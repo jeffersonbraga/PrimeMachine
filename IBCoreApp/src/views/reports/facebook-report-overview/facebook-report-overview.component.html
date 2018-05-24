@@ -1,0 +1,502 @@
+<h6 class="fs-14">
+  <i class="fa fa-facebook-square m-r-5 v-align-middle"></i>
+  <span class="v-align-middle"><strong>{{ profile.screenName }} • Overview • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+  <!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Visão Geral • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+</h6>
+<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+  <button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+  <button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+</nav>
+<div class="hidden-print sm-gutter">
+  <div class="panel panel-default m-b-10">
+    <div class="panel-body no-padding">
+      <div class="row">
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-small-line-chart [data]="pageTotalFansSmallLine"></aside-small-line-chart>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-small-line-chart [data]="pageTotalReachSmallLine"></aside-small-line-chart>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-small-line-chart [data]="pageTotalImpressionsSmallLine"></aside-small-line-chart>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-small-line-chart [data]="pageTotalEngagementSmallLine"></aside-small-line-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-5 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">crescimento de fãs na página</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="fanPageGrowthData" height="280" [reduceXTicks]="true" [isLogScale]="true" [forceY]="fanPageGrowthForceY" [tickValuesY]="fanPageGrowthTickValuesY"></stacked-area-chart>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-7 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">curtir e curtir (desfazer) na página</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-8">
+              <multi-chart [data]="likeUnlikeData" heigth="280" [legends]="legendsLikeUnlike"></multi-chart>
+            </div>
+            <div class="col-xs-4 p-l-0">
+              <aside-text-icon [data]="growthFansPeakAside"></aside-text-icon>
+              <aside-text-icon [data]="conqueredFansAside"></aside-text-icon>
+              <aside-text-icon [data]="lostFansAside"></aside-text-icon>
+              <aside-text-icon [data]="balanceFansAside"></aside-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-5 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">demografia do público</div>
+        </div>
+        <div class="panel-body">
+          <div class="radio radio-info">
+            <input type="radio" value="yes" checked="checked" name="aboutFansReachedUsers" id="aboutYourFans" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutYourFans">Fãs da página</label>
+            <input type="radio" value="no" name="aboutFansReachedUsers" id="aboutReachedUsers" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutReachedUsers">Usuários alcançados</label>
+          </div>
+          <div class="row">
+            <div class="col-md-12" [hidden]="!showAboutYourFans">
+              <stacked-column-chart [data]="aboutYourFansData" height="280" [reduceXTicks]="false" [legends]="legendsAboutYourFans"></stacked-column-chart>
+              <div class="row">
+                <div class="col-md-12 col-lg-6">
+                  <footer-text-icon [data]="majorAgeGroupFansFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-12 col-lg-6">
+                  <aside-pie-chart [data]="womenMenFansPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-12" [hidden]="showAboutYourFans">
+              <stacked-column-chart #aboutReachedUsersChart [data]="aboutReachedUsersData" [reduceXTicks]="false" height="280" [reduceXTicks]="false" [legends]="legendsAboutReachedUsers"></stacked-column-chart>
+              <div class="row">
+                <div class="col-md-12 col-lg-6">
+                  <footer-text-icon [data]="majorAgeGroupReachedUsersFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-12 col-lg-6">
+                  <aside-pie-chart #womenMenReachedUsersPieChart [data]="womenMenReachedUsersPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-7 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Usuários com mais interações</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': mostInfluentialFansData2.rows,
+									'col-md-12': !mostInfluentialFansData2.rows
+								}">
+              <table-chart [data]='mostInfluentialFansData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': mostInfluentialFansData2.rows,
+									'hidden': !mostInfluentialFansData2.rows
+								}">
+              <table-chart [data]='mostInfluentialFansData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-8 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">fãs online por horário</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="fansOnlinePerHourData" heigth="280" format="%H:%M" [reduceXTicks]="true" [legends]="legendsFansOnlinerPerHour" [tickValues]="fansOnlinePerHourTickValues"
+            rotateLabels="-45"></stacked-area-chart>
+          <footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-4 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">fãs online por dia da semana</div>
+        </div>
+        <div class="panel-body">
+          <column-chart [data]="fansOnlinePerWeekDayData" heigth="280" [reduceXTicks]="false"></column-chart>
+          <footer-text-icon [data]="weekDayWithMoreFansOnlineFooter"></footer-text-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-7">
+      <div class="row">
+        <div class="col-md-12 col-lg-6">
+          <div class="panel panel-default m-b-10">
+            <div class="panel-heading">
+              <div class="panel-title">Top países</div>
+            </div>
+            <div class="panel-body">
+              <div class="radio radio-info">
+                <input type="radio" checked="checked" value="yes" name="countriesReachedFans" id="countriesMoreFans" (change)="showCountriesList($event)">
+                <label for="countriesMoreFans">Fãs da página</label>
+                <input type="radio" value="no" name="countriesReachedFans" id="countriesMoreReached" (change)="showCountriesList($event)">
+                <label for="countriesMoreReached">Usuários alcançados</label>
+              </div>
+              <div class="row p-l-15 p-r-15">
+                <div class="col-md-12" [hidden]="!showCountriesMoreFans">
+                  <table-chart [data]='countriesMoreFansData'></table-chart>
+                </div>
+                <div class="col-md-12" [hidden]="showCountriesMoreFans">
+                  <table-chart [data]='countriesMoreReachedData'></table-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-12 col-lg-6">
+          <div class="panel panel-default m-b-10">
+            <div class="panel-heading">
+              <div class="panel-title">Top cidades</div>
+            </div>
+            <div class="panel-body">
+              <div class="radio radio-info">
+                <input type="radio" checked="checked" value="fans" name="citiesReachedFans" id="citiesMoreFans" (change)="showCitiesList($event)">
+                <label for="citiesMoreFans">Fãs da página</label>
+                <input type="radio" value="users" name="citiesReachedFans" id="citiesMoreReached" (change)="showCitiesList($event)">
+                <label for="citiesMoreReached">Usuários alcançados</label>
+              </div>
+              <div class="row p-l-15 p-r-15">
+                <div class="col-md-12" [hidden]="!showCitiesMoreFans">
+                  <table-chart [data]='citiesMoreFansData'></table-chart>
+                </div>
+                <div class="col-md-12" [hidden]="showCitiesMoreFans">
+                  <table-chart [data]='citiesMoreReachedData'></table-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-5">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Outras atividades na página</div>
+        </div>
+        <div class="panel-body">
+          <div class="row p-l-15 p-r-15">
+            <div class="col-md-12">
+              <table-chart [data]='otherActivitiesData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-7">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Origem das opções curtir</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': fansLikeSourceData2.rows,
+									'col-md-12': !fansLikeSourceData2.rows
+								}">
+              <table-chart [data]='fansLikeSourceData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': fansLikeSourceData2.rows,
+									'hidden': !fansLikeSourceData2.rows
+								}">
+              <table-chart [data]='fansLikeSourceData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-5">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Referências externas</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12">
+              <table-chart [data]='externalReferencesData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="content-pdf">
+  <div class="panel panel-default">
+    <div class="panel-body no-padding">
+      <div class="row">
+        <div class="col-xs-6">
+          <aside-small-line-chart [data]="pageTotalFansSmallLine"></aside-small-line-chart>
+        </div>
+        <div class="col-xs-6">
+          <aside-small-line-chart [data]="pageTotalReachSmallLine"></aside-small-line-chart>
+        </div>
+        <div class="col-xs-6">
+          <aside-small-line-chart [data]="pageTotalImpressionsSmallLine"></aside-small-line-chart>
+        </div>
+        <div class="col-xs-6">
+          <aside-small-line-chart [data]="pageTotalEngagementSmallLine"></aside-small-line-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">crescimento de fãs na página</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="fanPageGrowthData" height="280" [reduceXTicks]="true" [isLogScale]="true" [forceY]="fanPageGrowthForceY" [tickValuesY]="fanPageGrowthTickValuesY"></stacked-area-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row page-break">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">curtir e curtir (desfazer) na página</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-8">
+              <multi-chart [data]="likeUnlikeData" heigth="280" [legends]="legendsLikeUnlike"></multi-chart>
+            </div>
+            <div class="col-xs-4 p-l-0">
+              <aside-text-icon [data]="growthFansPeakAside"></aside-text-icon>
+              <aside-text-icon [data]="conqueredFansAside"></aside-text-icon>
+              <aside-text-icon [data]="lostFansAside"></aside-text-icon>
+              <aside-text-icon [data]="balanceFansAside"></aside-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">demografia do público</div>
+        </div>
+        <div class="panel-body">
+          <div class="radio radio-info">
+            <input type="radio" checked="checked" value="yes" name="aboutFansReachedUsers1" id="aboutYourFans1" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutYourFans">Fãs da página</label>
+            <input type="radio" value="no" name="aboutFansReachedUsers1" id="aboutReachedUsers1" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutReachedUsers">Usuários alcançados</label>
+          </div>
+          <div class="row">
+            <div class="col-xs-12" [hidden]="!showAboutYourFans">
+              <stacked-column-chart [data]="aboutYourFansData" height="280" [reduceXTicks]="false" [legends]="legendsAboutYourFans"></stacked-column-chart>
+              <div class="row">
+                <div class="col-xs-6">
+                  <footer-text-icon [data]="majorAgeGroupFansFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-6">
+                  <aside-pie-chart [data]="womenMenFansPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+            <div class="col-xs-12" [hidden]="showAboutYourFans">
+              <stacked-column-chart #aboutReachedUsersChart [data]="aboutReachedUsersData" [reduceXTicks]="false" height="280" [legends]="legendsAboutReachedUsers"></stacked-column-chart>
+              <div class="row">
+                <div class="col-xs-6">
+                  <footer-text-icon [data]="majorAgeGroupReachedUsersFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-6">
+                  <aside-pie-chart #womenMenReachedUsersPieChart [data]="womenMenReachedUsersPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row page-break">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Usuários com mais interações</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <table-chart [data]='mostInfluentialFansData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+									'col-xs-12': mostInfluentialFansData2.rows,
+									'hidden': !mostInfluentialFansData2.rows
+								}">
+              <table-chart [data]='mostInfluentialFansData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">fãs online por horário</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="fansOnlinePerHourData" heigth="280" format="%H:%M" [reduceXTicks]="true" [legends]="legendsFansOnlinerPerHour" [tickValues]="fansOnlinePerHourTickValues"
+            rotateLabels="-45"></stacked-area-chart>
+          <footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row page-break">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">fãs online por dia da semana</div>
+        </div>
+        <div class="panel-body">
+          <column-chart [data]="fansOnlinePerWeekDayData" heigth="280" [reduceXTicks]="false"></column-chart>
+          <footer-text-icon [data]="weekDayWithMoreFansOnlineFooter"></footer-text-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <div class="panel-title">Top países</div>
+            </div>
+            <div class="panel-body">
+              <div class="radio radio-info">
+                <input type="radio" checked="checked" value="fans" name="countriesReachedFans1" id="countriesMoreFans1" (change)="showCountriesList($event)">
+                <label for="countriesMoreFans">Fãs da página</label>
+                <input type="radio" value="users" name="countriesReachedFans1" id="countriesMoreReached1" (change)="showCountriesList($event)">
+                <label for="countriesMoreReached">Usuários alcançados</label>
+              </div>
+              <div class="row p-l-15 p-r-15">
+                <div class="col-xs-12" [hidden]="!showCountriesMoreFans">
+                  <table-chart [data]='countriesMoreFansData'></table-chart>
+                </div>
+                <div class="col-xs-12" [hidden]="showCountriesMoreFans">
+                  <table-chart [data]='countriesMoreReachedData'></table-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xs-12">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <div class="panel-title">Top cidades</div>
+            </div>
+            <div class="panel-body">
+              <div class="radio radio-info">
+                <input type="radio" checked="checked" value="fans" name="citiesReachedFans1" id="citiesMoreFans1" (change)="showCitiesList($event)">
+                <label for="citiesMoreFans">Fãs da página</label>
+                <input type="radio" value="users" name="citiesReachedFans1" id="citiesMoreReached1" (change)="showCitiesList($event)">
+                <label for="citiesMoreReached">Usuários alcançados</label>
+              </div>
+              <div class="row p-l-15 p-r-15">
+                <div class="col-xs-12" [hidden]="!showCitiesMoreFans">
+                  <table-chart [data]='citiesMoreFansData'></table-chart>
+                </div>
+                <div class="col-xs-12" [hidden]="showCitiesMoreFans">
+                  <table-chart [data]='citiesMoreReachedData'></table-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Outras atividades na página</div>
+        </div>
+        <div class="panel-body">
+          <div class="row p-l-15 p-r-15">
+            <div class="col-xs-12">
+              <table-chart [data]='otherActivitiesData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Origem das opções curtir</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <table-chart [data]='fansLikeSourceData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+									'col-xs-12': fansLikeSourceData2.rows,
+									'hidden': !fansLikeSourceData2.rows
+								}">
+              <table-chart [data]='fansLikeSourceData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Referências externas</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <table-chart [data]='externalReferencesData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

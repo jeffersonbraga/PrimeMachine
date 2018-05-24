@@ -1,0 +1,24 @@
+<div class="col-md-2 no-padding m-l-0 m-r-15 m-t-20 p-l-15">
+    <my_channels #mychannels [showCheckAllBtn]="showCheckAllBtn" (sendProfiles)="checkSocialMedia($event)"
+        [activeModuleName]="activeModuleName" [groupType]="groupType" [singleSelect]="true"></my_channels>
+</div>
+
+<div class="col-md-9">
+	<div class="top-report-container" [class.static]="static">
+		<top-report (changeDate)="updateDate($event)" (changeStatic)="setToStatic($event)" #topReport></top-report>
+	</div>
+
+    <div class="panel p-t-30 m-t-80 text-center" *ngIf="type==''">
+        <img src="/assets/img/blanks/reports.png" style="max-width: 100%;" alt="" class="m-l-40">
+        <p class="hint-text all-caps font-montserrat fs-12">Select a social profile to see your reports</p>
+    </div>
+
+	<twitter-report *ngIf="type=='T'" [reportConfigs]="reportConfigs"></twitter-report>
+    <linkedin-report *ngIf="type=='L' || type=='H'" [reportConfigs]="reportConfigs"></linkedin-report>            
+    <facebook-report *ngIf="type=='P'"  [reportConfigs]="reportConfigs"></facebook-report>
+    <instagram-report-main *ngIf="type=='I'"  [reportConfigs]="reportConfigs"></instagram-report-main>
+
+    <!-- 
+        <instagram-report></instagram-report>            
+    -->
+</div>

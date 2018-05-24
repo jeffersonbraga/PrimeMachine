@@ -1,0 +1,381 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import com.google.api.services.plus.Plus;
+import com.google.api.services.plus.model.Activity;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.googleplus.GooglePlusPostDTO;
+import br.com.opsocial.client.entity.instagram.InstagramPostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringHistoricFilterDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.client.entity.primitive.StringList;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenanceBlogPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceGooglePlusPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceGooglePlusPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostLocationRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceNewsPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceReclameAquiPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceYoutubePostMonitoringRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringLocationId;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringPostLocationId;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringUserId;
+import br.com.opsocial.ejb.entity.blogs.BlogPostMonitoring;
+import br.com.opsocial.ejb.entity.google.GooglePlusPost;
+import br.com.opsocial.ejb.entity.google.GooglePlusPostMonitoring;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostMonitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostLocation;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUser;
+import br.com.opsocial.ejb.entity.news.NewsPostMonitoring;
+import br.com.opsocial.ejb.entity.reclameaqui.ReclameAquiPostMonitoring;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring;
+import br.com.opsocial.ejb.entity.youtube.YoutubePostMonitoring;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.monitorings.xls.MonitoringPostsXLS;
+import br.com.opsocial.server.utils.networksintegrations.GoogleIntegration;
+
+public class ExportHistoryXLSAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+
+		MonitoringDTO monitoring = (MonitoringDTO) getParameters().get("monitoring");
+		Long startDate = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("startDate")).getValue();
+		Long endDate = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("endDate")).getValue();
+		StringUtil qualification = (StringUtil) getParameters().get("qualification");
+		StringList networks = (StringList) getParameters().get("networks");
+		List<Long> monitoringTags = (List<Long>) getParameters().get("monitoringTags");
+		PersistentList<StringUtil> monitoringTerms = (PersistentList<StringUtil>) getParameters().get("monitoringTerms");
+		StringList monitoringWords = (StringList) getParameters().get("monitoringWords");
+		
+		List<String> listMonitoringTerms = new ArrayList<String>();
+		
+		if(monitoringTerms != null && !monitoringTerms.getPersistences().isEmpty()) {
+			for (StringUtil term : monitoringTerms.getPersistences()) {
+				listMonitoringTerms.add(term.getValue()); 
+			}
+		} else {
+			listMonitoringTerms = null;
+		}
+
+		MaintenanceTwitterPostMonitoringRemote twitterRemote = (MaintenanceTwitterPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("TwitterPostMonitoring");
+		MaintenanceGooglePlusPostMonitoringRemote googleRemote = (MaintenanceGooglePlusPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("GooglePlusPostMonitoring");
+		MaintenanceYoutubePostMonitoringRemote youtubeRemote = (MaintenanceYoutubePostMonitoringRemote) RecoverMaintenance.recoverMaintenance("YoutubePostMonitoring");
+		MaintenanceInstagramPostMonitoringRemote instagramRemote = (MaintenanceInstagramPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("InstagramPostMonitoring");
+		MaintenanceReclameAquiPostMonitoringRemote reclameAquiRemote = (MaintenanceReclameAquiPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("ReclameAquiPostMonitoring");
+		MaintenanceNewsPostMonitoringRemote newsRemote = (MaintenanceNewsPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("NewsPostMonitoring");
+		MaintenanceBlogPostMonitoringRemote blogRemote = (MaintenanceBlogPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("BlogPostMonitoring");
+
+		MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("MonitoringPostTag");
+
+		setParameters(new HashMap<String, Object>());
+
+		Long counts = 0L;
+
+		if(networks.getValue().contains("twitter")) {
+			counts += twitterRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null,
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+		if(networks.getValue().contains("google")) {
+			counts += googleRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, 
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+		if(networks.getValue().contains("youtube")) {
+			counts += youtubeRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, 
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+		if(networks.getValue().contains("instagram")) {
+			counts += instagramRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, 
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+		if(networks.getValue().contains("reclameaqui")) {
+			counts += reclameAquiRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, 
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+		if(networks.getValue().contains("news")) {
+			counts += newsRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, 
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+		if(networks.getValue().contains("blogs")) {
+			counts += blogRemote.getByIntervalCount(monitoring.getIdMonitoring(), startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, 
+					monitoringTags != null ? monitoringTags : null, 
+					listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null);
+		}
+
+		if(counts > 5000) {
+			getParameters().put("counts", new br.com.opsocial.client.entity.primitive.Long(counts));
+		} else {
+
+			List<PostMonitoringDTO> postMonitoringDTOs = new ArrayList<PostMonitoringDTO>();
+
+			MaintenanceMonitoringPostLocationRemote monitoringPostLocationRemote = 
+					(MaintenanceMonitoringPostLocationRemote) RecoverMaintenance.recoverMaintenance("MonitoringPostLocation");
+			
+			MaintenanceMonitoringUserRemote monitoringUserRemote = 
+					(MaintenanceMonitoringUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringUser");
+
+			if(networks.getValue().contains("twitter")) {
+
+				// Twitter
+
+				List<TwitterPostMonitoring> twitterPosts = twitterRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 10000);
+
+				for(TwitterPostMonitoring twitterPostMonitoring : twitterPosts) {
+
+					PostMonitoringDTO postMonitoringDTO = MountDTO.mountTwitterPostMonitoring(twitterPostMonitoring);
+					postMonitoringDTO.setNetwork(Profile.TWITTER);
+					postMonitoringDTO.setCreatedTime(twitterPostMonitoring.getTwitterPost().getCreatedAt());
+					postMonitoringDTO.setMonitoringPostTags(
+							MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(twitterPostMonitoring.getTwitterPost().getStatusId().toString(), 
+									monitoring.getIdMonitoring(), twitterPostMonitoring.getTerm(), Profile.TWITTER)));
+					
+					MonitoringUserId monitoringUserId = new MonitoringUserId();
+					monitoringUserId.setIdUser(twitterPostMonitoring.getTwitterPost().getUserId().toString());
+					monitoringUserId.setNetworkType(Profile.TWITTER);
+					
+					MonitoringUser monitoringUser = monitoringUserRemote.getById(monitoringUserId);
+					
+					postMonitoringDTO.setUserSex(monitoringUser != null ? monitoringUser.getSex() : "");
+					
+					if(twitterPostMonitoring.getIdLocation() != null) {
+						
+						MonitoringLocationId monitoringLocationId = new MonitoringLocationId();
+						monitoringLocationId.setIdLocation(twitterPostMonitoring.getIdLocation());
+						monitoringLocationId.setNetworkType(Profile.TWITTER);
+						
+						MonitoringPostLocationId monitoringPostLocationId = new MonitoringPostLocationId();
+						monitoringPostLocationId.setPostId(twitterPostMonitoring.getTwitterPost().getStatusId().toString());
+						monitoringPostLocationId.setMonitoring(monitoring.getIdMonitoring());
+						monitoringPostLocationId.setMonitoringLocation(monitoringLocationId);
+						
+						MonitoringPostLocation monitoringPostLocation = monitoringPostLocationRemote.getById(monitoringPostLocationId); 
+						
+						if(monitoringPostLocation != null) {
+							postMonitoringDTO.setMonitoringPostLocation(MountDTO.mountMonitoringPostLocation(monitoringPostLocation));
+						}
+						
+					}
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			if(networks.getValue().contains("google")) {
+
+				// Google+
+
+				List<GooglePlusPostMonitoring> googlePosts = googleRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 5000);
+
+				for(GooglePlusPostMonitoring googlePlusPostMonitoring : googlePosts) {
+					
+					if(googlePlusPostMonitoring.getGooglePlusPost().getUrl() == null) {
+						
+						MaintenanceGooglePlusPostRemote googlePlusPostRemote = 
+								(MaintenanceGooglePlusPostRemote) RecoverMaintenance.recoverMaintenance("GooglePlusPost");
+						
+						try {
+							
+							Plus.Activities.Get getActivity = 
+									new GoogleIntegration().getGooglePlus().activities().get(googlePlusPostMonitoring.getGooglePlusPost().getActivityId());
+							
+							getActivity.setFields(GooglePlusPostDTO.FIELDS_ACTIVITY_URL);
+							getActivity.setKey(GoogleIntegration.API_KEY);
+
+							Activity activity= getActivity.execute();
+							
+							googlePlusPostMonitoring.getGooglePlusPost().setUrl(activity.getUrl());
+							
+							GooglePlusPost googlePlusPost = googlePlusPostRemote.getById(googlePlusPostMonitoring.getGooglePlusPost().getActivityId());
+							googlePlusPost.setUrl(activity.getUrl());
+							
+							googlePlusPostRemote.save(googlePlusPost);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+					}
+
+					PostMonitoringDTO postMonitoringDTO = MountDTO.mountGooglePlusPostMonitoring(googlePlusPostMonitoring);
+					postMonitoringDTO.setNetwork(Profile.GOOGLE);
+					postMonitoringDTO.setCreatedTime(googlePlusPostMonitoring.getGooglePlusPost().getPublished());
+					postMonitoringDTO.setMonitoringPostTags(
+							MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(googlePlusPostMonitoring.getGooglePlusPost().getActivityId(), 
+									monitoring.getIdMonitoring(), googlePlusPostMonitoring.getTerm(), Profile.GOOGLE)));
+					
+					if(googlePlusPostMonitoring.getGooglePlusPost().getActorId() != null) {
+						
+						MonitoringUserId monitoringUserId = new MonitoringUserId();
+						monitoringUserId.setIdUser(googlePlusPostMonitoring.getGooglePlusPost().getActorId().toString());
+						monitoringUserId.setNetworkType(Profile.GOOGLE);
+						
+						MonitoringUser monitoringUser = monitoringUserRemote.getById(monitoringUserId);
+						
+						postMonitoringDTO.setUserSex(monitoringUser != null ? monitoringUser.getSex() : "");
+					}
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			if(networks.getValue().contains("youtube")) {
+
+				// Youtube
+
+				List<YoutubePostMonitoring> youtubePosts = youtubeRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 5000);
+
+				for(YoutubePostMonitoring youtubePostMonitoring : youtubePosts) {
+
+					PostMonitoringDTO postMonitoringDTO = MountDTO.mountYoutubePostMonitoring(youtubePostMonitoring);
+					postMonitoringDTO.setNetwork(Profile.YOUTUBE);
+					postMonitoringDTO.setCreatedTime(youtubePostMonitoring.getYoutubePost().getPublishedAt());
+					postMonitoringDTO.setMonitoringPostTags(
+							MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(youtubePostMonitoring.getYoutubePost().getVideoId(), 
+									monitoring.getIdMonitoring(), youtubePostMonitoring.getTerm(), Profile.YOUTUBE)));
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			if(networks.getValue().contains("instagram")) {
+
+				// Instagram
+
+				List<InstagramPostMonitoring> instagramPosts = instagramRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 5000);
+
+				for(InstagramPostMonitoring instagramPostMonitoring : instagramPosts) {
+
+					InstagramPostMonitoringDTO instagramPostMonitoringDTO = MountDTO.mountInstagramPostMonitoring(instagramPostMonitoring);
+
+					PostMonitoringDTO postMonitoringDTO = instagramPostMonitoringDTO;
+					postMonitoringDTO.setNetwork(Profile.INSTAGRAM);
+					postMonitoringDTO.setCreatedTime(new Long(instagramPostMonitoring.getInstagramPost().getCreateTime()));
+					postMonitoringDTO.setMonitoringPostTags(
+							MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(instagramPostMonitoring.getInstagramPost().getIdMedia().toString(), 
+									monitoring.getIdMonitoring(), instagramPostMonitoring.getTerm(), Profile.INSTAGRAM)));
+					
+					MonitoringUserId monitoringUserId = new MonitoringUserId();
+					monitoringUserId.setIdUser(instagramPostMonitoring.getInstagramPost().getIdInstagramUser().toString());
+					monitoringUserId.setNetworkType(Profile.INSTAGRAM);
+					
+					MonitoringUser monitoringUser = monitoringUserRemote.getById(monitoringUserId);
+					
+					postMonitoringDTO.setUserSex(monitoringUser != null ? monitoringUser.getSex() : "");
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			if(networks.getValue().contains("reclameaqui")) {
+
+				// ReclameAqui
+
+				List<ReclameAquiPostMonitoring> reclameAquiPosts = reclameAquiRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 5000);
+
+				for(ReclameAquiPostMonitoring reclameAquiPostMonitoring : reclameAquiPosts) {
+
+					PostMonitoringDTO postMonitoringDTO = MountDTO.mountReclameAquiPostMonitoring(reclameAquiPostMonitoring);
+					postMonitoringDTO.setNetwork(Profile.RECLAMEAQUI);
+					postMonitoringDTO.setCreatedTime(new Long(reclameAquiPostMonitoring.getReclameAquiPost().getCreatedTime()));
+					postMonitoringDTO.setMonitoringPostTags(
+							MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(reclameAquiPostMonitoring.getReclameAquiPost().getCacheId(), 
+									monitoring.getIdMonitoring(), reclameAquiPostMonitoring.getTerm(), Profile.RECLAMEAQUI)));
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			if(networks.getValue().contains("news")) {
+
+				// News
+
+				List<NewsPostMonitoring> newsPosts = newsRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 5000);
+
+				for(NewsPostMonitoring newsPostMonitoring : newsPosts) {
+
+					PostMonitoringDTO postMonitoringDTO = MountDTO.mountNewsPostMonitoring(newsPostMonitoring);
+					postMonitoringDTO.setNetwork(Profile.NEWS);
+					postMonitoringDTO.setCreatedTime(new Long(newsPostMonitoring.getNewsPost().getCreatedTime()));
+					postMonitoringDTO.setMonitoringPostTags(MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(newsPostMonitoring.getNewsPost().getIdNewsPost().toString(), 
+							monitoring.getIdMonitoring(), newsPostMonitoring.getTerm(), Profile.NEWS)));
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			if(networks.getValue().contains("blogs")) {
+
+				// Blogs
+
+				List<BlogPostMonitoring> blogPosts = blogRemote.getByInterval(monitoring.getIdMonitoring(), 
+						startDate / 1000, endDate / 1000, qualification != null ? qualification.getValue() : null, monitoringTags != null ? monitoringTags : null, 
+								listMonitoringTerms != null ? listMonitoringTerms : null, monitoringWords != null ? monitoringWords.getValue() : null, 0, 5000);
+
+				for(BlogPostMonitoring blogPostMonitoring : blogPosts) {
+
+					PostMonitoringDTO postMonitoringDTO = MountDTO.mountBlogPostMonitoring(blogPostMonitoring);
+					postMonitoringDTO.setNetwork(Profile.BLOGS);
+					postMonitoringDTO.setCreatedTime(new Long(blogPostMonitoring.getBlogPost().getCreatedTime()));
+					postMonitoringDTO.setMonitoringPostTags(MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(blogPostMonitoring.getBlogPost().getIdBlogPost().toString(), 
+							monitoring.getIdMonitoring(), blogPostMonitoring.getTerm(), Profile.BLOGS)));
+
+					postMonitoringDTOs.add(postMonitoringDTO);
+				}
+			}
+
+			Collections.sort(postMonitoringDTOs);
+
+			MonitoringHistoricFilterDTO monitoringHistoricFilter = new MonitoringHistoricFilterDTO();
+			monitoringHistoricFilter.setMonitoring(monitoring);
+			monitoringHistoricFilter.setStartDate(startDate);
+			monitoringHistoricFilter.setEndDate(endDate);
+			monitoringHistoricFilter.setQualification(qualification);
+			monitoringHistoricFilter.setMonitoringTags(monitoringTags);
+			monitoringHistoricFilter.setNetworks(networks);
+			monitoringHistoricFilter.setMonitoringTerms(listMonitoringTerms);
+			monitoringHistoricFilter.setMonitoringWords(monitoringWords);
+
+			MonitoringPostsXLS monitoringPostsXLS = new MonitoringPostsXLS(postMonitoringDTOs, monitoringHistoricFilter);
+			monitoringPostsXLS.createXLS();
+
+			getParameters().put("xlsToDownload", new StringUtil(monitoringPostsXLS.getFileName()));
+			getParameters().put("xlsNameToDownload", new StringUtil(monitoringPostsXLS.getFormattedFileName()));
+			getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(monitoring.getAccount().getIdAccount()));
+		}
+	}
+
+}

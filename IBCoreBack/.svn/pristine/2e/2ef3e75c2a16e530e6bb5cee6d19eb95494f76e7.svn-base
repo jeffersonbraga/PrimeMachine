@@ -1,0 +1,719 @@
+package br.com.opsocial.server.utils.instagram;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.entity.relationships.RelationshipFeed;
+import org.jinstagram.entity.users.feed.UserFeed;
+import org.jinstagram.entity.users.feed.UserFeedData;
+import org.jinstagram.exceptions.InstagramBadRequestException;
+import org.jinstagram.exceptions.InstagramException;
+import org.jinstagram.model.Relationship;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.PostAttachment;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.instagram.entities.Comment;
+import br.com.opsocial.server.utils.instagram.entities.CommentFeed;
+import br.com.opsocial.server.utils.instagram.entities.FollowerFeed;
+import br.com.opsocial.server.utils.instagram.entities.FriendshipStatus;
+import br.com.opsocial.server.utils.instagram.entities.Paging;
+import br.com.opsocial.server.utils.instagram.entities.User;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+import br.com.opsocial.server.utils.streams.StreamFollowers;
+import br.com.opsocial.server.utils.streams.StreamPost;
+import br.com.opsocial.server.utils.streams.StreamPostComment;
+import br.com.opsocial.server.utils.streams.StreamPostComments;
+import br.com.opsocial.server.utils.streams.StreamPostPaging;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+import facebook4j.Account;
+import facebook4j.Facebook;
+import facebook4j.FacebookException;
+import facebook4j.RawAPIResponse;
+import facebook4j.auth.AccessToken;
+
+public class InstagramAPI {
+	
+	private InstagramPostHelper instagramPostHelper;
+	
+	public static final String INSTAGRAM_BUSINESS_ACCOUNT_FIELDS = "instagram_business_account";
+	public static final String INSTAGRAM_USER_FIELDS = "name,username,ig_id,followers_count,follows_count,media_count,profile_picture_url";
+	public static final String INSTAGRAM_MEDIA_FIELDS = "id,ig_id,caption,comments_count,like_count,media_type,media_url,permalink,thumbnail_url,timestamp";
+	public static final String INSTAGRAM_COMMENT_FIELDS = "id,text,timestamp,media,user{id,profile_picture_url,username,name}";
+
+	public InstagramAPI() {
+		
+	}
+	
+	public User getUser(String instagramBussinessAccountId, Facebook facebook) throws FacebookException {
+		
+		User user = null;
+		
+		try {
+			
+			Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+			
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("fields", INSTAGRAM_USER_FIELDS);
+			
+			RawAPIResponse res = facebook.callGetAPI(instagramBussinessAccountId, queryParameters);
+			
+			user = gson.fromJson(res.asString(), User.class);
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		}
+		
+		return user;
+	}
+	
+	public String getInstagramBussinessAccountId(Account account, Facebook facebook) {
+		
+		String instagramBussinessAccountId = null;
+		
+		try {
+			
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("fields", INSTAGRAM_BUSINESS_ACCOUNT_FIELDS);
+			
+			RawAPIResponse res = facebook.callGetAPI(account.getId(), queryParameters);
+			
+			JsonParser parser = new JsonParser();			
+			JsonObject jsonResponse = parser.parse(res.asString()).getAsJsonObject();
+			
+			if(jsonResponse.has("instagram_business_account")) {
+				instagramBussinessAccountId = jsonResponse.get("instagram_business_account").getAsJsonObject().get("id").getAsString();
+			}
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			e.printStackTrace();
+		}
+		
+		return instagramBussinessAccountId;
+	}
+
+	// WoopSocial
+	public StreamPostComment comment(String postId, StreamPostComment streamPostComment, Profile profile) throws FacebookException {
+		
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+		
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+		
+		try {
+			
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("message", streamPostComment.getMessage());
+			
+			RawAPIResponse res = facebook.callPostAPI(postId + "/comments", queryParameters);
+			
+			JsonParser parser = new JsonParser();			
+			JsonObject jsonResponse = parser.parse(res.asString()).getAsJsonObject();
+			
+			if(jsonResponse.has("id")) {
+				
+				String commentId = jsonResponse.get("id").getAsString();	
+				streamPostComment = getComment(commentId, profile);
+			}
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			e.printStackTrace();
+		}
+			
+		return streamPostComment;
+	}
+
+	public boolean postFirstComment(String postId, String postFirstComment, Profile profile) throws FacebookException {
+
+		boolean flag = false;
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+
+		try {
+
+			String mediaId = null;
+			try {
+
+				InstagramBusinessBO instagramBO = new InstagramBusinessBO();
+				instagramBO.getMediaData(profile.getInstagramBusinessId(), profile);
+				System.out.println(instagramBO.listaColetada.size());
+
+				for (Object o : instagramBO.listaColetada) {		
+					
+
+					
+					for (JsonElement jsonElement : ((JsonArray) o)) {
+						
+						String ig_id = ((Long) ((JsonObject) jsonElement).get("ig_id").getAsLong()).toString();
+						if (ig_id.equals(postId)) {
+							mediaId = ((Long) ((JsonObject) jsonElement).get("id").getAsLong()).toString();
+							break;
+						}
+					}
+				}
+
+			} catch (com.face4j.facebook.exception.FacebookException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("message", postFirstComment);
+
+			RawAPIResponse res = facebook.callPostAPI(mediaId + "/comments", queryParameters);
+
+			JsonParser parser = new JsonParser();			
+			JsonObject jsonResponse = parser.parse(res.asString()).getAsJsonObject();
+
+			if(jsonResponse.has("id")) {
+
+				String commentId = jsonResponse.get("id").getAsString();
+				flag = true;
+			}
+
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			e.printStackTrace();
+		}
+			
+		return flag;
+	}
+	
+	public StreamPostComment getComment(String commentId, Profile profile) {
+		
+		StreamPostComment streamPostComment = new StreamPostComment();
+		
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+		
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+		
+		try {
+			Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+			
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("fields", INSTAGRAM_COMMENT_FIELDS);
+			
+			RawAPIResponse res = facebook.callGetAPI(commentId + "/", queryParameters);
+			
+			Comment comment = gson.fromJson(res.asString(), Comment.class);
+			
+			streamPostComment = MountDTO.mountStreamPostCommentForInstagram(comment);
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			e.printStackTrace();
+		}
+		
+		return streamPostComment;
+	}
+
+//	// OpSocial
+//	public StreamPostComment comment(String postId, StreamPostComment streamPostComment, Profile profile) {
+//		
+//		InstagramIntegration instagramIntegration = new InstagramIntegration();
+//		
+//		Instagram instagram = instagramIntegration.getInstagram(profile);
+//		
+//		try {
+//			
+//			MediaCommentResponse mediaCommentResponse = instagram.setMediaComments(postId, streamPostComment.getMessage());
+//			
+//			streamPostComment = MountDTO.mountStreamPostCommentForInstagram(mediaCommentResponse.getCommentData());
+//			
+//		} catch (InstagramException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return streamPostComment;
+//	}
+	
+	// WoopSocial
+	public Boolean follow(String userId, Profile profile) {
+		
+		instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		
+		Boolean followed = false;
+		
+		try {
+			
+			FriendshipStatus friendshipStatus = instagramPostHelper.follow(profile, profile.getInstagramDevice(), userId);
+			
+			followed = friendshipStatus.getFollowing();
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			
+			profile = profileRemote.getById(profile.getIdProfile());
+			profile.setInstagramCookies(getCookies());
+			profile.setInstagramLastLoginTime(getLastLoginTime());
+			
+			profileRemote.save(profile);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return followed;
+	}
+	
+	// WoopSocial
+	public Boolean unfollow(String userId, Profile profile) {
+		
+		instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		
+		Boolean unfollowed = false;
+		
+		try {
+			
+			FriendshipStatus friendshipStatus = instagramPostHelper.unfollow(profile, profile.getInstagramDevice(), userId);
+			
+			unfollowed = friendshipStatus.getFollowing();
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			
+			profile = profileRemote.getById(profile.getIdProfile());
+			profile.setInstagramCookies(getCookies());
+			profile.setInstagramLastLoginTime(getLastLoginTime());
+			
+			profileRemote.save(profile);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return unfollowed;
+	}
+	
+	// OpSocial
+//	public Boolean follow(String userId, Profile profile) {
+//		
+//		InstagramIntegration instagramIntegration = new InstagramIntegration();
+//		Instagram instagram = instagramIntegration.getInstagram(profile);
+//		
+//		Boolean followed = false;
+//		
+//		try {
+//			
+//			RelationshipFeed relationshipFeed = instagram.setUserRelationship(userId, Relationship.FOLLOW);
+//			
+//			if(relationshipFeed.getData().getOutgoingStatus().equals("follows")) {
+//				followed = true;
+//			}
+//			
+//		} catch (InstagramBadRequestException e) {
+//			ValidateTokensController.validatingTokens(profile.getAccount());
+//			e.printStackTrace();
+//		} catch (InstagramException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return followed;
+//	}
+	
+	// OpSocial
+//	public Boolean unfollow(String userId, Profile profile) {
+//		
+//		InstagramIntegration instagramIntegration = new InstagramIntegration();
+//		Instagram instagram = instagramIntegration.getInstagram(profile);
+//		
+//		Boolean unfollowed = false;
+//		
+//		try {
+//			
+//			RelationshipFeed relationshipFeed = instagram.setUserRelationship(userId, Relationship.UNFOLLOW);
+//			
+//			if(relationshipFeed.getData().getOutgoingStatus().equals("none")) {
+//				unfollowed = true;
+//			}
+//			
+//		} catch (InstagramBadRequestException e) {
+//			ValidateTokensController.validatingTokens(profile.getAccount());
+//			e.printStackTrace();
+//		} catch (InstagramException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return unfollowed;
+//	}
+	
+	// WoopSocial
+	public StreamFollowers getFollowers(Profile profile, StreamPostPaging paging) {
+		
+		StreamFollowers streamFollowers = new StreamFollowers();
+		
+		instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		
+		try {
+			
+			FollowerFeed followerFeed = instagramPostHelper.getFollowers(profile, profile.getInstagramDevice(), paging.getUntil());
+
+			paging.setUntil(followerFeed.getNextMaxId());
+			
+			streamFollowers.setFollowers(MountDTO.mountFollowersForInstagram(followerFeed.getUsers(), profile.getIdProfile()));
+			streamFollowers.setPaging(paging);
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			
+			profile = profileRemote.getById(profile.getIdProfile());
+			profile.setInstagramCookies(getCookies());
+			profile.setInstagramLastLoginTime(getLastLoginTime());
+			
+			profileRemote.save(profile);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return streamFollowers;
+	}
+	
+	// OpSocial
+//	public StreamFollowers getFollowers(Profile profile, StreamPostPaging paging) {
+//		
+//		StreamFollowers streamFollowers = new StreamFollowers();
+//		
+//		InstagramIntegration instagramIntegration = new InstagramIntegration();
+//		
+//		Instagram instagram = instagramIntegration.getInstagram(profile);
+//		
+//		try {
+//			
+//			UserFeed userFeed;
+//			
+//			if(paging.getUntil() == null) {
+//				userFeed = instagram.getUserFollowedByList(profile.getNetworkId());
+//			} else {
+//				userFeed = instagram.getUserFollowedByListNextPage(profile.getNetworkId(), paging.getUntil());
+//			}
+//
+//			paging.setUntil(userFeed.getPagination().getNextCursor());
+//			
+//			List<UserFeedData> users = userFeed.getUserList();
+//			
+//			streamFollowers.setFollowers(MountDTO.mountFollowersForInstagram(users, profile.getIdProfile()));
+//			streamFollowers.setPaging(paging);
+//			
+//		} catch (InstagramException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return streamFollowers;
+//	}
+	
+	public CommentFeed getComments(Profile profile, String idMedia) throws FacebookException {
+		
+		CommentFeed commentFeed = new CommentFeed();
+		
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+		
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+		
+		try {
+			
+			Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+			
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("fields", INSTAGRAM_COMMENT_FIELDS);
+			
+			RawAPIResponse res = facebook.callGetAPI(idMedia + "/comments", queryParameters);
+			
+			commentFeed = gson.fromJson(res.asString(), CommentFeed.class);
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		}
+
+		return commentFeed;
+	}
+	
+	// WoopSocial
+	public StreamPostComments getComments(StreamPost streamPost, Profile profile) {
+		
+		StreamPostComments streamPostComments = new StreamPostComments();
+		
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+		
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+		
+		try {
+			
+			Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+			
+			Map<String, String> queryParameters = new HashMap<String, String>();
+			queryParameters.put("fields", INSTAGRAM_COMMENT_FIELDS);
+			
+			RawAPIResponse res = facebook.callGetAPI(streamPost.getPostId() + "/comments", queryParameters);
+			
+			CommentFeed commentFeed = gson.fromJson(res.asString(), CommentFeed.class);
+			
+			streamPostComments.setComments(MountDTO.mountStreamPostCommentsForInstagram(commentFeed));
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			e.printStackTrace();
+		}
+
+		return streamPostComments;
+	}
+	
+//	// OpSocial
+//	public StreamPostComments getComments(StreamPost streamPost, Profile profile) {
+//		
+//		StreamPostComments streamPostComments = new StreamPostComments();
+//		
+//		InstagramIntegration instagramIntegration = new InstagramIntegration();
+//		
+//		Instagram instagram = instagramIntegration.getInstagram(profile);
+//		
+//		try {
+//			
+//			List<CommentData> comments = instagram.getMediaComments(streamPost.getPostId() + "_" + profile.getNetworkId()).getCommentDataList();
+//			
+//			streamPostComments.setComments(MountDTO.mountStreamPostCommentsForInstagram(comments));
+//			
+//		} catch (InstagramException e) {
+//			e.printStackTrace();
+//		}
+//
+//		return streamPostComments;
+//	}
+	
+	public br.com.opsocial.server.utils.instagram.entities.MediaFeed getMedia(Profile profile, Paging paging, Integer limit) throws FacebookException {
+		
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+		
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+		
+		br.com.opsocial.server.utils.instagram.entities.MediaFeed mediaFeed = new br.com.opsocial.server.utils.instagram.entities.MediaFeed();
+		
+		try {
+			
+			if(paging != null) {
+				
+				Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+				
+				Map<String, String> queryParameters = new HashMap<String, String>();
+				queryParameters.put("fields", INSTAGRAM_MEDIA_FIELDS);
+				queryParameters.put("limit", limit.toString());
+				queryParameters.put("after", paging.getCursors().getAfter());
+				
+				RawAPIResponse res = facebook.callGetAPI(profile.getInstagramBusinessId() + "/media", queryParameters);
+				
+				mediaFeed = gson.fromJson(res.asString(), br.com.opsocial.server.utils.instagram.entities.MediaFeed.class);
+				
+			} else {
+				
+				Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+				
+				Map<String, String> queryParameters = new HashMap<String, String>();
+				queryParameters.put("fields", INSTAGRAM_MEDIA_FIELDS);
+				queryParameters.put("limit", limit.toString());
+				
+				RawAPIResponse res = facebook.callGetAPI(profile.getInstagramBusinessId() + "/media", queryParameters);
+				
+				mediaFeed = gson.fromJson(res.asString(), br.com.opsocial.server.utils.instagram.entities.MediaFeed.class);
+			}
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		}
+		
+		return mediaFeed;
+	}
+	
+	// WopSocial.
+	public List<StreamPost> getMyPosts(Profile profile, StreamPostPaging streamPostPaging) {
+		
+		List<StreamPost> streamPosts = new ArrayList<StreamPost>();
+		
+		AccessToken accessToken = new AccessToken(profile.getToken(), null);
+		
+		facebook4j.Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+		
+		br.com.opsocial.server.utils.instagram.entities.MediaFeed mediaFeed;
+		
+		try {
+			
+			if(streamPostPaging.getSince() != null) {
+				
+				Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+				
+				Map<String, String> queryParameters = new HashMap<String, String>();
+				queryParameters.put("fields", INSTAGRAM_MEDIA_FIELDS);
+				queryParameters.put("limit", streamPostPaging.getLimit().toString());
+				queryParameters.put("after", streamPostPaging.getSince());
+				
+				RawAPIResponse res = facebook.callGetAPI(profile.getInstagramBusinessId() + "/media", queryParameters);
+				
+				mediaFeed = gson.fromJson(res.asString(), br.com.opsocial.server.utils.instagram.entities.MediaFeed.class);
+				
+				if(mediaFeed.getData().size() > 0) {
+					streamPostPaging.setSince(mediaFeed.getPaging().getCursors().getAfter());
+				}
+				
+			} else {
+				
+				Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+				
+				Map<String, String> queryParameters = new HashMap<String, String>();
+				queryParameters.put("fields", INSTAGRAM_MEDIA_FIELDS);
+				queryParameters.put("limit", streamPostPaging.getLimit().toString());
+				
+				RawAPIResponse res = facebook.callGetAPI(profile.getInstagramBusinessId() + "/media", queryParameters);
+				
+				mediaFeed = gson.fromJson(res.asString(), br.com.opsocial.server.utils.instagram.entities.MediaFeed.class);
+				
+				if(mediaFeed.getData().size() > 0) {
+					streamPostPaging.setSince(mediaFeed.getPaging().getCursors().getAfter());
+				}
+			}
+			
+			streamPosts.addAll(MountDTO.mountStreamPostsForInstagram(mediaFeed.getData(), profile));
+			
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return streamPosts;
+		
+	}
+	
+	// OpSocial.
+//	public List<StreamPost> getMyPosts(Profile profile, StreamPostPaging streamPostPaging) { 
+//		
+//		List<StreamPost> streamPosts = new ArrayList<StreamPost>();
+//		
+//		InstagramIntegration instagramIntegration = new InstagramIntegration();
+//		
+//		Instagram instagram = instagramIntegration.getInstagram(profile);
+//		
+//		MediaFeed mediaFeed;
+//		
+//		try {
+//			
+//			if(streamPostPaging.getSince() != null) {
+//				
+//				mediaFeed = instagram.getRecentMediaFeed(instagram.getCurrentUserInfo().getData().getId(), 
+//						streamPostPaging.getLimit(), null, streamPostPaging.getSince(), null, null);
+//				
+//				if(mediaFeed.getData().size() > 0) {
+//					streamPostPaging.setSince(mediaFeed.getData().get(mediaFeed.getData().size() - 1).getId());
+//				}
+//				
+//			} else {
+//				
+//				mediaFeed = instagram.getRecentMediaFeed(instagram.getCurrentUserInfo().getData().getId(), streamPostPaging.getLimit(), null, null, null, null);
+//				
+//				if(mediaFeed.getData().size() > 0) {
+//					streamPostPaging.setSince(mediaFeed.getData().get(mediaFeed.getData().size() - 1).getId());
+//				}
+//			}
+//			
+//			streamPosts.addAll(MountDTO.mountStreamPostsForInstagram(mediaFeed.getData()));
+//			
+//		} catch (InstagramBadRequestException e) {
+//			ValidateTokensController.validatingTokens(profile.getAccount());
+//			e.printStackTrace();
+//		} catch (InstagramException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		return streamPosts;
+//	}
+	
+	public boolean post(Post post, Profile profile) {
+
+		Boolean wasSent = true;
+		String tempPath = OpSocialBackApplication.UPLOAD_DIR_TEMP + "/";
+		String videoPostsPath = OpSocialBackApplication.UPLOAD_DIR_VIDEO_POSTS + "/";
+
+		try {
+
+			instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+
+			if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_PICTURE)) {
+
+				if(post.getTargetFeed().equals(Post.TIMELINE_FEED)) {
+					PostAttachment pAttachment = post.getPostsAttachments().get(0);
+					String pathName = tempPath + pAttachment.getFileName();
+					wasSent = instagramPostHelper.uploadTimelinePhoto(profile, profile.getInstagramDevice(), post.getText(), new File(pathName));
+					
+					this.postFirstComment(instagramPostHelper.uploadedPostId, post.getHashtags(), profile);
+				} else if(post.getTargetFeed().equals(Post.STORY_FEED)) {
+					wasSent = instagramPostHelper.uploadStoryPhoto(profile, profile.getInstagramDevice(), post.getText(), post);
+				}
+
+			} else if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_VIDEO)) {
+
+				PostAttachment pAttachment = post.getPostsAttachments().get(0);
+
+				if(post.getTargetFeed().equals(Post.TIMELINE_FEED)) {
+					wasSent = instagramPostHelper.uploadTimelineVideo(profile, profile.getInstagramDevice(), post, new File(videoPostsPath + pAttachment.getFileName()));
+				} else if(post.getTargetFeed().equals(Post.STORY_FEED)) {
+					wasSent = instagramPostHelper.uploadStoryVideo(profile, profile.getInstagramDevice(), post, new File(videoPostsPath + pAttachment.getFileName()));
+				}
+
+			} else if(post.getAppendType().equals(Post.APPEND_ALBUM)) {
+				wasSent = instagramPostHelper.uploadTimelineAlbum(profile, profile.getInstagramDevice(), post);
+			}
+
+			if( !wasSent && (instagramPostHelper != null) && (instagramPostHelper.isAccountAuthenticated() != null) && (!instagramPostHelper.isAccountAuthenticated()) ) {
+				instagramPostHelper.deactivateProfileScheduling(profile.getIdProfile());
+			}
+
+		} catch (Exception e) {
+			wasSent = false;
+			e.printStackTrace();
+		}
+
+		return wasSent;
+	}
+
+	public String extractSendImageErrorMessage() {
+		return instagramPostHelper.extractSendImageErrorMessage();
+	}
+
+	public String getCookies() {
+		return instagramPostHelper.getCookies();
+	}
+
+	public boolean tryToPostAgain() {
+		return instagramPostHelper.tryToPostAgain();
+	}
+
+	public Long getLastLoginTime() {
+		return instagramPostHelper.getLastLoginTime();
+	}
+
+	public void setLastLoginTime(Long lastLoginTime) {
+		instagramPostHelper.setLastLoginTime(lastLoginTime);
+	}
+	
+}

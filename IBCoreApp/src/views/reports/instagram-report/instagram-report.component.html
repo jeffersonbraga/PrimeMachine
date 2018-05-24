@@ -1,0 +1,621 @@
+<div class="col-sm-12 text-center" *ngIf="isLoading">
+	<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+</div>
+<div class="col-sm-12 text-center p-t-60" *ngIf="!isLoading && reportState == 'G'" >
+	<p class="small hint-text">Aguarde um momento, gerando relatório do perfil.</p>
+</div>
+
+<div class="panel panel-opsocial panel-transparent" *ngIf="!isLoading && reportState == 'F'">
+	<ul class="nav nav-tabs nav-tabs-opsocial hidden-print" data-init-reponsive-tabs="dropdownfx">
+		<li class="active cursor">
+			<a data-toggle="tab" (click)="viewHistorical = true" aria-expanded="true"><span> Histórico</span></a>
+		</li>
+		<li class="cursor">
+			<a data-toggle="tab" (click)="viewHistorical = false" aria-expanded="false"><span> Visão Geral</span></a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane slide-left active" id="overview">
+
+			<h6 class="fs-16">
+				<i class="fa fa-instagram m-r-5"></i>
+				<span><strong>{{ profile.screenName }} • Overview • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+				<!-- <span><strong>{{ profile.screenName }} • Visão Geral • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+			</h6>
+			<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+				<button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+				<button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+			</nav>
+			
+			<!-- <div class="col-md-12">
+				<div class="col-md-6 pull-left">
+					<h6 class="fs-16">
+						
+					</h6>
+				</div>
+				<div class="buttons-downloads hidden-print">
+					<nav class="buttons-downloads hidden-print">
+						<button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+						<button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+					</nav>
+				</div>
+			</div> -->
+
+			<!-- HISTORICAL -->
+			<div class="row" [hidden]="viewHistorical">
+				<div class="col-md-12">
+					<div class="panel panel-default p-b-10">
+						<div class="row p-l-20">
+							<div class="col-lg-3 col-md-3">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-instagram" aria-hidden="true" style="color:#989898"></i>
+											TOTAL DE POSTS																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataHistorical != undefined)?dataHistorical.totalPosts:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-comment" aria-hidden="true" style="color:#989898"></i>
+											COMENTÁRIOS
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataHistorical != undefined)?dataHistorical.comments:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-heart" aria-hidden="true" style="color:#989898"></i>
+											LIKES																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataHistorical != undefined)?dataHistorical.likes:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-users" aria-hidden="true" style="color:#989898"></i>
+											SEGUIDORES																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataHistorical != undefined)?dataHistorical.followers:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-users" aria-hidden="true" style="color:#989898"></i>
+											SEGUINDO																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataHistorical != undefined)?dataHistorical.followers:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-md-8 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">POST POR MES E ANO</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<area-chart [data]="historical_posts" heigth="250" isArea="true" [reduceXTicks]="false" [tickValues]="fansOnlinePerHourTickValues" format="%H:%M"
+									rotateLabels="-90"></area-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="col-md-4 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">DENSIDADE DE POSTS DIA</div>
+						</div>
+							<bubble-chart [data]="historical_postsByDay" [chartHeight]="100" [color]="bubbleDayColor" [showYAxis]="false" [tickFormatFunctionX]="xAxisTickFunctionDay"></bubble-chart>
+						<div class="panel-heading">
+							<div class="panel-title">DENSIDADE DE POSTS HORA</div>
+						</div>
+							<bubble-chart [data]="historical_postsByHour" [chartHeight]="100" [color]="bubbleHourColor" [showYAxis]="false"></bubble-chart>
+					</div>
+				</div>
+
+				<div class="col-md-6 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">LIKES POR MES</div>
+						</div>
+						<stacked-area-chart [data]="historical_likes" heigth="250" format="%b" [reduceXTicks]="false"></stacked-area-chart>
+					</div>
+				</div>
+				<div class="col-md-6 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">COMMENTS POR MES</div>
+						</div>
+						<stacked-area-chart [data]="historical_comments" heigth="250" format="%b" [reduceXTicks]="false"></stacked-area-chart>
+					</div>
+				</div>
+				<div class="col-md-8 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">LIKES E COMMMENTS POR HORÁRIO</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<stacked-area-chart [data]="historical_likesCommentsPerHour" heigth="280" format="%H" [reduceXTicks]="true" [color]="colorsReactionsPerDay" [tickValues]="fansOnlinePerHourTickValues"></stacked-area-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">DEMOGRAFIA DO PÚBLICO</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12 p-r-0">
+								<stacked-column-chart [data]="historical_instagramPublicAgeGender" heigth="250" [reduceXTicks]="false"></stacked-column-chart>
+							</div>
+							<div class="col-md-4 p-l-0">
+								<!--<aside-text-icon [data]="averageTweetsAside"></aside-text-icon>-->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">POSTS COM MAIS INTERAÇÕES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<!-- <table-chart [data]='postsWithMoreInteractions'></table-chart> -->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">HASHTAGS COM MAIS INTERAÇÕES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='historical_instagramTopPostTags'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- OVERVIEW -->
+			<!-- OVERVIEW -->
+			<!-- OVERVIEW -->
+			<!-- OVERVIEW -->
+			<div class="row" [hidden]="!viewHistorical">
+
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="row p-l-20">
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-instagram" aria-hidden="true" style="color:#989898"></i>
+											TOTAL DE POSTS																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.totalPosts:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-2 col-md-2">								
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-picture-o" aria-hidden="true" style="color:#989898"></i>
+											POSTS EM FOTO
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.totalPostsImage:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-video-camera" aria-hidden="true" style="color:#989898"></i>
+											POSTS EM VIDEO																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.totalPostsVideo:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-book" aria-hidden="true" style="color:#989898"></i>
+											POSTS EM ALBUM																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.totalPostsCarousel:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-2 col-md-2" style="border-left: 4px;">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-hand-o-up" aria-hidden="true" style="color:#989898"></i>
+											MÉDIA DE INTERAÇÕES POR POST																					
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.averageInteractionsPosts:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-2 col-md-2">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-user" aria-hidden="true" style="color:#989898"></i>
+											MÉDIA DE INTERAÇÃO POR SEGUIDOR																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.averageInteractionsFollower:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="row p-l-20">
+							<div class="col-lg-3 col-md-6">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-eye" aria-hidden="true" style="color:#989898"></i>
+											IMPRESSÕES NO PERÍODO																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.averageInteractionsFollower:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-3 col-md-6">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-user" aria-hidden="true" style="color:#989898"></i>
+											ALCANCE NO PERÍODO																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.averageInteractionsFollower:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-3 col-md-6">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-mobile" aria-hidden="true" style="color:#989898"></i>
+											VISUALIZAÇÕES DO PERFIL																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.averageInteractionsFollower:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-lg-3 col-md-6">
+								<div class="panel no-border no-margin">
+									<div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+										<div class="panel-title">
+											<i class="fa fa-link" aria-hidden="true" style="color:#989898"></i>
+											CLIQUES NA URL																						
+											
+										</div>
+									</div>
+									<div class="panel-body">
+										<div class="row">
+											<div class="col-md-12">
+												<h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{(dataOverview != undefined)?dataOverview.averageInteractionsFollower:''}}</h1>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+						</div>
+					</div>
+				</div>
+
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">MUDANÇA DE FOLLOWERS NO PERÍODO</div>
+						</div>
+						<div class="row">
+							<div class="col-md-9 p-r-0">
+								<stacked-column-chart [data]="instagramFollowerTrend" [reduceXTicks]="true" heigth="250"></stacked-column-chart>
+							</div>
+							<!-- <div class="col-md-3 p-l-0">
+								<aside-text-icon [data]="totalFollowersPeakAside"></aside-text-icon>
+							</div>
+							<div class="col-md-3 p-l-0">
+								<aside-text-icon [data]="newFollowersPeakAside"></aside-text-icon>
+							</div>
+							<div class="col-md-3 p-l-0">
+								<aside-text-icon [data]="unFollowersPeakAside"></aside-text-icon>
+							</div>
+							<div class="col-md-3 p-l-0">
+								<aside-text-icon [data]="followersBalancePeakAside"></aside-text-icon>
+							</div> -->
+						</div>
+					</div>
+				</div>
+
+				<div class="col-md-4 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">DEMOGRAFIA DO PÚBLICO</div>
+						</div>
+						<div class="row">
+							<stacked-column-chart [data]="instagramPublicAgeGender" heigth="250" [reduceXTicks]="false"></stacked-column-chart>
+							<!-- <div class="row">
+								<div class="col-md-12 col-lg-6">
+										<footer-text-icon [data]="complementPublicAge"></footer-text-icon> 
+								</div>
+									<div class="col-md-12 col-lg-6">
+									<aside-pie-chart [data]="complementPublicGender"></aside-pie-chart>
+								</div> 
+							</div> -->
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">TOP PAÍSES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='countriesWithMoreFollowersData'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">TOP CIDADES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='citiesWithMoreFollowersData'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="col-md-8 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">SEGUIDORES ONLINE POR HORÁRIO</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<area-chart [data]="onlineFollowersByHour" heigth="250" isArea="true" [reduceXTicks]="false" [reduceXTicks]="false" [tickValues]="fansOnlinePerHourTickValues" format="%H"
+									rotateLabels="-90"></area-chart>
+								<!-- <footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon> -->
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">SEGUIDORES ONLINE POR DIA DA SEMANA</div>
+						</div>
+						<stacked-column-chart [data]="onlineFollowersByDay" heigth="250" [reduceXTicks]="true"></stacked-column-chart>
+						<!-- <footer-text-icon [data]="weekDayWithMoreFansOnlineFooter"></footer-text-icon> -->
+					</div>
+				</div>
+				<div class="col-md-6 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">LIKES NO PERÍODO</div>
+						</div>
+						<stacked-column-chart [data]="likesPerDay" heigth="250" [reduceXTicks]="true"></stacked-column-chart>
+						<!-- <footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+						<footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon> -->
+					</div>
+				</div>
+				<div class="col-md-6 report-full">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">COMMENTS NO PERÍODO</div>
+						</div>
+						<stacked-column-chart [data]="commentsPerDay" heigth="250" [reduceXTicks]="true"></stacked-column-chart>
+						<!-- <footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+						<footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon> -->
+					</div>
+				</div>
+
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">LIKES E COMMMENTS POR HORÁRIO</div>
+						</div>
+						<stacked-area-chart [data]="likesCommentsPerHour" heigth="280" format="%H" [color]="colorsReactionsPerDay" [tickValues]="fansOnlinePerHourTickValues"></stacked-area-chart>
+						<!-- <footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+						<footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+						<footer-text-icon [data]="timeWithMoreFansOnlineFooter"></footer-text-icon> -->
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">POSTS COM MAIS INTERAÇÕES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='instagramTopPostTags'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">SEGUIDORES MAIS ENGAJADOS</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='instagramTopPostTags'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">SEGUIDORES MAIS INFLUENTES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='instagramTopPostTags'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-title">HASHTAGS COM MAIS INTERAÇÕES</div>
+						</div>
+						<div class="row p-l-15 p-r-15">
+							<div class="col-md-12">
+								<table-chart [data]='instagramTopPostTags'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

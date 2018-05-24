@@ -1,0 +1,42 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+import entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class RecoverNetworksContents extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/recover_networks_contents",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		if(getSession().getAttribute("message") != null) {
+			getParameters().put("message", new StringUtil(getSession().getAttribute("message").toString()));
+		} else if(getSession().getAttribute("profileAndPages") != null) {
+			getParameters().put("profileAndPages", 
+					(List<Profile>) getSession().getAttribute("profileAndPages"));
+		} else if(getSession().getAttribute("profile") != null) {
+			getParameters().put("profile", getSession().getAttribute("profile"));
+		} else if(getSession().getAttribute("token") != null) {
+			getParameters().put("token", new StringUtil(getSession().getAttribute("token").toString()));
+		} else if(getSession().getAttribute("tryToLoginInstagramAgain") != null) {
+			getParameters().put("tryToLoginInstagramAgain", 
+					(Boolean) getSession().getAttribute("tryToLoginInstagramAgain"));
+		}
+		
+		getSession().setAttribute("profile", null);
+		getSession().setAttribute("message", null);
+		getSession().setAttribute("profileAndPages", null);
+	}
+}

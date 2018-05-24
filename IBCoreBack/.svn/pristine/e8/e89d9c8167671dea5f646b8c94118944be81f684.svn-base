@@ -1,0 +1,184 @@
+package br.com.opsocial.server.actions.upload;
+
+import java.io.File;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.server.utils.UtilFunctions;
+
+@RestController
+@RequestMapping("api")
+public class UploadAction {
+
+	private static final long serialVersionUID = 5676663031738075046L;
+	
+	private static final long SIZE_LIMIT = 1073741824L; // 1GB per video at most.
+	private String contentType;
+
+	private final static String VIDEO_AVI = "video/avi";
+	private final static String VIDEO_ASF = "video/x-ms-asf";
+	private final static String VIDEO_DV = "video/x-dv";
+	private final static String VIDEO_MOD = "audio/mod";
+	private final static String VIDEO_MOV = "video/quicktime";
+	private final static String VIDEO_MP4 = "video/mp4";
+	private final static String VIDEO_MPEG = "video/mpeg";
+	private final static String VIDEO_XFLV = "video/x-flv";
+	private final static String VIDEO_3GP = "video/3gpp";
+	private final static String VIDEO_MKV = "video/x-matroska";
+
+	@CrossOrigin
+	@RequestMapping(value = "/upload",
+	    method = RequestMethod.POST,
+	    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> pesquisaGrid(HttpServletRequest request, HttpServletResponse response) {
+
+		boolean isMultiPart = ServletFileUpload
+				.isMultipartContent(new ServletRequestContext(request));
+
+		String tempPath = request.getSession().getServletContext().getInitParameter("uploadDirVideoPosts");
+		String errors = "";
+		String videoName = "";
+		Long videoSize = 0L;
+		String videoExtension = "";
+		Double videoDuration = 0.0D;
+		
+		if (isMultiPart) {
+
+			FileItemFactory factory = new DiskFileItemFactory();
+			ServletFileUpload upload = new ServletFileUpload(factory);
+
+			try {
+				
+				List<FileItem> items = upload.parseRequest(request);
+				
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				
+				PrintWriter out = response.getWriter();
+
+				for (FileItem item : items) {
+
+					if (item.isFormField())
+						continue;
+
+					if(!item.getName().isEmpty()) {
+						
+						contentType = item.getContentType(); 
+
+						if(isVideoExtensionAllowed(contentType)) {
+							
+							videoSize = item.getSize();
+							videoExtension = contentType;
+						
+							if(videoSize <= SIZE_LIMIT) {
+								
+								String fileName = RandomStringUtils.randomAlphanumeric(12) + "." + getVideoExtension(contentType);
+	
+								File uploadedFile = new File(tempPath, fileName);
+	
+								uploadedFile.createNewFile();
+								
+								item.write(uploadedFile);
+
+								videoName = fileName;
+								videoDuration = UtilFunctions.getSecondsFromVideo(uploadedFile);
+								
+							} else {
+								errors += "O vídeo não pode ser carregado. O vídeo deve ter o tamanho inferior a 1GB" + "§";
+								item.delete();
+							}
+						} else {
+							errors += "O vídeo não pode ser carregado. O vídeo deve estar em um dos seguintes formatos: " + getVideoExtensions() + "§";
+							item.delete();
+						}
+					}
+				}
+				
+				JsonObject object = new JsonObject();
+				
+				object.addProperty("video_name", videoName);
+				object.addProperty("video_size", videoSize.toString());
+				object.addProperty("video_extension", videoExtension);
+				object.addProperty("video_duration", videoDuration);
+				object.addProperty("errors", errors);
+				
+				out.print(object);
+				//out.flush();
+
+			} catch (FileUploadException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return new ResponseEntity<>("{pesquisaGrid:ServiceTeste}", HttpStatus.OK);
+	}
+	
+	private Boolean isVideoExtensionAllowed(String contentType) {
+		return Arrays.asList(VIDEO_AVI,VIDEO_ASF,VIDEO_DV,VIDEO_MOD,VIDEO_MOV,VIDEO_MP4,VIDEO_MPEG,VIDEO_XFLV,VIDEO_3GP,VIDEO_MKV).contains(contentType);
+	}
+	
+	private String getVideoExtensions() {
+		
+		StringBuilder builder = new StringBuilder();
+		
+		for(String extension : Arrays.asList(VIDEO_AVI,VIDEO_ASF,VIDEO_DV,VIDEO_MOD,VIDEO_MOV,VIDEO_MP4,VIDEO_MPEG,VIDEO_XFLV,VIDEO_3GP,VIDEO_MKV)) {
+			builder.append(getVideoExtension(extension) + ", ");
+		}
+		
+		builder.replace(builder.lastIndexOf(", "), builder.length(), ".");
+		
+		return builder.toString();
+	}
+	
+	private String getVideoExtension(String contentType) {
+		
+		String videoExtension = "";
+		
+		if(contentType.equals(VIDEO_AVI)) {
+			videoExtension = "avi";
+		} else if(contentType.equals(VIDEO_ASF)) {
+			videoExtension = "asf";
+		} else if(contentType.equals(VIDEO_DV)) {
+			videoExtension = "dv";
+		} else if(contentType.equals(VIDEO_MOD)) {
+			videoExtension = "mod";
+		} else if(contentType.equals(VIDEO_MOV)) {
+			videoExtension = "mov";
+		} else if(contentType.equals(VIDEO_MP4)) {
+			videoExtension = "mp4";
+		} else if(contentType.equals(VIDEO_MPEG)) {
+			videoExtension = "mpeg";
+		} else if(contentType.equals(VIDEO_XFLV)) {
+			videoExtension = "flv";
+		} else if(contentType.equals(VIDEO_3GP)) {
+			videoExtension = "3gp";
+		} else if(contentType.equals(VIDEO_MKV)) {
+			videoExtension = "mkv";
+		}
+		
+		return videoExtension;
+	}
+}

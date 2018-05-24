@@ -1,0 +1,149 @@
+package br.com.opsocial.server.actions.application;
+
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import br.com.opsocial.client.entity.primitive.StringList;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericImageAdapt;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+public class RecoverLinkResumeAction extends ServerAction {
+	
+	private Document doc;
+	private List<String> images;
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		StringUtil url = (StringUtil) getParameters().get("url");
+		
+		try {
+			
+			doc = Jsoup.parse(new URL(url.getValue()), 5000);
+			
+			images = new ArrayList<String>();
+			
+			getOpenGraphImage();
+			
+			Elements imgElements = doc.getElementsByTag("img");
+					
+			for(Iterator<Element> iterImg = imgElements.iterator(); iterImg.hasNext();) {
+				
+				Element imgElement = (Element) iterImg.next();
+				
+				GenericImageAdapt genericImageAdapt  = null;
+				
+				Integer width = null;
+				
+				if(imgElement.attr("width") != null && !imgElement.attr("width").isEmpty()) {
+					if(imgElement.attr("width").contains("px")) {
+						width = Integer.parseInt(imgElement.attr("width").substring(0, imgElement.attr("width").indexOf("px")));
+					} else {
+						width = Integer.parseInt(imgElement.attr("width"));
+					}
+				} else {
+					genericImageAdapt = UtilFunctions.getImageSize(imgElement.attr("src"));
+					width = genericImageAdapt.getWidth();
+				}
+				
+				Integer height = null;
+			
+				if(genericImageAdapt != null) {
+					height = genericImageAdapt.getHeight();
+				} else {
+					if(imgElement.attr("height") != null && !imgElement.attr("height").isEmpty()) {
+						
+						if(imgElement.attr("height").contains("px")) {
+							height = Integer.parseInt(imgElement.attr("height").substring(0, imgElement.attr("height").indexOf("px")));
+						} else {
+							height = Integer.parseInt(imgElement.attr("height"));
+						}
+					}
+				}
+				
+				if(width != null) {
+					
+					if(width > 100) {
+						
+						try {
+							new URL(imgElement.attr("src"));
+							images.add(imgElement.attr("src") + "◙" + width + "◙" + height);
+						} catch (Exception e) {
+						}
+					}
+					
+				} else {
+					new URL(imgElement.attr("src"));
+					images.add(imgElement.attr("src") + "◙null◙null");
+				}
+			}
+			
+			String title = doc.getElementsByTag("title").html();
+			String description = doc.getElementsByAttributeValue("name", "description").attr("content");
+			
+			setParameters(new HashMap<String, Object>());
+			
+			getParameters().put("title", new StringUtil(title));
+			getParameters().put("description", new StringUtil(description));
+			getParameters().put("images", new StringList(images));
+			getParameters().put("link", url);
+			
+		} catch (Exception e) {
+			getParameters().put("title", new StringUtil(""));
+			getParameters().put("description", new StringUtil(""));
+			getParameters().put("images", new StringList(new ArrayList<String>()));
+			getParameters().put("link", url);
+			e.printStackTrace();
+		}
+	}
+	
+	private void getOpenGraphImage() {
+		
+		String image = null;
+		
+		Elements elements = doc.select("meta[property=og:image]");
+		
+		if(!elements.isEmpty()) {
+			
+			image = elements.get(0).attr("content");
+			
+			try {
+				
+				if(!new URI(image).isAbsolute()) {
+					
+					URI uriImage = new URI(doc.baseUri());
+					
+					image = uriImage.getScheme() + "://" + uriImage.getHost() + image;
+				}
+				
+				new URL(image);
+				
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+				image = null;
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+				image = null;
+			}
+		}
+		
+		if(image != null) {
+			images.add(image + "◙null◙null");
+		}
+	}
+}

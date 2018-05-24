@@ -1,0 +1,19 @@
+<input #checkedButtonRss type="radio" name="checked-button-rss" class="checked-button">
+<button [class.disabled]="loading" (click)="checkUncheckButton()" class="btn btn-block btn-default rssfeed-button" type="button">
+    <div class="rssfeed-icon rssfeed-clicked"></div>
+    <div class="pull-left width80minus40" [class.width80minus140]="canExclude">
+        <span title="{{rssFeed.title}}" class="p-l-10 channel-text" *ngIf="rssFeed">
+            <!-- {{rssFeed.title.length > 29 ? rssFeed.title.substring(0, 26) + '...' : rssFeed.title}} -->
+            {{ rssFeed.title }}
+        </span>
+    </div>
+    <div [hidden]="!isExcludable" class="p-r-2 pull-right">
+        <a href="javascript:void(0)" (click)="confirmDeleteRssFeed();">
+            <i class="pg-trash p-r-2"></i>
+        </a>
+    </div>
+    <section *ngIf="canExclude" class="interactions pull-right">
+        <button (click)="goBack()" class="btn btn-xs btn-info text-white p-t-0 p-b-0 p-l-3 p-r-3">Cancel</button>
+        <button (click)="deleteRssFeed()" class="btn btn-xs btn-danger text-white p-t-0 p-b-0 p-l-3 p-r-3"><i class="fa fa-times"></i> Delete</button>
+    </section>
+</button>

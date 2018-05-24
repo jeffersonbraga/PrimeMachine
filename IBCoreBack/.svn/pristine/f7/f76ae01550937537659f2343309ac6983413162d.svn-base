@@ -1,0 +1,49 @@
+package br.com.opsocial.server.actions.reports.facebook;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookPostCommentsDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.server.utils.reports.xls.ReportFacebookPostCommentsXLS;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+@RestController
+@RequestMapping("woopsocial")
+public class ReportFacebookPostCommentsXLSAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/report_facebook_post_comments_xls",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		FaceReportPostDTO faceReportPost = (FaceReportPostDTO) getParameters().get("faceReportPost");
+		Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		
+		setParameters(new HashMap<String, Object>());
+		
+		ReportFacebookPostCommentsDTO reportFacebookPostComments = UtilReports.mountReportFacebookPostComments(faceReportPost, new GenericDateInterval(dateFrom, dateUntil));
+
+		ReportFacebookPostCommentsXLS reportFacebookPostCommentsXLS = new ReportFacebookPostCommentsXLS(reportFacebookPostComments, profile);
+		reportFacebookPostCommentsXLS.createXLS();
+
+		getParameters().put("xlsToDownload", new StringUtil(reportFacebookPostCommentsXLS.getFileName()));
+		getParameters().put("xlsNameToDownload", new StringUtil(reportFacebookPostCommentsXLS.getFormattedFileName()));
+		getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(profile.getAccount().getIdAccount()));
+		
+	}
+
+}

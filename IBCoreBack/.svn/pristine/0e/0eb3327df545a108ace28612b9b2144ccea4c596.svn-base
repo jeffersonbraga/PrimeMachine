@@ -1,0 +1,129 @@
+package br.com.opsocial.server.actions.reports.instagram;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
+import javax.persistence.OptimisticLockException;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramOverviewDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportInstagramOverviewAction extends ServerAction {
+
+	//private Profile profile;
+	//private Integer period;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@CrossOrigin("*")
+	@RequestMapping(value = "/report_instagram_overview",
+    method = RequestMethod.POST,
+    consumes = MediaType.APPLICATION_JSON_VALUE,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ReportInstagramOverviewDTO> doAction(@Valid @RequestBody Profile profile, Long dateFrom_, Long dateUntil_) throws Exception, OptimisticLockException {
+		
+		MaintenanceReportGenerateRemote reportGenerateRemote = (MaintenanceReportGenerateRemote)
+				RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		
+		//profile = (Profile) getParameters().get("profile");
+		/*
+		if(getParameters().containsKey("period")) {
+			
+            period = (Integer) getParameters().get("period");
+            getDatesByPeriod(period);
+            
+        } else {
+
+        	Date dateFrom = new Date(dateF);
+            Date dateUntil = new Date(dateU);
+        }
+		*/
+
+    	Date dateFrom = new Date(dateFrom_);
+        Date dateUntil = new Date(dateUntil_);
+
+        genericDateInterval = new GenericDateInterval(UtilFunctions.getMidnightDateNoDaylightTime(dateFrom), 
+				  UtilFunctions.getMidnightDateNoDaylightTime(dateUntil));
+        
+		if(!reportGenerateRemote.hasEntity(profile.getNetworkId(), profile.getType())) {
+    		
+    		ReportGenerate reportGenerate = new ReportGenerate();
+			reportGenerate.setNetworkId(profile.getNetworkId());
+			reportGenerate.setNetworkType(profile.getType());
+			reportGenerate.setTokenSecret(profile.getToken());
+			reportGenerate.setState(ReportFacebook.GENERATING);
+			reportGenerate.setIsInNewInstaFollowersReports('T');
+			
+			reportGenerate = reportGenerateRemote.save(reportGenerate);
+			
+    		Calendar reportDate = Calendar.getInstance();
+			reportDate.add(Calendar.DATE, -1);
+
+			Long reportDateStamp = UtilFunctions.getMidnightDateNoDaylightTime(reportDate.getTime());
+
+			ReportInstagram reportInstagram = new ReportInstagram(profile, reportDateStamp);
+			reportInstagram.setReportGenerate(reportGenerate);
+			
+			new Thread(reportInstagram).start();
+    	}
+		
+		profile.setReportState(reportGenerateRemote.getEntity(profile.getNetworkId(), Profile.INSTAGRAM).getState());
+		
+		ReportInstagramOverviewDTO reportInstagramOverview;
+		
+		if(profile.getReportState().equals(Profile.REPORT_FINALIZED) || profile.getReportState().equals(Profile.REPORT_REFRESH_TOKEN)) {
+			reportInstagramOverview = UtilReports.mountReportInstagramOverviewDTO(profile, genericDateInterval);
+		} else {
+			reportInstagramOverview = new ReportInstagramOverviewDTO();
+		}
+		
+		//getParameters().put("reportInstagramOverview", reportInstagramOverview);
+		//getParameters().put("profile", profile);
+		return new ResponseEntity<>(reportInstagramOverview, HttpStatus.OK);
+	}
+	
+	private void getDatesByPeriod(Integer period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        genericDateInterval = new GenericDateInterval(UtilFunctions.getMidnightDateNoDaylightTime(fromDate.getTime()), 
+        		UtilFunctions.getMidnightDateNoDaylightTime(untilDate.getTime()));
+    }
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+	
+}

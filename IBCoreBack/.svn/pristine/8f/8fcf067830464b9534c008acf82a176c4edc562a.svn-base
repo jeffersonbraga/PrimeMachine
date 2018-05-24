@@ -1,0 +1,53 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringReportDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.monitorings.UtilMonitorings;
+import br.com.opsocial.server.utils.monitorings.xls.MonitoringReportXLS;
+
+@RestController
+@RequestMapping("opsocial")
+public class MonitoringReportXLSAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/monitoring_report_xls",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		MonitoringDTO monitoring = (MonitoringDTO) getParameters().get("monitoring");
+		
+		Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		
+		GenericDateInterval genericDateInterval = new GenericDateInterval(dateFrom, dateUntil);
+		
+		MaintenanceMonitoringTagRemote monitoringTagRemote = (MaintenanceMonitoringTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringTag");
+		
+		monitoring.setMonitoringTags(MountDTO.mountMonitoringTag(
+				monitoringTagRemote.listByMonitoring(monitoring.getIdMonitoring(), monitoring.getAccount().getIdAccount())));
+		
+		MonitoringReportDTO monitoringReportDTO = UtilMonitorings.mountMonitoringReportDTO(monitoring, genericDateInterval, UtilMonitorings.XLS);
+		
+		MonitoringReportXLS monitoringReportXLS = new MonitoringReportXLS(monitoringReportDTO, monitoring);
+		monitoringReportXLS.createXLS();
+
+		getParameters().put("xlsToDownload", new StringUtil(monitoringReportXLS.getFileName()));
+		getParameters().put("xlsNameToDownload", new StringUtil(monitoringReportXLS.getFormattedFileName()));
+		getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(monitoring.getAccount().getIdAccount()));	
+	}
+
+}

@@ -1,0 +1,21 @@
+<div class="panel no-border no-margin">
+    <div class="panel-heading p-b-0">
+        <div class="panel-title">
+            <i class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#989898'}"></i>
+             {{ data.title }}
+             <i *ngIf="data.hasGrown" class="fa fa-arrow-circle-up" aria-hidden="true" [ngStyle]="{'color': '#20ffa3'}"></i>
+             <i *ngIf="!data.hasGrown" class="fa fa-arrow-circle-down" aria-hidden="true" [ngStyle]="{'color': '#f7554e'}"></i>
+             <span class="small hint-text">{{ data.smallText }}</span>
+        </div>
+    </div>
+    <div class="panel-body mobi-h-40">
+        <div class="row">
+            <div class="col-md-5">
+                <h1 class="m-t-0 m-b-0 bold">{{ data.value | abbreviateNumber }}</h1>
+            </div>
+            <div class="col-md-7">
+                <small-line-chart #smallLineChart [data]="data.chart.data" [height]="data.chart.height"></small-line-chart>
+            </div>
+        </div>
+    </div>
+</div>

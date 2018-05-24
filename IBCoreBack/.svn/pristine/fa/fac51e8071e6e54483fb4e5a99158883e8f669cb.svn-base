@@ -1,0 +1,49 @@
+package br.com.opsocial.server.actions.monitorings.facebookgroups;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import das.MaintenanceProfileRemote;
+import entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class ListFacebookGroupsAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/list_facebook_groups",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		MonitoringDTO monitoringDTO = (MonitoringDTO) getParameters().get("monitoring");
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		List<Profile> groups = new ArrayList<Profile>();
+		
+		if(monitoringDTO != null) {
+			groups.addAll(remote.listByIdMonitoringForGroups(Profile.FACEBOOK_GROUP, monitoringDTO.getIdMonitoring()));	
+		}
+
+		List<Profile> groupsDTOs = new ArrayList<Profile>();
+		
+		for(Profile addedGroup : groups) {
+			groupsDTOs.add(MountDTO.mountProfile(addedGroup));
+		}
+
+		getParameters().put("groups", groupsDTOs);		
+	}
+}

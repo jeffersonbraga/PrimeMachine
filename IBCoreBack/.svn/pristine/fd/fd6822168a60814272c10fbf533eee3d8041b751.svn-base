@@ -1,0 +1,99 @@
+package br.com.opsocial.server.utils.reports;
+
+import java.util.Calendar;
+import java.util.List;
+import java.util.TimerTask;
+
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import das.MaintenanceProfileRemote;
+import das.MaintenanceTwitterFollowerControlRemote;
+import das.MaintenanceTwitterFollowerRemote;
+import entity.application.Profile;
+import entity.report.TwitterFollowerControl;
+
+public class TwitterFollowersTask extends TimerTask {
+
+	private List<Profile> profiles;
+	private MaintenanceProfileRemote profileRemote;
+	private Long reportDateStamp;
+	
+	private MaintenanceTwitterFollowerControlRemote twitterFollowerControlRemote;
+	private MaintenanceTwitterFollowerRemote twitterFollowerRemote;
+	
+	public TwitterFollowersTask() {
+		
+		Calendar reportDate = Calendar.getInstance();
+		reportDate.set(Calendar.HOUR_OF_DAY, 0);
+		reportDate.set(Calendar.MINUTE, 0);
+		reportDate.set(Calendar.SECOND, 0);
+
+		reportDateStamp = reportDate.getTimeInMillis() / 1000L;
+		
+		twitterFollowerControlRemote = (MaintenanceTwitterFollowerControlRemote) RecoverMaintenance.recoverMaintenance("TwitterFollowerControl");
+		twitterFollowerRemote = (MaintenanceTwitterFollowerRemote) RecoverMaintenance.recoverMaintenance("TwitterFollower");
+		profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+	}
+	
+	@Override
+	public void run() {
+		
+		profiles = profileRemote.listActivesByType('T');
+		
+		for(Profile profile : profiles) {
+			if(updateProfileFollowers(profile)) {
+				new Thread(new ReportTwitterFollowers(profile)).start();
+			}
+		}
+	}
+	
+	private boolean updateProfileFollowers(Profile profile) {
+		
+		TwitterFollowerControl twitterFollowerControl = twitterFollowerControlRemote.getById(Long.valueOf(profile.getNetworkId()));
+		
+		if(twitterFollowerControl == null) {
+			
+			twitterFollowerControl = new TwitterFollowerControl();
+			twitterFollowerControl.setIdProfile(Long.valueOf(profile.getNetworkId()));
+			twitterFollowerControl.setDate(reportDateStamp);
+			twitterFollowerControl.setNextCursor(-1L);
+			twitterFollowerControl.setState(ReportTwitterFollowers.GENERATING);
+			
+			try {
+				
+				twitterFollowerControlRemote.save(twitterFollowerControl);
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			return true;
+		} else {
+			
+			if(twitterFollowerControl.getState().equals(ReportTwitterFollowers.GENERATING)) {
+				return false;
+			} else {
+				
+				twitterFollowerControl.setDate(reportDateStamp);
+				twitterFollowerControl.setState(ReportTwitterFollowers.GENERATING);
+				
+				try {
+					
+					twitterFollowerControlRemote.save(twitterFollowerControl);
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Rotina que desativa temporariamente os seguidores, permitindo assim descobrir quais perfis deixaram de seguir o perfil corrente.
+				twitterFollowerRemote.deactivateFollowersTemporarily(Long.valueOf(profile.getNetworkId()));
+				
+				return true;
+			}	
+		}
+	}
+
+}

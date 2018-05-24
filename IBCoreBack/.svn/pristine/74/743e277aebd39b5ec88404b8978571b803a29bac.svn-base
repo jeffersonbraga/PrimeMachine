@@ -1,0 +1,102 @@
+package br.com.opsocial.server.actions.reports.facebook;
+
+import java.util.Calendar;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookOverviewDTO;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportFacebookOverviewAction {
+
+	private Profile profile;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@CrossOrigin
+	@RequestMapping(value = "/report_facebook_overview",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> doActionNew(Long idProfile, Long dateFrom, Long dateUntil) {
+			
+		MaintenanceReportGenerateRemote remoteReportGenerate = (MaintenanceReportGenerateRemote)
+				RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		ReportFacebookOverviewDTO reportFacebookOverview;
+		try {
+			
+			profile = remote.getById(idProfile);
+			
+			// Verify if report generate process initiate, otherwise initiate now.
+			if(!remoteReportGenerate.hasEntity(profile.getNetworkId(), profile.getType())) {
+				
+				ReportGenerate reportGenerate = new ReportGenerate();
+				reportGenerate.setNetworkId(profile.getNetworkId());
+				reportGenerate.setNetworkType(profile.getType());
+				reportGenerate.setTokenSecret(profile.getTokenSecret());
+				reportGenerate.setState(ReportFacebook.UNAVAILABLE);
+				
+				reportGenerate = remoteReportGenerate.save(reportGenerate);
+				
+				// Verifica se a página pode resgatar seus insights.
+				if(ReportGenerateVerification.isReportActive(reportGenerate)) {
+					
+					reportGenerate.setState(ReportFacebook.GENERATING);
+					remoteReportGenerate.save(reportGenerate);
+					
+					new Thread(new ReportGenerateRunnable(profile, ReportGenerateRunnable.REPORT_DAYS)).start();
+				}
+			}
+			
+			Character reportState = UtilReports.getReportState(profile);
+			
+			Calendar fromDate = Calendar.getInstance();
+			fromDate.setTimeInMillis(dateFrom);
+			
+			Calendar untilDate = Calendar.getInstance();
+			untilDate.setTimeInMillis(dateUntil);
+			
+			genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForFacebookReport(fromDate), UtilFunctions.getDateForFacebookReport(untilDate));
+			
+			if(reportState.equals(Profile.REPORT_FINALIZED) || reportState.equals(Profile.REPORT_REFRESH_TOKEN)) {
+				reportFacebookOverview = UtilReports.mountReportFacebookOverviewDTO(profile, genericDateInterval, 10);
+			} else {
+				reportFacebookOverview = new ReportFacebookOverviewDTO();
+			}
+			
+			JsonObject response = new JsonObject();
+			response.add("reportFacebookOverview", new Gson().toJsonTree(reportFacebookOverview));
+			response.addProperty("reportState", reportState);
+			
+			return new ResponseEntity<>(response.toString(), HttpStatus.OK);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+	}
+}

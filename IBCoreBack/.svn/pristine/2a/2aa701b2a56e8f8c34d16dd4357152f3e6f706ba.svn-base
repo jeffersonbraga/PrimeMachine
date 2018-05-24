@@ -1,0 +1,174 @@
+package br.com.opsocial.server.services;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpSession;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.auth.InstagramAuthService;
+import org.jinstagram.auth.model.Token;
+import org.jinstagram.auth.model.Verifier;
+import org.jinstagram.auth.oauth.InstagramService;
+import org.jinstagram.entity.users.basicinfo.UserInfoData;
+import org.jinstagram.exceptions.InstagramException;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+
+@RestController
+@RequestMapping("opsocial")
+public class AuthInstagramCallbackServlet {
+
+	private String instagramAuthAction;
+	
+	private MaintenanceProfileRemote remoteProfile;
+	private User user;
+	
+	private Instagram instagram;
+	private UserInfoData userInfoData;
+	
+	private Profile profile;
+	
+	private List<Profile> profilesToAdd;
+	private String message;
+
+	@CrossOrigin
+	@RequestMapping(value = "/instagram",
+	method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	protected void doAction(String code, HttpSession session) {
+
+		profilesToAdd = new ArrayList<Profile>();
+		
+		if(code != null) {
+			
+			try {
+				
+				InstagramService service =  new InstagramAuthService()
+						.apiKey(InstagramIntegration.CLIENT_ID)
+						.apiSecret(InstagramIntegration.CLIENT_SECRET)
+						.callback(Persistent.SERVER_PATH + "/opsocial/instagram")     
+						.build();
+
+				service.getAuthorizationUrl();
+
+				Verifier verifier = new Verifier(code);
+				Token accessToken = service.getAccessToken(verifier);
+
+				instagram = new Instagram(accessToken);
+
+				user = SecurityUtils.getCurrentUser();
+
+				userInfoData = instagram.getCurrentUserInfo().getData();
+
+				remoteProfile = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+				profile = remoteProfile.getEntityByNetworkId(String.valueOf(userInfoData.getId()), user.getAccount().getIdAccount());
+
+				instagramAuthAction = (String) session.getAttribute("instagram_auth_action");
+
+				if(instagramAuthAction.equals(AuthFacebookCallbackServlet.GET_ACCESS_TOKEN)) {
+					getAccessToken(session);
+				} else if(instagramAuthAction.equals(AuthFacebookCallbackServlet.REFRESH_TOKEN)) {
+					refreshToken(session);
+				}
+				
+			} catch (InstagramException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
+	private void getAccessToken(HttpSession session) {
+
+		try {
+
+			if(profile == null) {
+
+				profile = new Profile();
+				profile.setActive('T');
+				profile.setAvatar(userInfoData.getProfilePicture());
+				profile.setNetworkId(String.valueOf(userInfoData.getId()));
+				profile.setToken(instagram.getAccessToken().getToken());
+				profile.setTokenSecret(instagram.getAccessToken().getSecret());
+				profile.setScreenName(userInfoData.getUsername());
+				profile.setType(Profile.INSTAGRAM);
+				profile.setAccount(user.getAccount());
+				profile.setIsSchedulingAuthenticated(Profile.INACTIVE);
+				profile.setIsTokenValid('T');
+				
+				profilesToAdd.add(profile);
+				
+			} else {
+				message = "Perfil já cadastrado. Para adicionar outro perfil, faça o logout desta conta no Instagram e logue com a conta que deseja adicionar";
+			}
+			
+			if(!profilesToAdd.isEmpty()) {
+				session.setAttribute("profile_instagram", profilesToAdd);
+			} else {
+				session.setAttribute("message_instagram", message);
+			}
+			
+			session.setAttribute("alr_rec_instagram", new Boolean(true));
+			
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	private void refreshToken(HttpSession session) {
+		
+		try {
+			
+			Profile profileToRefresh = (Profile) (session.getAttribute("profile_instagram"));
+			
+			if(profile != null) {
+			
+				if(profileToRefresh.getIdProfile().equals(profile.getIdProfile())) {
+					
+					profile.setActive('T');
+					profile.setToken(instagram.getAccessToken().getToken());
+					profile.setTokenSecret(instagram.getAccessToken().getSecret());
+					profile.setIsTokenValid('T');
+					
+					remoteProfile.save(profile);
+					
+					profileToRefresh = remoteProfile.getById(profile.getIdProfile());
+					
+				} else {
+					session.setAttribute("message_instagram", "Para reconectar o perfil escolhido, você deverá " +
+							"primeiramente estar logado no Instagram com o perfil que deseja reconectar.");
+				}
+			} else {
+				session.setAttribute("message_instagram", "Para reconectar o perfil escolhido, você deverá " +
+						"primeiramente estar logado no Instagram com o perfil que deseja reconectar.");
+			}
+			
+			session.setAttribute("alr_rec_instagram", new Boolean(true));
+			session.setAttribute("profile_instagram", profileToRefresh);
+			
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+}

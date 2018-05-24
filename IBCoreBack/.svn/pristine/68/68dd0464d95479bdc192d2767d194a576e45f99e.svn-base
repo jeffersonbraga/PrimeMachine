@@ -1,0 +1,406 @@
+package br.com.opsocial.server.utils.monitorings.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.ServletContext;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.poi.common.usermodel.Hyperlink;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.client.entity.instagram.InstagramPostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringFollowerReportDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringInfluentialUserDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringPostTagDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.TwitterPostMonitoringDTO;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostTag;
+
+public class MonitoringFollowersReportXLS {
+	
+	private List<MonitoringFollowerReportDTO> monitoringFollowersReportTwitter;
+	private List<MonitoringFollowerReportDTO> monitoringFollowersReportInstagram;
+	private Monitoring monitoring;
+	private Long reportDate;
+	
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+	
+	private HSSFWorkbook wb;
+	
+	private Font fontHeader;
+	private CellStyle cellStyleHeader;
+	
+	private CreationHelper createHelper;
+	
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellDateStyle;
+	private CellStyle cellStyleHLink;
+	
+	public MonitoringFollowersReportXLS() {
+		
+	}
+	
+	public MonitoringFollowersReportXLS(List<MonitoringFollowerReportDTO> monitoringFollowersReportTwitter, 
+			List<MonitoringFollowerReportDTO> monitoringFollowersReportInstagram,
+			Monitoring monitoring, Long reportDate) {
+		this.monitoringFollowersReportTwitter = monitoringFollowersReportTwitter;
+		this.monitoringFollowersReportInstagram = monitoringFollowersReportInstagram;
+		this.monitoring = monitoring;
+		this.reportDate = reportDate;
+	}
+	
+	public void createXLS() {
+		
+		wb = new HSSFWorkbook();
+		
+		initiateDefautStyles();
+		
+		this.reportsPath = OpSocialBackApplication.opSocialContext.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+
+		Sheet sheetTwitterPosts = wb.createSheet("Twitter Posts");
+		Sheet sheetInstagramPosts = wb.createSheet("Instagram Posts");
+		
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		SimpleDateFormat dateFormatToFileName = new SimpleDateFormat("dd-MM-yyyy");
+		
+		String startDate = dateFormat.format(new Date(reportDate * 1000L));
+		
+		addMainHeader(sheetTwitterPosts, monitoring.getName() + " - Twitter - Posts com mais seguidores " + startDate, 11);
+		addMainHeader(sheetInstagramPosts, monitoring.getName() + " - Instagram - Posts com mais seguidores " + startDate, 8);
+		
+		int rowNumberTwitter = 2;
+		int rowNumberInstagram = 2;
+		
+		addTwitterPostHeader(sheetTwitterPosts, rowNumberTwitter);
+		rowNumberTwitter++;
+		
+		for(MonitoringFollowerReportDTO monitoringFollowerReport : monitoringFollowersReportTwitter) {
+
+			for(PostMonitoringDTO postMonitoring : monitoringFollowerReport.getPostsMonitoring()) {
+				addTwitterPostMonitoring(sheetTwitterPosts, (TwitterPostMonitoringDTO) postMonitoring, rowNumberTwitter, monitoringFollowerReport.getMonitoringInfluentialUser());
+				rowNumberTwitter++;
+			}
+		}
+		
+		addInstagramPostHeader(sheetInstagramPosts, rowNumberInstagram);
+		rowNumberInstagram++;
+		
+		for(MonitoringFollowerReportDTO monitoringFollowerReport : monitoringFollowersReportInstagram) {
+			for(PostMonitoringDTO postMonitoring : monitoringFollowerReport.getPostsMonitoring()) {
+				addInstagramPostMonitoring(sheetInstagramPosts, (InstagramPostMonitoringDTO) postMonitoring, rowNumberInstagram);
+				rowNumberInstagram++;
+			}
+			
+		}
+		
+		sheetTwitterPosts.setDefaultColumnWidth(15);
+		sheetTwitterPosts.setColumnWidth(2, 20000);
+		sheetInstagramPosts.setDefaultColumnWidth(15);
+		sheetInstagramPosts.setColumnWidth(3, 20000);
+		
+		try {
+			
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+			
+			formattedFileName = monitoring.getName() + "-posts-com-mais-seguidores" + dateFormatToFileName.format(new Date(reportDate * 1000L));
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void initiateDefautStyles() {
+		
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+		
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte)102, (byte)153, (byte)204);
+		
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeaderData.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeaderData.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeaderData.setBorderRight(CellStyle.BORDER_THIN);
+		
+		createHelper = wb.getCreationHelper();
+		
+		//by default hyperlinks are blue and underlined
+		cellStyleHLink = wb.createCellStyle();
+
+		Font fontHLink = wb.createFont();
+		fontHLink.setUnderline(Font.U_SINGLE);
+		fontHLink.setColor(IndexedColors.BLUE.getIndex());
+
+		cellStyleHLink.setFont(fontHLink);
+		
+		CreationHelper createHelper = wb.getCreationHelper();
+		
+		cellDateStyle = wb.createCellStyle();
+	    cellDateStyle.setDataFormat(
+	        createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+		
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+		
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+	
+	private void addTwitterPostMonitoring(Sheet sheetDataPosts, TwitterPostMonitoringDTO twitterPostMonitoring, int rowNumber, MonitoringInfluentialUserDTO monitoringInfluentialUser) {
+		
+		Row	row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellUserName = row.createCell(0);
+		cellUserName.setCellValue(monitoringInfluentialUser.getMonitoringUser().getName());
+		
+		Cell cellFollowers = row.createCell(1);
+		cellFollowers.setCellValue(monitoringInfluentialUser.getFollowers());
+		
+		Cell cellText = row.createCell(2);
+		cellText.setCellValue(validateCellValue(twitterPostMonitoring.getTwitterPostDTO().getText()));
+		
+		String postURL = validateCellValue("http://www.twitter.com/" + twitterPostMonitoring.getTwitterPostDTO().getScreenName() + "/status/" + twitterPostMonitoring.getTwitterPostDTO().getStatusId());
+		
+		Hyperlink hyperLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
+		hyperLink.setAddress(postURL);
+		
+		Cell cellPostURL = row.createCell(3);
+		cellPostURL.setCellValue(postURL);
+		cellPostURL.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLink);
+		cellPostURL.setCellStyle(cellStyleHLink);
+		
+		Cell cellCreatedAt = row.createCell(4);
+		cellCreatedAt.setCellValue(new Date(twitterPostMonitoring.getTwitterPostDTO().getCreatedAt() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellRetweetCount = row.createCell(5);
+		cellRetweetCount.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getRetweetCount());
+		
+		Cell cellFavoriteCount = row.createCell(6);
+		cellFavoriteCount.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getFavoriteCount());
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(twitterPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(7);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(8);
+		cellTags.setCellValue(getTagsNamesInCSV(twitterPostMonitoring.getMonitoringPostTags()));
+	}
+	
+	private void addTwitterPostHeader(Sheet sheetDataPosts, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellUserNameTitle = row.createCell(0);
+		cellUserNameTitle.setCellValue("Perfil");
+		cellUserNameTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellFollowersTitle = row.createCell(1);
+		cellFollowersTitle.setCellValue("Número de seguidores");
+		cellFollowersTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellText = row.createCell(2);
+		cellText.setCellValue("Texto");
+		cellText.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellURL = row.createCell(3);
+		cellURL.setCellValue("URL do tweet");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(4);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellRetweetCount = row.createCell(5);
+		cellRetweetCount.setCellValue("Retweets");
+		cellRetweetCount.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellFavoriteCount = row.createCell(6);
+		cellFavoriteCount.setCellValue("Curtir");
+		cellFavoriteCount.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(7);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(8);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+	}
+
+	private void addInstagramPostMonitoring(Sheet sheetDataPosts, InstagramPostMonitoringDTO instagramPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		String profileURL = UtilFunctions.INSTAGRAM_URL + instagramPostMonitoring.getInstagramPostDTO().getUserName();
+		
+		Hyperlink hyperLinkProfile = createHelper.createHyperlink(Hyperlink.LINK_URL);
+		hyperLinkProfile.setAddress(profileURL);
+		
+		Cell cellProfileUrl = row.createCell(0);
+		cellProfileUrl.setCellValue(profileURL);
+		cellProfileUrl.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLinkProfile);
+		cellProfileUrl.setCellStyle(cellStyleHLink);
+		
+		String postURL = validateCellValue(instagramPostMonitoring.getInstagramPostDTO().getMediaLink());
+		
+		Hyperlink hyperLinkPost = createHelper.createHyperlink(Hyperlink.LINK_URL);
+		hyperLinkPost.setAddress(postURL);
+		
+		Cell cellPostURL = row.createCell(1);
+		cellPostURL.setCellValue(postURL);
+		cellPostURL.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLinkPost);
+		cellPostURL.setCellStyle(cellStyleHLink);
+		
+		Cell cellFollowers = row.createCell(2);
+		cellFollowers.setCellValue(instagramPostMonitoring.getInstagramPostDTO().getFollowers());
+		
+		Cell cellText = row.createCell(3);
+		cellText.setCellValue(truncateCellValue(validateCellValue(instagramPostMonitoring.getInstagramPostDTO().getPictureCaption())));
+		
+		Cell cellCreatedAt = row.createCell(4);
+		cellCreatedAt.setCellValue(new Date(Long.valueOf(instagramPostMonitoring.getInstagramPostDTO().getCreateTime()) * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(instagramPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(5);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(6);
+		cellTags.setCellValue(getTagsNamesInCSV(instagramPostMonitoring.getMonitoringPostTags()));
+	}
+	
+	private void addInstagramPostHeader(Sheet sheetDataPosts, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellProfileUrl = row.createCell(0);
+		cellProfileUrl.setCellValue("URL do usuário");
+		cellProfileUrl.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellURL = row.createCell(1);
+		cellURL.setCellValue("URL do post");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellFollowers = row.createCell(2);
+		cellFollowers.setCellValue("Seguidores");
+		cellFollowers.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellText = row.createCell(3);
+		cellText.setCellValue("Texto");
+		cellText.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(4);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(5);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(6);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private String getTagsNamesInCSV(List<MonitoringPostTag> monitoringPostTags) {
+		
+		String tagsNames = "";
+		
+		if(!monitoringPostTags.isEmpty()) {
+			
+			tagsNames += monitoringPostTags.get(0).getMonitoringTag().getName();
+			
+			for (int i = 1; i < monitoringPostTags.size(); i++) {
+				tagsNames += "," + monitoringPostTags.get(i).getMonitoringTag().getName();
+			}
+		}
+		
+		if(tagsNames.isEmpty()) {
+			tagsNames = "-";
+		}
+		
+		return tagsNames;
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+	
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+	
+	private String validateCellValue(String value) {
+		return value != null ? (!value.isEmpty() ? value : " ") : " ";
+	}
+	
+	/**
+	 * Trunca um texto que tenha mais do que 32767 caracteres, 
+	 * devido a limitação de 32767 caracteres em uma coluna de um arquivo xls. 
+	 */  
+	private String truncateCellValue(String text) {
+		return text.length() > 32767 ? text.substring(0, 32767 - 3) + "..." : text; 
+	}
+}

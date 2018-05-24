@@ -1,0 +1,32 @@
+package br.com.opsocial.server.actions.application;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.AuthFacebookCallbackServlet;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import facebook4j.Facebook;
+
+public class ReAuthFacebookAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profileDTO = (Profile) getParameters().get("profile");
+		getRequest().getSession().setAttribute("reauth", profileDTO);
+		getRequest().getSession().setAttribute("facebook_auth_action", AuthFacebookCallbackServlet.REAUTH_TOKEN);
+		
+		Facebook facebook = new FacebookIntegration().getFacebookSystem();
+		facebook.setOAuthPermissions(FacebookIntegration.APP_PERMISSIONS);
+
+		getRequest().getSession().setAttribute("facebook", facebook);
+
+		String callbackURL = Persistent.SERVER_PATH + "/opsocial/authFacebookCallback";
+		
+		getParameters().put("authenticationurl", new StringUtil(facebook.getOAuthAuthorizationURL(callbackURL.toString())));
+	}
+
+}

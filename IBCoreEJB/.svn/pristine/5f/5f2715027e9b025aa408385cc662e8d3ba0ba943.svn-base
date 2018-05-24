@@ -1,0 +1,33 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.OpLog;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+@Stateless
+public class OpLogDAOImpl extends AbstractDAOImpl<OpLog> implements OpLogDAO{
+
+	@Override
+	public List<OpLog> getLogByUserEntityAndOperation(Long idUser, String entity, String operation) {
+		sql = "SELECT l FROM OpLog l WHERE l.idUser = :idUser "
+				+ " AND l.entity = :entity"
+				+ " AND l.operation = :operation ORDER BY l.date";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idUser", idUser);
+		query.setParameter("entity", entity);
+		query.setParameter("operation", operation);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<OpLog>();
+		}
+	}
+
+}

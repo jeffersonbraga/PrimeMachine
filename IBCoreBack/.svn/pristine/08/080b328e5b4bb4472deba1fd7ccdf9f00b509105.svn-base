@@ -1,0 +1,159 @@
+package br.com.opsocial.client.entity.instagram;
+
+import java.util.Date;
+import java.util.List;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class InstagramPostDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private Long idMedia;
+	private Long idInstagramUser;
+	private String userName;
+	private String avatar;
+	private String pictureUrl;
+	private Integer pictureWidth;
+	private Integer pictureHeight;
+	private String pictureCaption;
+	private String createTime;
+	private Integer countLikes;
+	private Integer followers;
+	private Integer following;
+	private Integer medias;
+	private List<InstagramCommentDTO> comments;
+	private Date lastUpdate;
+	private String mediaLink;
+
+	public InstagramPostDTO() {
+	}
+
+	public Long getIdInstagramUser() {
+		return idInstagramUser;
+	}
+
+	public void setIdInstagramUser(Long idInstagramUser) {
+		this.idInstagramUser = idInstagramUser;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getPictureUrl() {
+		return pictureUrl;
+	}
+
+	public void setPictureUrl(String pictureUrl) {
+		this.pictureUrl = pictureUrl;
+	}
+
+	public Integer getPictureWidth() {
+		return pictureWidth;
+	}
+
+	public void setPictureWidth(Integer pictureWidth) {
+		this.pictureWidth = pictureWidth;
+	}
+
+	public String getPictureCaption() {
+		return pictureCaption;
+	}
+
+	public void setPictureCaption(String pictureCaption) {
+		this.pictureCaption = pictureCaption;
+	}
+
+	public Integer getPictureHeight() {
+		return pictureHeight;
+	}
+
+	public void setPictureHeight(Integer pictureHeight) {
+		this.pictureHeight = pictureHeight;
+	}
+
+	public String getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+
+	public Integer getCountLikes() {
+		return countLikes;
+	}
+
+	public void setCountLikes(Integer countLikes) {
+		this.countLikes = countLikes;
+	}
+
+	public Long getIdMedia() {
+		return idMedia;
+	}
+
+	public void setIdMedia(Long idMedia) {
+		this.idMedia = idMedia;
+	}
+	
+	public Integer getFollowers() {
+		return followers;
+	}
+
+	public void setFollowers(Integer followers) {
+		this.followers = followers;
+	}
+
+	public Integer getFollowing() {
+		return following;
+	}
+
+	public void setFollowing(Integer following) {
+		this.following = following;
+	}
+
+	public Integer getMedias() {
+		return medias;
+	}
+
+	public void setMedias(Integer medias) {
+		this.medias = medias;
+	}
+
+	public List<InstagramCommentDTO> getComments() {
+		return comments;
+	}
+
+	public void setComments(List<InstagramCommentDTO> comments) {
+		this.comments = comments;
+	}
+
+	public Date getLastUpdate() {
+		return lastUpdate;
+	}
+
+	public void setLastUpdate(Date lastUpdate) {
+		this.lastUpdate = lastUpdate;
+	}
+
+	public String getMediaLink() {
+		return mediaLink;
+	}
+
+	public void setMediaLink(String mediaLink) {
+		this.mediaLink = mediaLink;
+	}	
+}

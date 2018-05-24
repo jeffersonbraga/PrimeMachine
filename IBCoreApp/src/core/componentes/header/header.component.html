@@ -1,0 +1,148 @@
+<div class="header ">
+	<!-- START MOBILE CONTROLS -->
+	<div class="container-fluid relative">
+		<!-- LEFT SIDE -->
+		<div class="pull-left full-height visible-sm visible-xs over-logo">
+			<!-- START ACTION BAR -->
+			<div class="header-inner p-t-7">
+				<a class="btn-link toggle-sidebar visible-sm-inline-block visible-xs-inline-block padding-5" data-toggle="sidebar">
+					<span class="icon-set menu-hambuger"></span>
+				</a>
+			</div>
+			<!-- END ACTION BAR -->
+		</div>
+		<div class="pull-center hidden-md hidden-lg">
+			<div class="header-inner p-t-10">
+				<div class="brand inline">
+					<a [routerLink]="['compose']">
+						<img src="assets/img/logo-svg-fundo-roxo.svg" alt="logo" data-src="assets/img/logo-svg-fundo-roxo.svg" data-src-retina="assets/img/logo-svg-fundo-roxo.svg"
+						 width="78" height="28">
+					</a>
+				</div>
+			</div>
+		</div>
+		<!-- RIGHT SIDE -->
+		<div class="pull-right full-height visible-xs visible-xs over-logo">
+			<!-- START ACTION BAR -->
+			<div class="visible-lg visible-xs m-t-10 m-r-10 xs-m-r-0 sm-m-r-0 pull-right">
+				<div class="dropdown pull-left">
+					<button class="profile-dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<span class="thumbnail-wrapper d32 circular inlin relative">
+							<div class="overlay-mask" *ngIf="ControlService.uploadingAvatar">
+								<div class="text-center">
+									<div class="uploading-avatar absolute-center"></div>
+								</div>
+							</div>
+							<img [src]="ControlService.avatar_path + user.avatar" *ngIf="hasAvatar" class="avatar-user">
+							<img [src]="'assets/img/profiles/avatar_white.png'" *ngIf="!hasAvatar" class="avatar-user">
+						</span>
+					</button>
+					<ul class="dropdown-menu profile-dropdown" role="menu">
+						<li>
+							<a href="javascript:void(0)" (click)="openSettingsModal()">
+								<i class="pg fa fa-cog"></i> Configurações</a>
+						</li>
+						<li>
+							<a href="javascript:void(0)" (click)="openChannelsModal()">
+								<i class="pg fa fa-at"></i> Meus Canais</a>
+						</li>
+						<li>
+							<a href="javascript:void(0)" (click)="openTutorialModal()">
+								<i class="pg fa fa-info-circle" style="margin-left: 1.5px; margin-right: 6.5px;"></i> Tutorials</a>
+						</li>
+						<li *ngIf="showMenuReconnect">
+							<a href="javascript:void(0)" (click)="openReconnectModal()">
+								<i class="pg fa fa-repeat"></i> Reconectar Perfis</a>
+						</li>
+						<li class="bg-master-lighter">
+							<a href="javascript:void(0)" (click)="logout()" class="clearfix">
+								<span class="pull-left">Logout</span>
+								<span class="pull-right">
+									<i class="pg-power"></i>
+								</span>
+							</a>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<!-- END ACTION BAR -->
+		</div>
+	</div>
+	<!-- END MOBILE CONTROLS -->
+	<div class=" pull-left sm-table hidden-xs hidden-sm">
+		<div class="header-inner p-t-10">
+			<div class="brand inline">
+				<a [routerLink]="['stream']">
+					<img src="assets/img/logo-svg-fundo-roxo.svg" alt="logo" data-src="assets/img/logo-svg-fundo-roxo.svg" data-src-retina="assets/img/logo-svg-fundo-roxo.svg"
+					 width="78" height="28">
+				</a>
+			</div>
+		</div>
+	</div>
+	<div class="pull-right">
+		<!-- START User Info-->
+		<div class="visible-lg visible-md m-t-10">
+			<div class="dropdown pull-left">
+				<button class="profile-dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					<span class="thumbnail-wrapper d32 circular inline m-t-5 relative">
+						<div class="overlay-mask" *ngIf="ControlService.uploadingAvatar">
+							<div class="text-center">
+								<div class="uploading-avatar absolute-center"></div>
+							</div>
+						</div>
+						<img [src]="ControlService.avatar_path + user.avatar" *ngIf="hasAvatar" class="avatar-user">
+						<img [src]="'assets/img/profiles/avatar_white.png'" *ngIf="!hasAvatar" class="avatar-user">
+					</span>
+
+					<div class="pull-right p-l-10 p-t-10 fs-16 font-heading">
+						{{ user?.name }}
+						<i class="fa fa-chevron-down" aria-hidden="true"></i>
+					</div>
+				</button>
+				<ul class="dropdown-menu profile-dropdown" role="menu">
+					<li>
+						<a href="javascript:void(0)" (click)="openSettingsModal()">
+							<i class="pg fa fa-cog"></i> Configurações</a>
+					</li>
+					<li>
+						<a href="javascript:void(0)" (click)="openChannelsModal()">
+							<i class="pg fa fa-at"></i> Meus Canais</a>
+					</li>
+					<li (click)="openGroupsModal()">
+						<a href="javascript:void(0)" (click)="setGroupType()">
+							<i class="pg fa fa-folder-open"></i> Meus Grupos</a>
+					</li>
+					<li *ngIf="user?.type == 'A' || user?.type == 'W'">
+						<a href="javascript:void(0)" (click)="openTeamModal()">
+							<i class="pg fa fa-group"></i> Equipe</a>
+					</li>
+					<li>
+						<a href="javascript:void(0)" (click)="openTutorialModal()">
+							<i class="pg fa fa-info-circle" style="margin-left: 1.5px; margin-right: 6.5px;"></i> Tutorials</a>
+					</li>
+					<li *ngIf="showMenuReconnect">
+						<a href="javascript:void(0)" (click)="openReconnectModal()">
+							<i class="pg fa fa-repeat"></i> Reconectar Perfis</a>
+					</li>
+					<li class="bg-master-lighter">
+						<a href="javascript:void(0)" (click)="logout()" class="clearfix">
+							<span class="pull-left">Logout</span>
+							<span class="pull-right">
+								<i class="pg-power"></i>
+							</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<!-- END User Info-->
+	</div>
+	<div class="pull-right m-r-20 hidden-xs hidden-sm">
+		<div class="header-inner">
+			<a class="icon-set globe-fill btn-link icon-set m-l-20 cursor sm-no-margin hidden-sm hidden-xs" data-toggle="quickview" data-toggle-element="#quickview"
+			 (click)="openQuickview()" id="quickview-op">
+				<span class="bubble" data-toggle-element="#quickview" data-toggle="quickview" *ngIf="existsUnread"></span>
+			</a>
+		</div>
+	</div>
+</div>

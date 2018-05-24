@@ -1,0 +1,75 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.SetDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.sets.Sets;
+
+@Stateless
+public class MaintenanceSetBean extends AbstractDASImpl<Sets> implements MaintenanceSetRemote {
+	
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	SetDAO dao;  
+
+	@Override
+	public AbstractDAO<Sets> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public List<Sets> getByStartDate(Long startDate) {
+		return dao.getByStartDate(startDate);
+	}
+
+	@Override
+	public List<Sets> getByEndDate(Long endDate) {
+		return dao.getByEndDate(endDate);
+	}
+
+	@Override
+	public List<Sets> getByProfile(Long idProfile, Long idAccount) {
+		return dao.getByProfile(idProfile, idAccount);
+	}
+
+	@Override
+	public List<Sets> listSchedulings(Long idAccount) {
+		return dao.listSchedulings(idAccount);
+	}
+
+	@Override
+	public Long getAmount(Long idUser) {
+		return dao.getAmount(idUser);
+	}
+
+	@Override
+	public List<Sets> listActives() {
+		return dao.listActives();
+	}
+
+	@Override
+	public List<Sets> listByAccount(Long idAccount) {
+		return dao.listByAccount(idAccount);
+	}
+
+	@Override
+	public void setDao(AbstractDAO<Sets> dao) {
+		this.dao = (SetDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<Sets> getDao() {
+		return dao;
+	}
+
+	@Override
+	public List<Sets> listSchedulings(Long idProfile, Long idAccount, Character status, Integer offset, Integer limit) {
+		return dao.listSchedulings(idProfile, idAccount, status, offset, limit);
+	}
+}

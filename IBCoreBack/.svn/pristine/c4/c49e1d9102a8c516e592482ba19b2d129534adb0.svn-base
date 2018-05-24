@@ -1,0 +1,1417 @@
+package br.com.opsocial.server.utils;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
+import dao.AccountDAOImpl;
+import dao.AnniversarieDAOImpl;
+import dao.BlogPostDAOImpl;
+import dao.BlogPostMonitoringDAOImpl;
+import dao.ColorTagDAOImpl;
+import dao.ConversationDAOImpl;
+import dao.ExceptionDAOImpl;
+import dao.FacePostMonitoringDAOImpl;
+import dao.FaceReportLocationDAOImpl;
+import dao.FaceReportPostCommentDAOImpl;
+import dao.FaceReportPostDAOImpl;
+import dao.FacebookInfluentialUserDAOImpl;
+import dao.FacebookPostDAOImpl;
+import dao.FacebookPostInsightDAOImpl;
+import dao.GooglePagingDAOImpl;
+import dao.GooglePlusPostDAOImpl;
+import dao.GooglePlusPostMonitoringDAOImpl;
+import dao.InstagramDeviceDAOImpl;
+import dao.InstagramFollowerDAOImpl;
+import dao.InstagramPostCommentDAOImpl;
+import dao.InstagramPostDAOImpl;
+import dao.InstagramPostLikeDAOImpl;
+import dao.InstagramPostMonitoringDAOImpl;
+import dao.InstagramPostTagDAOImpl;
+import dao.InstagramReportDAOImpl;
+import dao.InstagramReportPostDAOImpl;
+import dao.InstagramUserDAOImpl;
+import dao.MessageDAOImpl;
+import dao.MonitoringDAOImpl;
+import dao.MonitoringGroupReportDAOImpl;
+import dao.MonitoringHashTagDAOImpl;
+import dao.MonitoringInfluentialUserDAOImpl;
+import dao.MonitoringLinkDAOImpl;
+import dao.MonitoringLocationDAOImpl;
+import dao.MonitoringLocationReportDAOImpl;
+import dao.MonitoringLogReportDAOImpl;
+import dao.MonitoringPostLocationDAOImpl;
+import dao.MonitoringPostTagDAOImpl;
+import dao.MonitoringQualificationReportDAOImpl;
+import dao.MonitoringReportControlDAOImpl;
+import dao.MonitoringReportDAOImpl;
+import dao.MonitoringSearchDAOImpl;
+import dao.MonitoringTagDAOImpl;
+import dao.MonitoringTagReportDAOImpl;
+import dao.MonitoringTermReportDAOImpl;
+import dao.MonitoringUserDAOImpl;
+import dao.MonitoringUserReportDAOImpl;
+import dao.NewsPostDAOImpl;
+import dao.NewsPostMonitoringDAOImpl;
+import dao.NotificationDAOImpl;
+import dao.ObjectAttachmentDAOImpl;
+import dao.PostDAOImpl;
+import dao.ProfileDAOImpl;
+import dao.ProfileUserDashboardDAOImpl;
+import dao.RateLimitStatusDAOImpl;
+import dao.ReclameAquiPostDAOImpl;
+import dao.ReclameAquiPostMonitoringDAOImpl;
+import dao.ReportControlDAOImpl;
+import dao.ReportDetailedDAOImpl;
+import dao.ReportGenerateDAOImpl;
+import dao.ReportLogoDAOImpl;
+import dao.SampleDAOImpl;
+import dao.SamplePostDAOImpl;
+import dao.SampleReportDAOImpl;
+import dao.SetDAOImpl;
+import dao.SuggestionDAOImpl;
+import dao.TrendingTopicDAOImpl;
+import dao.TwitterFollowerControlDAOImpl;
+import dao.TwitterFollowerDAOImpl;
+import dao.TwitterFollowerReportDAOImpl;
+import dao.TwitterPagingDAOImpl;
+import dao.TwitterPostDAOImpl;
+import dao.TwitterPostMonitoringDAOImpl;
+import dao.TwitterPostURLDAOImpl;
+import dao.TwitterReportDAOImpl;
+import dao.TwitterStatusDAOImpl;
+import dao.TwitterStatusReportDAOImpl;
+import dao.UserDAOImpl;
+import dao.YoutubePostDAOImpl;
+import dao.YoutubePostMonitoringDAOImpl;
+import dao.generic.AbstractDAOImpl;
+import das.*;
+import das.generic.AbstractDAS;
+
+public abstract class RecoverMaintenance {
+	
+	public static AbstractDAS recoverMaintenance(String entity) {
+		
+		if(entity.equals("User")) {
+			
+			MaintenanceUserRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceUserBean();
+				remote.setDao(new UserDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceUserRemote) new InitialContext().lookup("das.Maintenance" + "UserRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("FaceReportLocation")) {
+			
+			MaintenanceFaceReportLocationRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFaceReportLocationBean();
+				remote.setDao(new FaceReportLocationDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFaceReportLocationRemote) new InitialContext().lookup("das.Maintenance" + "FaceReportLocationRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("FaceReportPost")) {
+			
+			MaintenanceFaceReportPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFaceReportPostBean();
+				remote.setDao(new FaceReportPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFaceReportPostRemote) new InitialContext().lookup("das.Maintenance" + "FaceReportPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("InstagramPost")) {
+			
+			MaintenanceInstagramPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramPostBean();
+				remote.setDao(new InstagramPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramPostRemote) new InitialContext().lookup("das.Maintenance" + "InstagramPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Monitoring")) {
+			
+			MaintenanceMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringBean();
+				remote.setDao(new MonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Notification")) {
+			
+			MaintenanceNotificationRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceNotificationBean();
+				remote.setDao(new NotificationDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceNotificationRemote) new InitialContext().lookup("das.Maintenance" + "NotificationRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Profile")) {
+			
+			MaintenanceProfileRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceProfileBean();
+				remote.setDao(new ProfileDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceProfileRemote) new InitialContext().lookup("das.Maintenance" + "ProfileRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("ReportControl")) {
+			
+			MaintenanceReportControlRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceReportControlBean();
+				remote.setDao(new ReportControlDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceReportControlRemote) new InitialContext().lookup("das.Maintenance" + "ReportControlRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("ReportDetailed")) {
+			
+			MaintenanceReportDetailedRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceReportDetailedBean();
+				remote.setDao(new ReportDetailedDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceReportDetailedRemote) new InitialContext().lookup("das.Maintenance" + "ReportDetailedRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("ReportGenerate")) {
+			
+			MaintenanceReportGenerateRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceReportGenerateBean();
+				remote.setDao(new ReportGenerateDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceReportGenerateRemote) new InitialContext().lookup("das.Maintenance" + "ReportGenerateRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Set")) {
+			
+			MaintenanceSetRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceSetBean();
+				remote.setDao(new SetDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceSetRemote) new InitialContext().lookup("das.Maintenance" + "SetRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Post")) {
+			
+			MaintenancePostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenancePostBean();
+				remote.setDao(new PostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenancePostRemote) new InitialContext().lookup("das.Maintenance" + "PostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("TwitterReport")) {
+			
+			MaintenanceTwitterReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterReportBean();
+				remote.setDao(new TwitterReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterReportRemote) new InitialContext().lookup("das.Maintenance" + "TwitterReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("TwitterStatus")) {
+			
+			MaintenanceTwitterStatusRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterStatusBean();
+				remote.setDao(new TwitterStatusDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterStatusRemote) new InitialContext().lookup("das.Maintenance" + "TwitterStatusRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("TwitterStatusReport")) {
+			
+			MaintenanceTwitterStatusReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterStatusReportBean();
+				remote.setDao(new TwitterStatusReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterStatusReportRemote) new InitialContext().lookup("das.Maintenance" + "TwitterStatusReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("FacebookPost")) {
+			
+			MaintenanceFacebookPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFacebookPostBean();
+				remote.setDao(new FacebookPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFacebookPostRemote) new InitialContext().lookup("das.Maintenance" + "FacebookPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("FacePostMonitoring")) {
+			
+			MaintenanceFacePostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFacePostMonitoringBean();
+				remote.setDao(new FacePostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFacePostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "FacePostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("GooglePlusPost")) {
+			
+			MaintenanceGooglePlusPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceGooglePlusPostBean();
+				remote.setDao(new GooglePlusPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceGooglePlusPostRemote) new InitialContext().lookup("das.Maintenance" + "GooglePlusPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("GooglePlusPostMonitoring")) {
+			
+			MaintenanceGooglePlusPostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceGooglePlusPostMonitoringBean();
+				remote.setDao(new GooglePlusPostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceGooglePlusPostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "GooglePlusPostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("ObjectAttachment")) {
+			
+			MaintenanceObjectAttachmentRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceObjectAttachmentBean();
+				remote.setDao(new ObjectAttachmentDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceObjectAttachmentRemote) new InitialContext().lookup("das.Maintenance" + "ObjectAttachmentRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("RateLimitStatus")) {
+			
+			MaintenanceRateLimitStatusRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceRateLimitStatusBean();
+				remote.setDao(new RateLimitStatusDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceRateLimitStatusRemote) new InitialContext().lookup("das.Maintenance" + "RateLimitStatusRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("TwitterPost")) {
+			
+			MaintenanceTwitterPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterPostBean();
+				remote.setDao(new TwitterPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterPostRemote) new InitialContext().lookup("das.Maintenance" + "TwitterPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("TwitterPostMonitoring")) {
+			
+			MaintenanceTwitterPostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterPostMonitoringBean();
+				remote.setDao(new TwitterPostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterPostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "TwitterPostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("YoutubePost")) {
+			
+			MaintenanceYoutubePostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceYoutubePostBean();
+				remote.setDao(new YoutubePostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceYoutubePostRemote) new InitialContext().lookup("das.Maintenance" + "YoutubePostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("YoutubePostMonitoring")) {
+			
+			MaintenanceYoutubePostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceYoutubePostMonitoringBean();
+				remote.setDao(new YoutubePostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceYoutubePostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "YoutubePostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("MonitoringReport")) {
+			
+			MaintenanceMonitoringReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringReportBean();
+				remote.setDao(new MonitoringReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("FacebookInfluentialUser")) {
+			
+			MaintenanceFacebookInfluentialUserRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFacebookInfluentialUserBean();
+				remote.setDao(new FacebookInfluentialUserDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFacebookInfluentialUserRemote) new InitialContext().lookup("das.Maintenance" + "FacebookInfluentialUserRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Suggestion")) {
+			
+			MaintenanceSuggestionRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceSuggestionBean();
+				remote.setDao(new SuggestionDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceSuggestionRemote) new InitialContext().lookup("das.Maintenance" + "SuggestionRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Anniversarie")) {
+			
+			MaintenanceAnniversarieRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceAnniversarieBean();
+				remote.setDao(new AnniversarieDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceAnniversarieRemote) new InitialContext().lookup("das.Maintenance" + "AnniversarieRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Account")) {
+			
+			MaintenanceAccountRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceAccountBean();
+				remote.setDao(new AccountDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceAccountRemote) new InitialContext().lookup("das.Maintenance" + "AccountRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("InstagramPostMonitoring")) {
+			
+			MaintenanceInstagramPostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramPostMonitoringBean();
+				remote.setDao(new InstagramPostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramPostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "InstagramPostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("FacebookPostInsight")) {
+			
+			MaintenanceFacebookPostInsightRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFacebookPostInsightBean();
+				remote.setDao(new FacebookPostInsightDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFacebookPostInsightRemote) new InitialContext().lookup("das.Maintenance" + "FacebookPostInsightRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("TwitterFollower")) {
+			
+			MaintenanceTwitterFollowerRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterFollowerBean();
+				remote.setDao(new TwitterFollowerDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterFollowerRemote) new InitialContext().lookup("das.Maintenance" + "TwitterFollowerRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("TwitterFollowerControl")) {
+			
+			MaintenanceTwitterFollowerControlRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterFollowerControlBean();
+				remote.setDao(new TwitterFollowerControlDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterFollowerControlRemote) new InitialContext().lookup("das.Maintenance" + "TwitterFollowerControlRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("TwitterFollowerReport")) {
+			
+			MaintenanceTwitterFollowerReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterFollowerReportBean();
+				remote.setDao(new TwitterFollowerReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterFollowerReportRemote) new InitialContext().lookup("das.Maintenance" + "TwitterFollowerReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringUser")) {
+			
+			MaintenanceMonitoringUserRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringUserBean();
+				remote.setDao(new MonitoringUserDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringUserRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringUserRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringInfluentialUser")) {
+			
+			MaintenanceMonitoringInfluentialUserRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringInfluentialUserBean();
+				remote.setDao(new MonitoringInfluentialUserDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringInfluentialUserRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringInfluentialUserRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("ReclameAquiPost")) {
+			
+			MaintenanceReclameAquiPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceReclameAquiPostBean();
+				remote.setDao(new ReclameAquiPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceReclameAquiPostRemote) new InitialContext().lookup("das.Maintenance" + "ReclameAquiPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("ReclameAquiPostMonitoring")) {
+			
+			MaintenanceReclameAquiPostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceReclameAquiPostMonitoringBean();
+				remote.setDao(new ReclameAquiPostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceReclameAquiPostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "ReclameAquiPostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringPostTag")) {
+			
+			MaintenanceMonitoringPostTagRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringPostTagBean();
+				remote.setDao(new MonitoringPostTagDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringPostTagRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringPostTagRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringTag")) {
+			
+			MaintenanceMonitoringTagRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringTagBean();
+				remote.setDao(new MonitoringTagDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringTagRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringTagRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("ColorTag")) {
+			
+			MaintenanceColorTagRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceColorTagBean();
+				remote.setDao(new ColorTagDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceColorTagRemote) new InitialContext().lookup("das.Maintenance" + "ColorTagRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		}  else if(entity.equals("NewsPost")) {
+			
+			MaintenanceNewsPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceNewsPostBean();
+				remote.setDao(new NewsPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceNewsPostRemote) new InitialContext().lookup("das.Maintenance" + "NewsPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("NewsPostMonitoring")) {
+			
+			MaintenanceNewsPostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceNewsPostMonitoringBean();
+				remote.setDao(new NewsPostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceNewsPostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "NewsPostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		}  else if(entity.equals("BlogPost")) {
+			
+			MaintenanceBlogPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceBlogPostBean();
+				remote.setDao(new BlogPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceBlogPostRemote) new InitialContext().lookup("das.Maintenance" + "BlogPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+
+		} else if(entity.equals("BlogPostMonitoring")) {
+			
+			MaintenanceBlogPostMonitoringRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceBlogPostMonitoringBean();
+				remote.setDao(new BlogPostMonitoringDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceBlogPostMonitoringRemote) new InitialContext().lookup("das.Maintenance" + "BlogPostMonitoringRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramReportPost")) {
+			
+			MaintenanceInstagramReportPostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramReportPostBean();
+				remote.setDao(new InstagramReportPostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramReportPostRemote) new InitialContext().lookup("das.Maintenance" + "InstagramReportPostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramPostComment")) {
+			
+			MaintenanceInstagramPostCommentRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramPostCommentBean();
+				remote.setDao(new InstagramPostCommentDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramPostCommentRemote) new InitialContext().lookup("das.Maintenance" + "InstagramPostCommentRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramPostLike")) {
+			
+			MaintenanceInstagramPostLikeRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramPostLikeBean();
+				remote.setDao(new InstagramPostLikeDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramPostLikeRemote) new InitialContext().lookup("das.Maintenance" + "InstagramPostLikeRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramPostTag")) {
+			
+			MaintenanceInstagramPostTagRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramPostTagBean();
+				remote.setDao(new InstagramPostTagDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramPostTagRemote) new InitialContext().lookup("das.Maintenance" + "InstagramPostTagRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramFollower")) {
+			
+			MaintenanceInstagramFollowerRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramFollowerBean();
+				remote.setDao(new InstagramFollowerDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramFollowerRemote) new InitialContext().lookup("das.Maintenance" + "InstagramFollowerRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;	
+		} else if(entity.equals("ReportLogo")) {
+			
+			MaintenanceReportLogoRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceReportLogoBean();
+				remote.setDao(new ReportLogoDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceReportLogoRemote) new InitialContext().lookup("das.Maintenance" + "ReportLogoRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Conversation")) {
+			
+			MaintenanceConversationRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceConversationBean();
+				remote.setDao(new ConversationDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceConversationRemote) new InitialContext().lookup("das.Maintenance" + "ConversationRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("Message")) {
+			
+			MaintenanceMessageRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMessageBean();
+				remote.setDao(new MessageDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMessageRemote) new InitialContext().lookup("das.Maintenance" + "MessageRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringLocation")) {
+			
+			MaintenanceMonitoringLocationRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringLocationBean();
+				remote.setDao(new MonitoringLocationDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringLocationRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringLocationRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				} 
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringPostLocation")) {
+			
+			MaintenanceMonitoringPostLocationRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringPostLocationBean();
+				remote.setDao(new MonitoringPostLocationDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringPostLocationRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringPostLocationRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringHashTag")) {
+			
+			MaintenanceMonitoringHashTagRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringHashTagBean();
+				remote.setDao(new MonitoringHashTagDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringHashTagRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringHashTagRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringLink")) {
+			
+			MaintenanceMonitoringLinkRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringLinkRemoteBean();
+				remote.setDao(new MonitoringLinkDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringLinkRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringLinkRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringQualificationReport")) {
+			
+			MaintenanceMonitoringQualificationReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringQualificationReportBean();
+				remote.setDao(new MonitoringQualificationReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringQualificationReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringQualificationReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringReportControl")) {
+			
+			MaintenanceMonitoringReportControlRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringReportControlBean();
+				remote.setDao(new MonitoringReportControlDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringReportControlRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringReportControlRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringTagReport")) {
+			
+			MaintenanceMonitoringTagReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringTagReportBean();
+				remote.setDao(new MonitoringTagReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringTagReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringTagReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("Sample")) {
+			
+			MaintenanceSampleRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceSampleBean();
+				remote.setDao(new SampleDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceSampleRemote) new InitialContext().lookup("das.Maintenance" + "SampleRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("SamplePost")) {
+			
+			MaintenanceSamplePostRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceSamplePostBean();
+				remote.setDao(new SamplePostDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceSamplePostRemote) new InitialContext().lookup("das.Maintenance" + "SamplePostRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+			
+		} else if(entity.equals("SampleReport")) {
+			
+			MaintenanceSampleReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceSampleReportBean();
+				remote.setDao(new SampleReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceSampleReportRemote) new InitialContext().lookup("das.Maintenance" + "SampleReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringTermReport")) {
+			
+			MaintenanceMonitoringTermReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				 remote = new MaintenanceMonitoringTermReportBean();
+				 remote.setDao(new MonitoringTermReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringTermReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringTermReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringUserReport")) {
+			
+			MaintenanceMonitoringUserReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringUserReportBean();
+				remote.setDao(new MonitoringUserReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringUserReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringUserReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringLocationReport")) {
+			
+			MaintenanceMonitoringLocationReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringLocationReportBean();
+				remote.setDao(new MonitoringLocationReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringLocationReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringLocationReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("Exception")) {
+			
+			MaintenanceExceptionRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceExceptionBean();
+				remote.setDao(new ExceptionDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceExceptionRemote) new InitialContext().lookup("das.Maintenance" + "ExceptionRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("FaceReportPostComment")) {
+			
+			MaintenanceFaceReportPostCommentRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceFaceReportPostCommentBean();
+				remote.setDao(new FaceReportPostCommentDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceFaceReportPostCommentRemote) new InitialContext().lookup("das.Maintenance" + "FaceReportPostCommentRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringLogReport")) {
+			
+			MaintenanceMonitoringLogReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringLogReportBean();
+				remote.setDao(new MonitoringLogReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringLogReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringLogReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringGroupReport")) {
+			
+			MaintenanceMonitoringGroupReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringGroupReportBean();
+				remote.setDao(new MonitoringGroupReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringGroupReportRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringGroupReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("TwitterPostURL")) {
+			
+			MaintenanceTwitterPostURLRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterPostURLBean();
+				remote.setDao(new TwitterPostURLDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterPostURLRemote) new InitialContext().lookup("das.Maintenance" + "TwitterPostURLRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramUser")) {
+			
+			MaintenanceInstagramUserRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramUserBean();
+				remote.setDao(new InstagramUserDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramUserRemote) new InitialContext().lookup("das.Maintenance" + "InstagramUserRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramReport")) {
+			
+			MaintenanceInstagramReportRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramReportBean();
+				remote.setDao(new InstagramReportDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramReportRemote) new InitialContext().lookup("das.Maintenance" + "InstagramReportRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("TwitterPaging")) {
+			
+			MaintenanceTwitterPagingRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTwitterPagingBean();
+				remote.setDao(new TwitterPagingDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTwitterPagingRemote) new InitialContext().lookup("das.Maintenance" + "TwitterPagingRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("GooglePaging")) {
+			
+			MaintenanceGooglePagingRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceGooglePagingBean();
+				remote.setDao(new GooglePagingDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceGooglePagingRemote) new InitialContext().lookup("das.Maintenance" + "GooglePagingRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("ProfileUserDashboard")) {
+			
+			MaintenanceProfileUserDashboardRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceProfileUserDashboardBean();
+				remote.setDao(new ProfileUserDashboardDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceProfileUserDashboardRemote) new InitialContext().lookup("das.Maintenance" + "ProfileUserDashboardRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("TrendingTopic")) {
+			
+			MaintenanceTrendingTopicRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceTrendingTopicBean();
+				remote.setDao(new TrendingTopicDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceTrendingTopicRemote) new InitialContext().lookup("das.Maintenance" + "TrendingTopicRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("MonitoringSearch")) {
+			
+			MaintenanceMonitoringSearchRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceMonitoringSearchBean();
+				remote.setDao(new MonitoringSearchDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceMonitoringSearchRemote) new InitialContext().lookup("das.Maintenance" + "MonitoringSearchRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		} else if(entity.equals("InstagramDevice")) {
+			
+			MaintenanceInstagramDeviceRemote remote = null;
+			
+			if(AbstractDAOImpl.DEBUG) {
+				remote = new MaintenanceInstagramDeviceBean();
+				remote.setDao(new InstagramDeviceDAOImpl());
+			} else {
+				try {
+					remote = (MaintenanceInstagramDeviceRemote) new InitialContext().lookup("das.Maintenance" + "InstagramDeviceRemote");
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			return remote;
+		}
+		
+		return null;
+	}
+}
+

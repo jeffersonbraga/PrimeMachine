@@ -1,0 +1,174 @@
+package br.com.opsocial.server.utils.emails;
+
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.SendMail;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class EmailSender {
+
+	public static final String HELLO_WOOP_EMAIL = "hello@woopsocial.com";
+	public static final String SAM_WOOP_EMAIL = "sam@woopsocial.com";
+
+	public static final String HELLO_WOOP_PERSONAL = "Woop";
+	public static final String SAM_WOOP_PERSONAL = "Sam from Woop";
+	
+	public EmailSender() {
+
+	}
+	
+	// Send email "Cheers!", when the user buy one plan on platform.
+	public Boolean sendCheersEmail(Account account) {
+		
+		Boolean wasSent = true;
+		
+		try {
+			
+			MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+			String subject = "Cheers!";
+
+			File emailFile = new File(Persistent.EMAILS_PATH + "cheers.html");
+
+			Document doc = Jsoup.parse(emailFile, "UTF-8");
+
+			List<User> users = userRemote.listUsersByAccount(account.getIdAccount());
+
+			for(User user : users) {
+
+				try {
+
+					new SendMail(SAM_WOOP_EMAIL, subject, user.getEmail(), doc.html(), SAM_WOOP_PERSONAL);
+
+					wasSent = true;
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return wasSent;
+	}
+	
+	// Send email "What about", if the user has not inserted the profile in the first moment on the platform.
+	public Boolean sendWhatAboutFirstChannelEmail(Account account) {
+		
+		Boolean wasSent = true;
+
+		try {
+			
+			MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+			String subject = "What about adding your first social channel to start using Woop?";
+
+			File emailFile = new File(Persistent.EMAILS_PATH + "freemium-what-about.html");
+
+			Document doc = Jsoup.parse(emailFile, "UTF-8");
+
+			List<User> users = userRemote.listUsersByAccount(account.getIdAccount());
+
+			for(User user : users) {
+
+				try {
+
+					new SendMail(HELLO_WOOP_EMAIL, subject, user.getEmail(), doc.html(), HELLO_WOOP_PERSONAL);
+
+					wasSent = true;
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return wasSent;
+	}
+
+	// Send email "Welcome do Woop", if the user has been inserted in the first 24 hours after create the account.
+	public Boolean sendWelcomeToWoopEmail(Account account) {
+
+		Boolean wasSent = true;
+
+		try {
+
+			MaintenanceAccountRemote accountRemote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+			account = accountRemote.getById(account.getIdAccount());
+
+			if(account.getFirstProfileDate() == null) {
+
+				Profile profile = profileRemote.getFirstProfileInserted(account.getIdAccount());
+
+				account.setFirstProfileDate(profile.getInsertionDate());
+
+				accountRemote.save(account);
+
+				account = accountRemote.getById(account.getIdAccount());
+
+				Instant cadastreDate = Instant.ofEpochMilli(account.getCadastreDate().getTime());
+				Instant insertionDate = Instant.ofEpochSecond(account.getFirstProfileDate());
+
+				Duration duration = Duration.between(cadastreDate, insertionDate);
+
+				Long hours = duration.toHours();
+
+				if(hours <= 24) {
+
+					MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+					String subject = "Welcome to woop!";
+
+					File emailFile = new File(Persistent.EMAILS_PATH + "freemium-welcome-to-woop.html");
+
+					Document doc = Jsoup.parse(emailFile, "UTF-8");
+
+					List<User> users = userRemote.listUsersByAccount(account.getIdAccount());
+
+					for(User user : users) {
+
+						try {
+
+							new SendMail(HELLO_WOOP_EMAIL, subject, user.getEmail(), doc.html(), HELLO_WOOP_PERSONAL);
+
+							wasSent = true;
+
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+
+		} catch (IllegalArgumentException e1) {
+			e1.printStackTrace();
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+
+		return wasSent;
+	}
+
+}

@@ -1,0 +1,31 @@
+.no-preview{
+    height: auto;
+    position: relative;
+}
+
+.center-absolute{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.fa-facebook-square{
+    color: #3467d4;
+    font-size: 24px
+}
+
+.fa-twitter-square{
+    color: #17c6ff;
+    font-size: 24px
+}
+
+.fa-instagram{
+    color: #ff4169;
+    font-size: 24px
+}
+
+.fa-linkedin-square{
+    color: #0084bf;
+    font-size: 24px
+}

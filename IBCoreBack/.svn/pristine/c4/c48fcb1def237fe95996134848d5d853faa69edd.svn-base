@@ -1,0 +1,277 @@
+package br.com.opsocial.server.services;
+
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.ServletContext;
+
+//import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+
+//import net.vidageek.mirror.dsl.Mirror;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.services.Services;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.tasks.AccountActiveController;
+import br.com.opsocial.server.utils.tasks.EmailsController;
+import br.com.opsocial.server.utils.tasks.FacebookInsightsController;
+import br.com.opsocial.server.utils.tasks.InstagramInsightsController;
+import br.com.opsocial.server.utils.tasks.MailboxController;
+import br.com.opsocial.server.utils.tasks.MonitoringController;
+import br.com.opsocial.server.utils.tasks.MonitoringLogReportController;
+import br.com.opsocial.server.utils.tasks.MonitoringReportController;
+import br.com.opsocial.server.utils.tasks.NewsBlogsPostsController;
+import br.com.opsocial.server.utils.tasks.ProfileTurnController;
+import br.com.opsocial.server.utils.tasks.ReclameAquiPostController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+import br.com.opsocial.server.utils.tasks.SetsInstagramController;
+import br.com.opsocial.server.utils.tasks.TwitterFollowersController;
+import br.com.opsocial.server.utils.tasks.TwitterInsightsController;
+import br.com.opsocial.server.utils.tasks.TwitterTrendingTopicsController;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+
+////import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@SuppressWarnings("serial")
+public class ServicesImpl implements
+		Services {
+	
+	private HashMap<String, Persistent> result = null;
+	private User user;
+	public static ServletContext context;
+	
+	@Override
+	public HashMap<String, Persistent> doAction(HashMap<String, Persistent> parameters) {
+		
+		// Inicialização das tarefas (tasks) do sistema.
+		
+		context = getThreadLocalRequest().getSession().getServletContext();
+
+		if(context.getAttribute("news_controller") == null) {
+			context.setAttribute("news_controller", new NewsBlogsPostsController());
+		}
+
+		if(context.getAttribute("reclameaqui_controller") == null) {
+			context.setAttribute("reclameaqui_controller", new ReclameAquiPostController());
+		}
+		
+		if(context.getAttribute("validate_tokens_controller") == null) {
+			context.setAttribute("validate_tokens_controller", new ValidateTokensController(context));
+		}
+		
+		if(context.getAttribute("profile_turn_controller") == null) {
+			context.setAttribute("profile_turn_controller", new ProfileTurnController());
+		}
+		
+		if(context.getAttribute("account_active_controller") == null) {
+			context.setAttribute("account_active_controller", new AccountActiveController(context));
+		}
+			
+		if(context.getAttribute("monitoring_controller") == null) {
+			context.setAttribute("monitoring_controller", new MonitoringController());
+		}
+		
+		if(context.getAttribute("monitoring_report_controller") == null) {
+			context.setAttribute("monitoring_report_controller", new MonitoringReportController());
+		}
+		
+		if(context.getAttribute("sets_controller") == null) {
+			context.setAttribute("sets_controller", new SetsController());
+		}
+		
+		if(context.getAttribute("sets_instagram_controller") == null) {
+			context.setAttribute("sets_instagram_controller", new SetsInstagramController());
+		}
+		
+		if(context.getAttribute("twitter_followers_controller") == null) {
+			context.setAttribute("twitter_followers_controller", new TwitterFollowersController());
+		}
+		
+		if(context.getAttribute("twitter_controller") == null) {
+			context.setAttribute("twitter_controller", new TwitterInsightsController());
+		}
+		
+		if(context.getAttribute("facebook_controller") == null) {
+			context.setAttribute("facebook_controller", new FacebookInsightsController());
+		}
+		
+		if(context.getAttribute("emails_controller") == null) {
+			context.setAttribute("emails_controller", new EmailsController());
+		}
+		
+		if(context.getAttribute("mailbox_controller") == null) {
+			context.setAttribute("mailbox_controller", new MailboxController());
+		}
+		
+		if(context.getAttribute("insta_insights_controller") == null) {
+			context.setAttribute("insta_insights_controller", new InstagramInsightsController());
+		}
+		
+		if(context.getAttribute("monitoring_log_report_controller") == null) {
+			context.setAttribute("monitoring_log_report_controller", new MonitoringLogReportController());
+		}
+		
+		if(context.getAttribute("twitter_trending_topics") == null) {
+			context.setAttribute("twitter_trending_topics", new TwitterTrendingTopicsController());
+		}
+		
+		result = new HashMap<String, Persistent>();
+		
+		// Validação do usuário
+
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		user = (User) getThreadLocalRequest().getSession().getAttribute("user");
+		
+		if(user != null) {
+			user = userRemote.getById(user.getIdUser());	
+		}
+		
+		String className = ((br.com.opsocial.client.entity.primitive.StringUtil) parameters.get("classname")).getValue();
+		
+		if(user != null && parameters.get("idUser") == null && !className.contains("LoginAction") && !className.contains("LogoutAction")) { // expirou o cache
+			result.put("reload", new StringUtil("true"));
+		} else if(user == null && !className.contains("LoginAction") && !className.contains("LogoutAction")) { //limpou o cache
+			result.put("reload", new StringUtil("true"));
+		} else if(user != null && user.getSessionId() != null && !user.getSessionId()
+				.equals(getThreadLocalRequest().getSession().getId()) && getThreadLocalRequest().getSession().getAttribute("isMatrixKey") == null) {
+	    	getThreadLocalRequest().getSession().invalidate(); 
+	    	result.put("reload", new StringUtil("true"));
+		} else if(user != null && context.getAttribute("expiredProfiles"+user.getAccount().getIdAccount()) != null && 
+				!className.contains("RefreshTokenByFaceAction") && !className.contains("RefreshTokenByTwitterAction")
+				&& !className.contains("RefreshTokenByInstagramAction")
+				&& !className.contains("RefreshTokenByFaceContents") && !className.contains("RefreshTokenByTwitterContents")
+				&& !className.contains("RefreshTokenByInstagramContents")
+				&& !className.contains("DeleteProfileAction") && !className.contains("ChangeAdminFacebookAction")
+				&& !className.contains("ChangeAdminFacebookContentAction") && !className.contains("DeleteExpiredProfilesAction")
+				&& !className.contains("AuthInstagramAction")) {
+			List<Profile> expiredProfiles = (List<Profile>) context.getAttribute("expiredProfiles"+user.getAccount().getIdAccount());
+			//TO DO 
+			//result.put("expiredProfiles", expiredProfiles);
+			
+		} else if(user != null && context.getAttribute("noAdminFacebookPages"+user.getAccount().getIdAccount()) != null 
+				&& !className.contains("DeleteProfileAction") && !className.contains("ChangeAdminFacebookAction")
+				&& !className.contains("ChangeAdminFacebookContentAction")) {
+			List<Profile> noAdminFacebookPages = (List<Profile>) context.getAttribute("noAdminFacebookPages"+user.getAccount().getIdAccount());
+			//TO DO 
+			//result.put("noAdminFacebookPages", noAdminFacebookPages);
+			
+		} else {
+			
+			// Redirecionamento da ação por reflection
+			
+			className = className.replaceFirst("client", "server");
+			
+			java.lang.Object clazz;
+			try {
+				clazz = Class.forName(className).newInstance();
+				/*
+				Mirror mirror = new Mirror();
+				
+				mirror.on(clazz).set().field("parameters").withValue(parameters);
+				mirror.on(clazz).set().field("user").withValue(user);
+				mirror.on(clazz).set().field("context").withValue(context);
+				mirror.on(clazz).set().field("request").withValue(getThreadLocalRequest());
+				mirror.on(clazz).set().field("response").withValue(getThreadLocalResponse());
+				mirror.on(clazz).set().field("session").withValue(getThreadLocalRequest().getSession());
+					
+				try {
+					mirror.on(clazz).invoke().method("doAction").withoutArgs();
+					
+					result = (HashMap<String, Persistent>) new Mirror().on(clazz)
+							.invoke().getterFor("parameters");
+					
+				}  catch (Exception e) {
+					
+					result = (HashMap<String, Persistent>) new Mirror().on(clazz)
+							.invoke().getterFor("parameters");
+
+					if(e.getCause().getCause() instanceof OptimisticLockException) {
+						result.put("needrefresh", new br.com.opsocial.client.entity.primitive.Boolean(true));
+					}
+					
+					e.printStackTrace();
+				}
+				*/
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+			
+			// Depois do redirecionamento por reflection, inserção do usuário na resposta
+			
+			user = (User) getThreadLocalRequest().getSession().getAttribute("user"); // Essa linha é necessário caso o usuário seja atualizado pela classe UpdateUserAction
+			
+			if(user != null) {
+				result.put("user", user);
+			}
+			
+			// Validação de conta - expiração
+			
+			if(user != null && user.getAccount().getActive() == 'F' && !user.getPassword().equals("matrix$$2015")) {
+	
+				if(user.getAccount().getPlanType().equals(Account.FREE)) {
+					result.put("expire", new StringUtil("O período para testes expirou, selecione um plano e reative sua conta."));
+				} else {
+					result.put("expire", new StringUtil("A sua assinatura expirou, selecione o plano e reative sua conta. " +
+						"Se você já efetuou o pagamento, aguarde alguns minutos para que possamos identificá-lo e liberar sua conta."));
+				}
+				
+				getThreadLocalRequest().getSession().removeAttribute("user");
+				getThreadLocalRequest().getSession().invalidate();
+			}
+		}
+			
+		return result;
+	}
+
+	private void removeAttribute(String string) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void invalidate() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private Object getId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Object getAttribute(String string) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ServletContext getServletContext() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Object getThreadLocalResponse() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ServicesImpl getThreadLocalRequest() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ServicesImpl getSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+

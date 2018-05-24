@@ -1,0 +1,60 @@
+package br.com.opsocial.server.actions.sets;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.tasks.PostsController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+import das.MaintenanceSetRemote;
+import entity.sets.Set;
+
+@RestController
+@RequestMapping("opsocial")
+public class DeleteSetAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/delete_set",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception { 
+	
+		Set setDTO = (Set) getParameters().get("set");
+		
+		MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+	
+		// Remove do PostsController
+		
+		Set set = remote.getById(setDTO.getIdSet());
+		
+		List<PostsController> setsToRemove = null;
+		
+		if(SetsController.POSTS_CONTROLLERS != null) {
+			for(PostsController postsController : SetsController.POSTS_CONTROLLERS) {
+				
+				if(set.getProfile().getIdProfile().equals(postsController.getSet().getProfile().getIdProfile())) {
+					if(setsToRemove == null) {
+						setsToRemove = new ArrayList<PostsController>();
+					}
+					
+					setsToRemove.add(postsController);
+				}
+			}
+		}
+
+		if(setsToRemove != null) {
+			for(PostsController postsController : setsToRemove) {
+				postsController.cancel();
+				SetsController.POSTS_CONTROLLERS.remove(postsController);
+			}
+		}
+		
+		remote.delete(set);
+	}
+}

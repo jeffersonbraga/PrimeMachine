@@ -1,0 +1,138 @@
+package br.com.opsocial;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.ServletContext;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.support.SpringBootServletInitializer;
+import org.springframework.core.env.Environment;
+
+import br.com.opsocial.server.services.ipag.IpagService;
+import br.com.opsocial.server.utils.tasks.InstagramInsightsController;
+
+@SpringBootApplication
+public class OpSocialBackApplication extends SpringBootServletInitializer {
+
+	@Autowired
+	ServletContext context;
+
+	public static ServletContext opSocialContext;
+
+	@Autowired
+	Environment env;
+
+    public static final String SPRING_PROFILE_DEVELOPMENT = "dev";
+
+    public static final String SPRING_PROFILE_PRODUCTION = "prod";
+
+    public static final String SPRING_PROFILE_CLOUD = "cloud";
+
+    public static String UPLOAD_DIR_AVATAR = "/opsocial/images/avatar";
+
+    public static String UPLOAD_DIR_TEMP = "/opsocial/images/temp";
+
+    public static String UPLOAD_DIR_REPORTS = "/opsocial/images/reports";
+
+    public static String GET_DIR_REPORTS_XLS = "/opsocial/reports/xls";
+
+    public static String UPLOAD_DIR_VIDEO_POSTS = "/opsocial/videos/posts";
+    
+    public static String UPLOAD_DIR_COMMENT_POSTS = "/opsocial/comments";
+
+    public static String UPLOAD_DIR_THUMBNAILS = "/opsocial/images/thumbnails";
+
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+        return application.sources(applicationClass);
+    }
+ 
+    private static Class<OpSocialBackApplication> applicationClass = OpSocialBackApplication.class;
+
+	public static void main(String[] args) {
+		SpringApplication.run(OpSocialBackApplication.class, args);
+	}
+
+    /**
+     * Initializes hipster.
+     * <p>
+     * Spring profiles can be configured with a program arguments --spring.profiles.active=your-active-profile
+     * <p>
+     * You can find more information on how profiles work with JHipster on <a href="http://jhipster.github.io/profiles/">http://jhipster.github.io/profiles/</a>.	
+     */
+    @PostConstruct
+    public void initApplication() {
+
+    	opSocialContext 	= context;
+
+        UPLOAD_DIR_AVATAR 	= context.getRealPath("/") + "/opsocial/images/avatar";
+
+        UPLOAD_DIR_TEMP 	= context.getRealPath("/") + "/opsocial/images/temp";
+
+        UPLOAD_DIR_REPORTS 	= context.getRealPath("/") + "/opsocial/images/reports";
+
+        GET_DIR_REPORTS_XLS = context.getRealPath("/") + "/opsocial/reports/xls";
+
+        UPLOAD_DIR_VIDEO_POSTS 	= context.getRealPath("/") + "/opsocial/videos/posts";
+
+        UPLOAD_DIR_THUMBNAILS 	= context.getRealPath("/") + "/opsocial/images/thumbnails";
+
+        Collection<String> activeProfiles = Arrays.asList(env.getActiveProfiles());
+        if (activeProfiles.contains(SPRING_PROFILE_DEVELOPMENT) && activeProfiles.contains(SPRING_PROFILE_PRODUCTION)) {
+        	System.out.println("You have misconfigured your application! It should not run " +
+                "with both the 'dev' and 'prod' profiles at the same time.");
+        }
+
+        if (activeProfiles.contains(SPRING_PROFILE_DEVELOPMENT) && activeProfiles.contains(SPRING_PROFILE_CLOUD)) {
+            System.out.println("You have misconfigured your application! It should not" +
+                "run with both the 'dev' and 'cloud' profiles at the same time.");
+        }
+
+        if (activeProfiles.contains(SPRING_PROFILE_PRODUCTION)){
+/*
+			new NewsBlogsPostsController();
+	
+			new ReclameAquiPostController();
+			
+			new ValidateTokensController();
+	
+			new ProfileTurnController();
+			
+			new AccountActiveController(this.context);
+				
+			new MonitoringController();
+			
+			new MonitoringReportController();
+			
+			new SetsController();
+			
+			new SetsInstagramController();
+			
+			new TwitterFollowersController();
+			
+			new TwitterInsightsController();
+			
+			new FacebookInsightsController();
+			
+			new InstagramInsightsController();
+			
+			new EmailsController();
+			
+			new MailboxController();
+			
+			new MonitoringLogReportController();
+			
+			new TwitterTrendingTopicsController();
+
+			new InstagramInsightsController();
+*/			
+        }
+        
+        new IpagService();
+    }
+}

@@ -1,0 +1,141 @@
+package br.com.opsocial.ejb.entity.generic;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+import javax.ejb.SessionContext;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Transient;
+
+@MappedSuperclass
+public abstract class Persistent extends AbstractEntityImpl {
+	
+	@Resource
+	@Transient
+	public SessionContext sctx;
+	
+	private static final long serialVersionUID = 1L;
+	
+	public final static Character UNFILTERED_PICTURE = 'U';
+	public final static Character FILTERED_PICTURE = 'F';
+	
+	public void saveLog(String entity, String operation, Long idUser, Date date, Long entityKey){
+		if ((entity.equals("User") || entity.equals("Post") || entity.equals("Schedule")) && idUser != null){
+			/*try {
+				MaintenanceOpLogRemote remoteLog = (MaintenanceOpLogRemote) new InitialContext().lookup("global/OpSocialBack/MaintenanceOpLogBean!br.com.opsocial.ejb.das.MaintenanceOpLogRemote");
+				
+				OpLog opLog = new OpLog();
+				
+				opLog.setEntity(entity);
+				opLog.setOperation(operation);
+				opLog.setIdUser(idUser);
+				opLog.setDate(date);
+				opLog.setEntityKey(entityKey);
+				
+				remoteLog.save(opLog);
+				
+			} catch (NamingException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}*/
+		}
+	}
+	
+//GLASSFISH LOCAL - Linux 
+	
+//	public static String SERVER_PATH = "http://localhost:8080/OpSocial";
+//	public static String SITE = "http://localhost:8080/OpSocialSite";
+//	public static String UPLOAD_SERVLET = "./opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/properties/";
+//	public static String REPORTS = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/reports/";
+//	public static String SYSTEM_PATH = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/";
+//	public static String FONTS = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/fonts/";
+//	public static String IMAGES_PATH = "http://localhost:8080/OpSocial/images/temp/";
+//	public static String AVATAR_PATH = "http://localhost:8080/OpSocial/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+//	public static String EMAILS_PATH = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/email/";
+//	public static String EMAILS_DATASIFT_PATH = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocialSite/email/datasift/";
+	
+	//GLASSFISH LOCAL - MAC
+	
+//	public static String SERVER_PATH = "http://localhost:8080/OpSocial";
+//	public static String SITE = "http://localhost:8080/OpSocialSite";
+//	public static String UPLOAD_SERVLET = "./opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/properties/";
+//	public static String REPORTS = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/reports/";
+//	public static String SYSTEM_PATH = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/";
+//	public static String FONTS = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/fonts/";
+//	public static String IMAGES_PATH = "http://localhost:8080/OpSocial/images/temp/";
+//	public static String AVATAR_PATH = "http://localhost:8080/OpSocial/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+//	public static String EMAILS_PATH = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/email/";
+//	public static String EMAILS_DATASIFT_PATH = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocialSite/email/datasift/";
+	
+	//GLASSFISH LOCAL
+
+	public static String SERVER_PATH = "http://localhost:8080/OpSocialBack";
+	public static String SITE = "http://localhost:8080/OpSocialSite";
+	public static String UPLOAD_SERVLET = "./woopsocial/upload";
+	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+	public static String PROPERTIES = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\properties\\";
+	public static String REPORTS = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\reports\\";
+	public static String SYSTEM_PATH = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\";
+	public static String FONTS = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\fonts\\";
+	public static String IMAGES_PATH = "http://localhost:8080/OpSocialBack/woopsocial/images/temp/";
+	public static String VIDEOS_POSTS = "http://localhost:8080/OpSocialBack/woopsocial/videos/posts/";
+	public static String AVATAR_PATH = "http://localhost:8080/OpSocialBack/woopsocial/images/avatar/";
+	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+//	public static String EMAILS_PATH = "C:\\opsocial\\emails\\";
+	public static String EMAILS_PATH = "C:\\woopsocial\\emails\\";
+	public static String EMAILS_DATASIFT_PATH = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocialSite\\email\\datasift\\";
+	public static String ACTIVATON_LINK = "http://localhost:4200/newuser/";
+
+	//GLASSFISH SERVER AWS
+
+//	public static String SERVER_PATH = "http://www.app.opsocial.com.br";
+//	public static String SITE = "http://www.opsocial.com.br";
+//	public static String UPLOAD_SERVLET = "./opsocial/opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://www.app.opsocial.com.br/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/properties/";
+//	public static String REPORTS = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/reports/";
+//	public static String FONTS = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/fonts/";
+//	public static String SYSTEM_PATH = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/";
+//	public static String IMAGES_PATH = "http://www.app.opsocial.com.br/images/temp/";
+//	public static String AVATAR_PATH = "http://www.app.opsocial.com.br/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://www.app.opsocial.com.br/images/report_logo/";
+//	public static String EMAILS_PATH = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/email/";
+//	public static String EMAILS_DATASIFT_PATH = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocialSite/email/datasift/";
+	
+	//WILDFLY PRODUCTION (Woop)
+
+//	public static String SERVER_PATH = "https://app.woopsocial.com";
+//	public static String SITE = "http://localhost:8080/OpSocialSite";
+//	public static String UPLOAD_SERVLET = "./opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\properties\\";
+//	public static String REPORTS = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\reports\\";
+//	public static String SYSTEM_PATH = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\";
+//	public static String FONTS = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\fonts\\";
+//	public static String IMAGES_PATH = "https://app.woopsocial.com/opsocial/images/temp/";
+//	public static String VIDEOS_POSTS = "https://app.woopsocial.com/opsocial/videos/posts/";
+//	public static String AVATAR_PATH = "https://app.woopsocial.com/opsocial/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+////	public static String EMAILS_PATH = "C:\\opsocial\\emails\\";
+//	public static String EMAILS_PATH = "/woopsocial/emails/";
+//	public static String EMAILS_DATASIFT_PATH = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocialSite\\email\\datasift\\";
+//	public static String ACTIVATON_LINK = "https://app.woopsocial.com/newuser/";
+		
+	@Override
+	public Long getId() {
+		return null;
+	}
+
+	@Override
+	public void setId(Long id) {
+	}
+}

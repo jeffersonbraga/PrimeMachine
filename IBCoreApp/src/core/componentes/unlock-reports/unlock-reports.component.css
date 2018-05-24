@@ -1,0 +1,22 @@
+.btn-danger{
+    background-color: #fc1c51 !important;
+    border-color: #fc1c51 !important;
+}
+
+.title1{
+    font-size: 12px;
+    font-weight: bold;
+    color: #553c96;
+}
+
+.title2{
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 30px;
+}
+
+.description{
+    font-family: "Segoe UI";
+    font-weight: lighter;
+    font-size: 18px;
+}

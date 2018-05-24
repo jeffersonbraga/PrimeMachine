@@ -1,0 +1,56 @@
+package br.com.opsocial;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+public class StaticServer {
+
+	public static void main(String args[]) throws ParseException {
+		/*JDate d = new Date(1498100400);1498359600
+		Date d = new Date(1498100400000L);
+		Date d2 = new Date(1498359600000L);
+		//----- System.out.println(d.toString());
+		//----- System.out.println(d2.toString());*/
+		String encryptedPassword = new BCryptPasswordEncoder().encode("123456");
+		
+		//----- System.out.println(encryptedPassword);
+
+		Date d = new Date();
+		//----- System.out.println(d.getTime());
+		//----- System.out.println(d.toGMTString());
+		
+		GregorianCalendar gc = new GregorianCalendar();
+		////----- System.out.println(gc.getTimeInMillis());
+		////----- System.out.println(gc.get(GregorianCalendar.HOUR_OF_DAY));
+		////----- System.out.println(gc.get(GregorianCalendar.HOUR));
+		
+		//gc.set(GregorianCalendar.ZONE_OFFSET, -7200000);
+		//----- System.out.println(TimeZone.getAvailableIDs().toString());
+		
+		Object o = TimeZone.getAvailableIDs();
+		//gc.setTimeZone(Zone);
+		////----- System.out.println(gc.get(GregorianCalendar.HOUR_OF_DAY));
+		////----- System.out.println(gc.get(GregorianCalendar.HOUR));
+
+
+		
+		DateFormat df = new SimpleDateFormat("M/d/yyyy H:m:s z");
+		df.setLenient (false); 
+		//Date dt = df.parse ("25/09/2017 0:30:00 GMT+01:00");
+		Date dt = df.parse ("09/25/2017 20:30:00 GMT-03:00");
+		//----- System.out.println(dt.getTime());
+		//----- System.out.println(dt.toGMTString());
+		
+		DateFormat df2 = new SimpleDateFormat("d/M/yyyy H:m:s z");
+		df2.setLenient (false); 
+		Date dt2 = df2.parse ("25/09/2017 01:48:02 GMT+01:00");
+		//----- System.out.println(dt2.getTime());
+		//----- System.out.println(dt2.toGMTString());
+	}
+}

@@ -1,0 +1,21 @@
+<div class="m-r-0 m-l-0 m-b-5 footer-content">
+	<header>
+		<div class="full-width">
+			<span class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold lh-14">
+				<i *ngIf="data.icon" class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#666'}"></i>
+				<img *ngIf="data.iconUrl" src="{{ data.iconUrl }}" width="16" height="16"/>
+				{{ data.title }} 
+			</span>
+			<span *ngIf="isAbbreviateValue else noAbbreviateNumber" class="m-t-0 m-b-0 bold fs-23 color-black">
+				{{data.value | abbreviateNumber}} 
+				<small>{{ data.smallText }}</small>
+			</span>
+			<ng-template #noAbbreviateNumber>
+				<span class="m-t-0 m-b-0 bold fs-23 color-black">
+					{{data.value}} 
+					<small>{{ data.smallText }}</small>
+				</span>
+			</ng-template>
+		</div>
+	</header>
+</div>

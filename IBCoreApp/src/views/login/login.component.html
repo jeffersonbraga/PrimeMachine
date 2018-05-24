@@ -1,0 +1,110 @@
+<!-- <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+</div>
+<div class="well">
+    <form (ngSubmit)="onSubmit()" class="form">
+        <legend>Para utilizar o sistema informe:</legend>
+        <div class="form-group">
+            <label for="email">Usuário</label>
+            <input type="text" class="form-control" name="email" [(ngModel)]="user.email" #firstName="ngModel" required autofocus>
+
+        </div>
+        <div class="form-group">
+            <label>Senha</label>
+            <input type="password" class="form-control" name="password" [(ngModel)]="user.password" #lastName="ngModel" required>
+
+        </div>
+        <button type="submit" class="btn btn-primary" translate="login.form.button">Prosseguir</button>
+    </form>
+    <p></p>
+    <div class="alert alert-warning" *ngIf="errorMessage != null">
+        Você não possui usuário? <a class="alert-link" [routerLink]="['register']">Registre agora</a>
+    </div>
+</div> -->
+
+<div class="login-wrapper " #containerLogin>
+      <!-- START Login Background Pic Wrapper-->
+      <div class="bg-pic">
+        <!-- START Background Pic-->
+        <img src="assets/img/demo/new-york-city-buildings-sunrise-morning-hd-wallpaper.jpg" data-src="assets/img/demo/new-york-city-buildings-sunrise-morning-hd-wallpaper.jpg" data-src-retina="assets/img/demo/new-york-city-buildings-sunrise-morning-hd-wallpaper.jpg" alt="" class="lazy">
+        <!-- END Background Pic-->
+        <!-- START Background Caption-->
+        <!-- <div class="bg-caption pull-bottom sm-pull-bottom text-white p-l-20 m-b-20">
+          <h2 class="semi-bold text-white">
+					Pages make it easy to enjoy what matters the most in the life</h2>
+          <p class="small">
+            images Displayed are solely for representation purposes only, All work copyright of respective owner, otherwise © 2013-2014 REVOX.
+          </p>
+        </div> -->
+        <!-- END Background Caption-->
+      </div>
+      <!-- END Login Background Pic Wrapper-->
+      <!-- START Login Right Container-->
+      <div class="login-container bg-white">
+        <div class="p-l-50 m-l-20 p-r-50 m-r-20 p-t-50 m-t-30 sm-p-l-15 sm-p-r-15 sm-p-t-40">
+          <img src="assets/img/logo-svg-fundo-branco.svg" alt="logo" width="78">
+          <p class="p-t-35">Sign into your pages account</p>
+          <!-- START Login Form -->
+          <form id="form-login" class="p-t-15" role="form" (ngSubmit)="onSubmit()">
+            <!-- START Form Control-->
+            <div class="form-group form-group-default">
+              <label>Login</label>
+              <div class="controls">
+                <input type="text" class="form-control" name="email" [(ngModel)]="user.email" #firstName="ngModel" required autofocus>
+              </div>
+            </div>
+            <!-- END Form Control-->
+            <!-- START Form Control-->
+            <div class="form-group form-group-default">
+              <label>Password</label>
+              <div class="controls">
+                <input type="password" class="form-control" name="password" placeholder="Credentials" [(ngModel)]="user.password" #lastName="ngModel" required>
+              </div>
+            </div>
+            <!-- START Form Control-->
+
+            <div class="col-md-12 no-padding" hidden="true" #containerError>
+              <div class="alert alert-danger">
+                  <!-- <button type="button" class="close" data-dismiss="alert">
+                      <span aria-hidden="true">×</span>
+                      <span class="sr-only">Close</span>
+                  </button> -->
+                  <span>{{errorMessage}}</span>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 no-padding">
+                <div class="checkbox ">
+                  <input type="checkbox" value="1" id="checkbox1">
+                  <label for="checkbox1">Keep Me Signed in</label>
+                </div>
+              </div>
+              <div class="col-md-6 text-right">
+                <a href="#" class="text-info small">Help? Contact Support</a>
+              </div>
+            </div>
+            <!-- END Form Control-->
+            <button type="submit" class="btn btn-primary btn-cons m-t-10" translate="login.form.button">Prosseguir</button>
+          </form>
+          <!--END Login Form
+          <div class="pull-bottom sm-pull-bottom">
+            <div class="m-b-30 p-r-80 sm-m-t-20 sm-p-r-15 sm-p-b-20 clearfix">
+              <div class="col-sm-3 col-md-2 no-padding">
+                <img alt="" class="m-t-5" data-src="assets/img/demo/pages_icon.png" data-src-retina="assets/img/demo/pages_icon_2x.png" height="60" src="assets/img/demo/pages_icon.png" width="60">
+              </div>
+              <div class="col-sm-9 no-padding m-t-10">
+                <p>
+                  <small>
+									Create a pages account. If you have a facebook account, log into it for this
+									process. Sign in with <a href="#" class="text-info">Facebook</a> or <a href="#"
+									                                                                       class="text-info">Google</a>
+								</small>
+                </p>
+              </div>
+            </div>
+          </div>-->
+        </div>
+      </div>
+      <!-- END Login Right Container-->
+    </div>

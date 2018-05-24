@@ -1,0 +1,141 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringReportControl;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.monitorings.MonitoringReportGenerate;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+
+public class MonitoringReportController {
+
+	private Timer timer;
+
+	public MonitoringReportController() {
+
+		timer = new Timer();
+		
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+		taskDate.set(Calendar.AM_PM, Calendar.AM);
+		taskDate.set(Calendar.HOUR_OF_DAY, 4);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+		
+		Date taskTime = taskDate.getTime();
+		
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+
+	class Task extends TimerTask {
+
+		public void run() {
+
+			try {
+				
+				Calendar currentDate = Calendar.getInstance();
+				currentDate.add(Calendar.DATE, -1);
+				
+				Long generateDay = UtilFunctions.getMidnightDateNoDaylightTime(currentDate.getTime());
+				
+				MaintenanceAccountRemote remote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+	    		
+	    		List<Account> accounts = remote.listActiveAccounts(new Date());
+	    		
+	    		for(Account account : accounts) {
+	    			new MonitoringReportPerAccount(account, generateDay).start();
+    			}
+	    		
+			} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+		}
+		
+		class MonitoringReportPerAccount extends Thread {
+			
+			private Account account;
+			private Long generateDay;
+			
+			public MonitoringReportPerAccount() {
+			}
+			
+			public MonitoringReportPerAccount(Account account, Long generateDay) {
+				this.account = account;
+				this.generateDay = generateDay;
+			}
+			
+			@Override
+			public void run() {
+				
+				MaintenanceMonitoringRemote monitoringRemote = (MaintenanceMonitoringRemote) RecoverMaintenance.recoverMaintenance("Monitoring");
+	    		
+	    		List<Monitoring> monitorings = monitoringRemote.getMonitoringsByAccount(account.getIdAccount());
+	    		
+	    		for(Monitoring monitoring : monitorings) {
+	    			
+	    			new MonitoringReportGenerate(monitoring, generateDay).generateReport();
+	    			
+					// Verificação de dias em que os relatórios não foram gerados (MonitoringReport).
+	    			List<Long> reportDays = ReportGenerateVerification.getListDaysForMonitoringReport(monitoring, generateDay);
+	    			for(Long reportDay : reportDays) {
+	    				new MonitoringReportGenerate(monitoring, reportDay).generateReport();
+	    			}
+
+	    			new MonitoringReportGenerate(monitoring, generateDay).generateTermReport();
+	    			
+	    			// Verificação de dias em que os relatórios não foram gerados (MonitoringTermReport).
+	    			List<Long> reportTermDays = ReportGenerateVerification.getListDaysForMonitoringReport(monitoring, MonitoringReportControl.TERM, generateDay);
+	    			for (Long reportTermDay : reportTermDays) {
+						new MonitoringReportGenerate(monitoring, reportTermDay).generateTermReport();
+					}
+	    			
+	    			new MonitoringReportGenerate(monitoring, generateDay).generateQualificationReport();
+	    			
+	    			// Verificação de dias em que os relatórios não foram gerados (MonitoringQualificationReport).
+	    			List<Long> reportQualificationDays = ReportGenerateVerification.getListDaysForMonitoringReport(monitoring, MonitoringReportControl.QUALIFICATION, generateDay);
+	    			for(Long reportQualificationDay : reportQualificationDays) {
+	    				new MonitoringReportGenerate(monitoring, reportQualificationDay).generateQualificationReport();
+	    			}
+	    			
+	    			new MonitoringReportGenerate(monitoring, generateDay).generateTagReport();
+	    			
+	    			// Verificação de dias em que os relatórios não foram gerados (MonitoringTagReport).
+	    			List<Long> reportTagsDays = ReportGenerateVerification.getListDaysForMonitoringReport(monitoring, MonitoringReportControl.TAG, generateDay);
+	    			for(Long reportTagDay : reportTagsDays) {
+	    				new MonitoringReportGenerate(monitoring, reportTagDay).generateTagReport();
+	    			}
+	    			
+	    			new MonitoringReportGenerate(monitoring, generateDay).generateUserReport();
+	    			
+	    			// Verificação de dias em que os relatórios não foram gerados (MonitoringUserReport).
+	    			List<Long> reportUsersDays = ReportGenerateVerification.getListDaysForMonitoringReport(monitoring, MonitoringReportControl.USERS, generateDay);
+	    			for (Long reportUserDay : reportUsersDays) {
+						new MonitoringReportGenerate(monitoring, reportUserDay).generateUserReport();
+					}
+	    			
+	    			new MonitoringReportGenerate(monitoring, generateDay).generateLocationReport();
+	    			
+	    			// Verificação de dias em que os relatórios não foram gerados (MonitoringLocationReport).
+	    			List<Long> reportLocationsDays = ReportGenerateVerification.getListDaysForMonitoringReport(monitoring, MonitoringReportControl.LOCATION, generateDay);
+	    			for (Long reportLocationDay : reportLocationsDays) {
+						new MonitoringReportGenerate(monitoring, reportLocationDay).generateLocationReport();
+					}
+				}
+	    		
+			}
+			
+		}
+	}
+
+}

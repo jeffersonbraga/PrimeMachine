@@ -1,0 +1,61 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("woopsocial")
+public class ListProfilesForNetworksInteractions extends ServerAction {
+	
+	@RequestMapping(value = "/list_profiles_for_networks_interactions",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction(HttpSession session) throws Exception, OptimisticLockException {
+	
+		User user = SecurityUtils.getCurrentUser();
+		
+		java.lang.Character network = ((Character) getParameters().get("network"));
+		
+		List<java.lang.Character> types = new ArrayList<java.lang.Character>();
+		
+		if(network.equals(Profile.TWITTER)) {
+			types.add(Profile.TWITTER);
+		} else if(network.equals(Profile.FACEBOOK)) {
+			types.add(Profile.FACEBOOK);
+			types.add(Profile.FACEBOOK_PAGE);
+		} else if(network.equals(Profile.INSTAGRAM)) {
+			types.add(Profile.INSTAGRAM);
+		} 
+				
+		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		List<Profile> profiles = profileRemote.getEntityByNetworkType(types, user.getAccount().getIdAccount());
+		
+		List<Profile> profileDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : profiles) {
+			profileDTOs.add(profile);
+		}
+
+		getParameters().put("profiles", profileDTOs);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {}
+
+}

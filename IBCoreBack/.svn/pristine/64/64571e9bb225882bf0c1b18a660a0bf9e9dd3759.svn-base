@@ -1,0 +1,119 @@
+package br.com.opsocial.client.entity.report.instagram;
+
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+
+public class InstagramPostsStatsYearDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private Integer year;
+	private Long postsTotal;
+	private Integer monthWithMorePosts;
+	private Long monthWithMorePostsValue;
+	
+	private Integer postFrequencyByMonth;
+
+	private Map<Integer, Long> postsPerMonth;
+	private Map<Integer, Long> likesPerMonth;
+	private Map<Integer, Long> commentsPerMonth;
+
+	private List<InstagramSimpleDataDTO> postsPerMonthSimpleData;
+	private List<InstagramSimpleDataDTO> likesPerMonthSimpleData;
+	private List<InstagramSimpleDataDTO> commentsPerMonthSimpleData;
+	
+	public InstagramPostsStatsYearDTO() {
+		
+	}
+
+	public Integer getYear() {
+		return year;
+	}
+
+	public void setYear(Integer year) {
+		this.year = year;
+	}
+
+	public Long getPostsTotal() {
+		return postsTotal;
+	}
+
+	public void setPostsTotal(Long postsTotal) {
+		this.postsTotal = postsTotal;
+	}
+
+	public Map<Integer, Long> getPostsPerMonth() {
+		return postsPerMonth;
+	}
+
+	public void setPostsPerMonth(Map<Integer, Long> postsPerMonth) {
+		this.postsPerMonth = postsPerMonth;
+	}
+
+	public Integer getMonthWithMorePosts() {
+		return monthWithMorePosts;
+	}
+
+	public void setMonthWithMorePosts(Integer monthWithMorePosts) {
+		this.monthWithMorePosts = monthWithMorePosts;
+	}
+
+	public Long getMonthWithMorePostsValue() {
+		return monthWithMorePostsValue;
+	}
+
+	public void setMonthWithMorePostsValue(Long monthWithMorePostsValue) {
+		this.monthWithMorePostsValue = monthWithMorePostsValue;
+	}
+
+	public Map<Integer, Long> getLikesPerMonth() {
+		return likesPerMonth;
+	}
+
+	public void setLikesPerMonth(Map<Integer, Long> likesPerMonth) {
+		this.likesPerMonth = likesPerMonth;
+	}
+
+	public Map<Integer, Long> getCommentsPerMonth() {
+		return commentsPerMonth;
+	}
+
+	public void setCommentsPerMonth(Map<Integer, Long> commentsPerMonth) {
+		this.commentsPerMonth = commentsPerMonth;
+	}
+
+	public List<InstagramSimpleDataDTO> getPostsPerMonthSimpleData() {
+		return postsPerMonthSimpleData;
+	}
+
+	public List<InstagramSimpleDataDTO> getLikesPerMonthSimpleData() {
+		return likesPerMonthSimpleData;
+	}
+
+	public List<InstagramSimpleDataDTO> getCommentsPerMonthSimpleData() {
+		return commentsPerMonthSimpleData;
+	}
+
+	public void setPostsPerMonthSimpleData(List<InstagramSimpleDataDTO> postsPerMonthSimpleData) {
+		this.postsPerMonthSimpleData = postsPerMonthSimpleData;
+	}
+
+	public void setLikesPerMonthSimpleData(List<InstagramSimpleDataDTO> likesPerMonthSimpleData) {
+		this.likesPerMonthSimpleData = likesPerMonthSimpleData;
+	}
+
+	public void setCommentsPerMonthSimpleData(List<InstagramSimpleDataDTO> commentsPerMonthSimpleData) {
+		this.commentsPerMonthSimpleData = commentsPerMonthSimpleData;
+	}
+
+	public Integer getPostFrequencyByMonth() {
+		return postFrequencyByMonth;
+	}
+
+	public void setPostFrequencyByMonth(Integer postFrequencyByMonth) {
+		this.postFrequencyByMonth = postFrequencyByMonth;
+	}	
+}

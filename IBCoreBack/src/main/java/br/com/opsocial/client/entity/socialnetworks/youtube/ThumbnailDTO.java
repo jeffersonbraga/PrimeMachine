@@ -1,0 +1,58 @@
+package br.com.opsocial.client.entity.socialnetworks.youtube;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class ThumbnailDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private String url;
+	private Integer height;
+	private Integer width;
+	
+	public ThumbnailDTO() {
+	}
+
+	/**
+	 * @return the url
+	 */
+	public String getUrl() {
+		return url;
+	}
+
+	/**
+	 * @param url the url to set
+	 */
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	/**
+	 * @return the height
+	 */
+	public Integer getHeight() {
+		return height;
+	}
+
+	/**
+	 * @param height the height to set
+	 */
+	public void setHeight(Integer height) {
+		this.height = height;
+	}
+
+	/**
+	 * @return the width
+	 */
+	public Integer getWidth() {
+		return width;
+	}
+
+	/**
+	 * @param width the width to set
+	 */
+	public void setWidth(Integer width) {
+		this.width = width;
+	}
+	
+}

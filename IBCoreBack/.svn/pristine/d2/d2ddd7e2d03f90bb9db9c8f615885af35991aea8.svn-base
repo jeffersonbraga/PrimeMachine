@@ -1,0 +1,22 @@
+package br.com.opsocial;
+
+import java.sql.Date;
+import java.util.Calendar;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import br.com.opsocial.server.utils.tasks.InstagramInsightsController;
+
+public class StaticServer {
+
+	public static void main(String args[]) {
+		/*Date d = new Date(1498100400);1498359600
+		Date d = new Date(1498100400000L);
+		Date d2 = new Date(1498359600000L);
+		System.out.println(d.toString());
+		System.out.println(d2.toString());*/
+	}
+}

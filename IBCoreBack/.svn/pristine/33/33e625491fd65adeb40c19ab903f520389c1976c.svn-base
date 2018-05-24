@@ -1,0 +1,215 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.client.entity.report.PostEngagementStatsDTO;
+import entity.generic.Persistent;
+import entity.report.AgeGroup;
+
+
+public class ReportFacebookOverviewDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private Long dateFrom;
+	private Long dateUntil;
+	
+	private List<FanPageGrowthDTO> fanPageGrowth;
+	private Long fansUntilDateFrom;
+	
+	private List<FanPageGrowthDTO> likesByDay;
+	private List<FanPageGrowthDTO> unlikesByDay;
+	
+	private Long totalOfFans;
+	private FanPageGrowthDTO majorFanPageGrowth;
+	private Long conqueredFans;
+	private Long lostFans;
+	private Long balanceFans;
+	
+	private Map<String, Long> fansLikeSource;
+	
+	private Map<String, Long> aboutReachedUsers;
+	private AgeGroup majorAgeGroupReacheUsers;
+	private Integer womenReachedUsersPerc;
+	private Integer menReachedUsersPerc;
+	
+	private List<PostEngagementStatsDTO> postEngagementStats;
+	private Map<String, Long> postsEngagementTotalStats;
+	
+	private Map<String, Long> otherActivities;
+	private Map<String, Long> externalReferences;
+	
+	private List<FaceReportPostDTO> postsMostEngaged;
+	
+	public ReportFacebookOverviewDTO() {
+	}
+
+	public Long getDateFrom() {
+		return dateFrom;
+	}
+
+	public void setDateFrom(Long dateFrom) {
+		this.dateFrom = dateFrom;
+	}
+
+	public Long getDateUntil() {
+		return dateUntil;
+	}
+
+	public void setDateUntil(Long dateUntil) {
+		this.dateUntil = dateUntil;
+	}
+
+	public List<FanPageGrowthDTO> getFanPageGrowth() {
+		return fanPageGrowth;
+	}
+
+	public void setFanPageGrowth(List<FanPageGrowthDTO> fanPageGrowth) {
+		this.fanPageGrowth = fanPageGrowth;
+	}
+
+	public Long getFansUntilDateFrom() {
+		return fansUntilDateFrom;
+	}
+
+	public void setFansUntilDateFrom(Long fansUntilDateFrom) {
+		this.fansUntilDateFrom = fansUntilDateFrom;
+	}
+
+	public List<FanPageGrowthDTO> getLikesByDay() {
+		return likesByDay;
+	}
+
+	public void setLikesByDay(List<FanPageGrowthDTO> likesByDay) {
+		this.likesByDay = likesByDay;
+	}
+
+	public List<FanPageGrowthDTO> getUnlikesByDay() {
+		return unlikesByDay;
+	}
+
+	public void setUnlikesByDay(List<FanPageGrowthDTO> unlikesByDay) {
+		this.unlikesByDay = unlikesByDay;
+	}
+
+	public Long getTotalOfFans() {
+		return totalOfFans;
+	}
+
+	public void setTotalOfFans(Long totalOfFans) {
+		this.totalOfFans = totalOfFans;
+	}
+
+	public FanPageGrowthDTO getMajorFanPageGrowth() {
+		return majorFanPageGrowth;
+	}
+
+	public void setMajorFanPageGrowth(FanPageGrowthDTO majorFanPageGrowth) {
+		this.majorFanPageGrowth = majorFanPageGrowth;
+	}
+
+	public Long getConqueredFans() {
+		return conqueredFans;
+	}
+
+	public void setConqueredFans(Long conqueredFans) {
+		this.conqueredFans = conqueredFans;
+	}
+
+	public Long getLostFans() {
+		return lostFans;
+	}
+
+	public void setLostFans(Long lostFans) {
+		this.lostFans = lostFans;
+	}
+
+	public Long getBalanceFans() {
+		return balanceFans;
+	}
+
+	public void setBalanceFans(Long balanceFans) {
+		this.balanceFans = balanceFans;
+	}
+
+	public Map<String, Long> getFansLikeSource() {
+		return fansLikeSource;
+	}
+
+	public void setFansLikeSource(Map<String, Long> fansLikeSource) {
+		this.fansLikeSource = fansLikeSource;
+	}
+
+	public Map<String, Long> getAboutReachedUsers() {
+		return aboutReachedUsers;
+	}
+
+	public void setAboutReachedUsers(Map<String, Long> aboutReachedUsers) {
+		this.aboutReachedUsers = aboutReachedUsers;
+	}
+
+	public AgeGroup getMajorAgeGroupReacheUsers() {
+		return majorAgeGroupReacheUsers;
+	}
+
+	public void setMajorAgeGroupReacheUsers(AgeGroup majorAgeGroupReacheUsers) {
+		this.majorAgeGroupReacheUsers = majorAgeGroupReacheUsers;
+	}
+
+	public Integer getWomenReachedUsersPerc() {
+		return womenReachedUsersPerc;
+	}
+
+	public void setWomenReachedUsersPerc(Integer womenReachedUsersPerc) {
+		this.womenReachedUsersPerc = womenReachedUsersPerc;
+	}
+
+	public Integer getMenReachedUsersPerc() {
+		return menReachedUsersPerc;
+	}
+
+	public void setMenReachedUsersPerc(Integer menReachedUsersPerc) {
+		this.menReachedUsersPerc = menReachedUsersPerc;
+	}
+
+	public List<PostEngagementStatsDTO> getPostEngagementStats() {
+		return postEngagementStats;
+	}
+
+	public void setPostEngagementStats(List<PostEngagementStatsDTO> postEngagementStats) {
+		this.postEngagementStats = postEngagementStats;
+	}
+
+	public Map<String, Long> getPostsEngagementTotalStats() {
+		return postsEngagementTotalStats;
+	}
+
+	public void setPostsEngagementTotalStats(Map<String, Long> postsEngagementTotalStats) {
+		this.postsEngagementTotalStats = postsEngagementTotalStats;
+	}
+
+	public Map<String, Long> getOtherActivities() {
+		return otherActivities;
+	}
+
+	public void setOtherActivities(Map<String, Long> otherActivities) {
+		this.otherActivities = otherActivities;
+	}
+
+	public Map<String, Long> getExternalReferences() {
+		return externalReferences;
+	}
+
+	public void setExternalReferences(Map<String, Long> externalReferences) {
+		this.externalReferences = externalReferences;
+	}
+
+	public List<FaceReportPostDTO> getPostsMostEngaged() {
+		return postsMostEngaged;
+	}
+
+	public void setPostsMostEngaged(List<FaceReportPostDTO> postsMostEngaged) {
+		this.postsMostEngaged = postsMostEngaged;
+	}
+}

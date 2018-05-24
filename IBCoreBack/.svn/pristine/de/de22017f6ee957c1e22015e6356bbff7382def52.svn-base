@@ -1,0 +1,99 @@
+package br.com.opsocial.server.actions.config;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+
+@RestController
+@RequestMapping("woopsocial")
+public class ConfigAction extends ServerAction {
+
+	@CrossOrigin 
+	@RequestMapping(value = "/config",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Object>> doNewAction(HttpSession session) throws Exception, OptimisticLockException {
+
+		List<Object> l = new ArrayList<Object>();
+
+		User user = SecurityUtils.getCurrentUser();
+
+		if (user != null) {
+			setParameters(new HashMap<String, Object>());
+
+			MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");		
+			MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+			List<Character> types = new ArrayList<Character>();
+			types.add(Profile.FACEBOOK);
+			types.add(Profile.FACEBOOK_PAGE);
+			types.add(Profile.TWITTER);
+			types.add(Profile.INSTAGRAM);
+
+			List<Profile> profiles = null;
+
+			if (user != null && user.getAccount() != null) {
+				profiles = remote.getEntityByNetworkType(types, user.getAccount().getIdAccount());
+			}
+	
+			List<Profile> profileDTOs = new ArrayList<Profile>();
+
+			if (profiles != null) {
+				for(Profile profile : profiles) {
+					profileDTOs.add(profile);			
+				}
+			}
+
+			getParameters().put("profiles", profileDTOs);		
+
+			List<User> admins = userRemote.listUsersByAccount(user.getAccount().getIdAccount(), User.ADMINISTRATOR);
+
+			List<User> adminsDTOs = new ArrayList<User>();
+
+			for(User admin : admins) {
+				adminsDTOs.add(admin);
+			}
+
+			List<User> analysts = userRemote.listUsersByAccount(user.getAccount().getIdAccount(), User.ANALYST);
+
+			List<User> analystsDTOs = new ArrayList<User>();
+
+			for(User analyst : analysts) {
+				analystsDTOs.add(analyst);
+			}
+
+			getParameters().put("admins", adminsDTOs);
+			getParameters().put("analysts", analystsDTOs);
+
+			l.add(adminsDTOs);
+			l.add(analystsDTOs);
+			l.add(user);
+		}
+
+		return new ResponseEntity<>(l, HttpStatus.OK);		
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+	}
+}

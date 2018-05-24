@@ -1,0 +1,1009 @@
+package br.com.opsocial.server.utils.monitorings.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import br.com.opsocial.client.entity.blogs.BlogPostMonitoringDTO;
+import br.com.opsocial.client.entity.googleplus.GooglePlusPostMonitoringDTO;
+import br.com.opsocial.client.entity.instagram.InstagramPostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringHistoricFilterDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.TwitterPostMonitoringDTO;
+import br.com.opsocial.client.entity.news.NewsPostMonitoringDTO;
+import br.com.opsocial.client.entity.primitive.StringList;
+import br.com.opsocial.client.entity.reclameaqui.ReclameAquiPostMonitoringDTO;
+import br.com.opsocial.client.entity.youtube.YoutubePostMonitoringDTO;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostTag;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+public class MonitoringPostsXLS {
+
+	private List<PostMonitoringDTO> postsMonitoring;
+	private MonitoringHistoricFilterDTO monitoringHistoricFilter;
+	
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+	
+	private HSSFWorkbook wb;
+	
+	private Font fontHeader;
+	private CellStyle cellStyleHeader;
+	
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellDateStyle;
+	
+	public MonitoringPostsXLS() {
+		
+	}
+	
+	public MonitoringPostsXLS(List<PostMonitoringDTO> postsMonitoring, MonitoringHistoricFilterDTO monitoringHistoricFilter) {
+		this.postsMonitoring = postsMonitoring;
+		this.monitoringHistoricFilter = monitoringHistoricFilter;
+	}
+	
+	public void createXLS() {
+		
+		wb = new HSSFWorkbook();
+		
+		initiateDefaultStyles();
+		
+		this.reportsPath = ServicesImpl.context.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+
+//		Sheet sheetFacebookPosts = wb.createSheet("Facebook Posts");
+		Sheet sheetTwitterPosts = wb.createSheet("Twitter Posts");
+		Sheet sheetGooglePlustPosts = wb.createSheet("Google+ Posts");
+		Sheet sheetYoutubePosts = wb.createSheet("Youtube Posts");
+		Sheet sheetInstagramPosts = wb.createSheet("Instagram Posts");
+		Sheet sheetReclameAquiPosts = wb.createSheet("Reclame Aqui Posts");
+		Sheet sheetNewsPosts = wb.createSheet("News Posts");
+		Sheet sheetBlogsPosts = wb.createSheet("Blogs Posts");
+		
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+		SimpleDateFormat dateFormatToFileName = new SimpleDateFormat("dd-MM-yyyy");
+		
+		String startDate = dateFormat.format(new Date(monitoringHistoricFilter.getStartDate()));
+		String endDate = dateFormat.format(new Date(monitoringHistoricFilter.getEndDate()));
+		
+		addMainHeader(sheetTwitterPosts, monitoringHistoricFilter.getMonitoring().getName() + " - Twitter " + startDate + " a " + endDate, 13);
+		addMainHeader(sheetGooglePlustPosts, monitoringHistoricFilter.getMonitoring().getName() + " - Google+ " + startDate + " a " + endDate, 10);
+		addMainHeader(sheetYoutubePosts, monitoringHistoricFilter.getMonitoring().getName() + " - Youtube " + startDate + " a " + endDate , 9);
+		addMainHeader(sheetInstagramPosts, monitoringHistoricFilter.getMonitoring().getName() + " - Instagram " + startDate + " a " + endDate, 10);
+		addMainHeader(sheetReclameAquiPosts, monitoringHistoricFilter.getMonitoring().getName() + " - Reclame Aqui " + startDate + " a " + endDate, 7);
+		addMainHeader(sheetNewsPosts, monitoringHistoricFilter.getMonitoring().getName() + " - News " + startDate + " a " + endDate, 8);
+		addMainHeader(sheetBlogsPosts, monitoringHistoricFilter.getMonitoring().getName() + " - Blogs " + startDate + " a " + endDate, 8);
+		
+		addTwitterPostHeader(sheetTwitterPosts);
+		addGooglePostHeader(sheetGooglePlustPosts);
+		addYoutubePostHeader(sheetYoutubePosts);
+		addInstagramPostHeader(sheetInstagramPosts);
+		addReclameAquiPostHeader(sheetReclameAquiPosts);
+		addNewsPostHeader(sheetNewsPosts);
+		addBlogPostHeader(sheetBlogsPosts);
+		
+		int rowNumberTwitter = 2;
+		int rowNumberGooglePlus = 2;
+		int rowNumberYoutube = 2;
+		int rowNumberInstagram = 2;
+		int rowNumberReclameAqui = 2;
+		int rowNumberNews = 2;
+		int rowNumberBlog = 2;
+		Collections col = (Collections) Collections.reverseOrder((Comparator<PostMonitoringDTO>) postsMonitoring);
+		for(PostMonitoringDTO postMonitoring : postsMonitoring) {
+			
+			if(postMonitoring instanceof TwitterPostMonitoringDTO) {
+				addTwitterPostMonitoring(sheetTwitterPosts, (TwitterPostMonitoringDTO) postMonitoring, rowNumberTwitter);
+				rowNumberTwitter++;
+			} else if(postMonitoring instanceof GooglePlusPostMonitoringDTO) {
+				addGooglePlusPostMonitoring(sheetGooglePlustPosts, (GooglePlusPostMonitoringDTO) postMonitoring, rowNumberGooglePlus);
+				rowNumberGooglePlus++;
+			} else if(postMonitoring instanceof YoutubePostMonitoringDTO) {
+				addYoutubePlusPostMonitoring(sheetYoutubePosts, (YoutubePostMonitoringDTO) postMonitoring, rowNumberYoutube);
+				rowNumberYoutube++;
+			} else if(postMonitoring instanceof InstagramPostMonitoringDTO) {
+				addInstagramPostMonitoring(sheetInstagramPosts, (InstagramPostMonitoringDTO) postMonitoring, rowNumberInstagram);
+				rowNumberInstagram++;
+			} else if(postMonitoring instanceof ReclameAquiPostMonitoringDTO) {
+				addReclameAquiPostMonitoring(sheetReclameAquiPosts, (ReclameAquiPostMonitoringDTO) postMonitoring, rowNumberReclameAqui);
+				rowNumberReclameAqui++;
+			} else if(postMonitoring instanceof NewsPostMonitoringDTO) {
+				addNewsPostMonitoring(sheetNewsPosts, (NewsPostMonitoringDTO) postMonitoring, rowNumberNews);
+				rowNumberNews++;
+			} else if(postMonitoring instanceof BlogPostMonitoringDTO) {
+				addBlogPostMonitoring(sheetBlogsPosts, (BlogPostMonitoringDTO) postMonitoring, rowNumberBlog);
+				rowNumberBlog++;
+			}
+		}
+		
+		sheetTwitterPosts.setDefaultColumnWidth(15);
+		sheetGooglePlustPosts.setDefaultColumnWidth(15);
+		sheetYoutubePosts.setDefaultColumnWidth(15);
+		sheetInstagramPosts.setDefaultColumnWidth(15);
+		sheetReclameAquiPosts.setDefaultColumnWidth(15);
+		sheetNewsPosts.setDefaultColumnWidth(15);
+		sheetBlogsPosts.setDefaultColumnWidth(15);
+		
+		try {
+			
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+			
+			formattedFileName = monitoringHistoricFilter.getMonitoring().getName() + "-posts-" + dateFormatToFileName.format(new Date(monitoringHistoricFilter.getStartDate())) 
+					+ "--" + dateFormatToFileName.format(new Date(monitoringHistoricFilter.getEndDate()));
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void initiateDefaultStyles() {
+		
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+		
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte)102, (byte)153, (byte)204);
+		
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeaderData.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeaderData.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeaderData.setBorderRight(CellStyle.BORDER_THIN);
+		
+		CreationHelper createHelper = wb.getCreationHelper();
+		
+		cellDateStyle = wb.createCellStyle();
+	    cellDateStyle.setDataFormat(
+	        createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+		
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+		
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+	
+//	private void addFacebookPostMonitoring(Sheet sheetDataPosts, FacePostMonitoringDTO facePostMonitoring, int rowNumber) {
+//		
+//		Row row = sheetDataPosts.createRow(rowNumber);
+//		
+//		if(facePostMonitoring.getFacebookPostDTO().getLink() == null && 
+//				facePostMonitoring.getFacebookPostDTO().getType().equals(FacebookPostDTO.STATUS)) {
+//			
+//			facePostMonitoring.getFacebookPostDTO().setLink(ReportFacebook.PERMALINK_STATUS + 
+//					"story_fbid=" + facePostMonitoring.getFacebookPostDTO().getPostId().substring(facePostMonitoring.getFacebookPostDTO().getPostId().indexOf("_") + 1, facePostMonitoring.getFacebookPostDTO().getPostId().length()) + "&" + 
+//					"id=" + facePostMonitoring.getFacebookPostDTO().getProfileId());
+//		}
+//		
+//		Cell cellURL = row.createCell(0);
+//		cellURL.setCellValue(facePostMonitoring.getFacebookPostDTO().getLink());
+//		
+//		Cell cellMessage = row.createCell(1);
+//		cellMessage.setCellValue(truncateCellValue(validateCellValue(facePostMonitoring.getFacebookPostDTO().getMessage())));
+//		
+//		Cell cellType = row.createCell(2);
+//		cellType.setCellValue(facePostMonitoring.getFacebookPostDTO().getType());
+//		
+//		Cell cellName = row.createCell(3);
+//		cellName.setCellValue(validateCellValue(facePostMonitoring.getFacebookPostDTO().getName()));
+//		
+//		Cell cellCaption = row.createCell(4);
+//		cellCaption.setCellValue(truncateCellValue(validateCellValue(facePostMonitoring.getFacebookPostDTO().getCaption())));
+//		
+//		Cell cellDescription = row.createCell(5);
+//		cellDescription.setCellValue(truncateCellValue(validateCellValue(facePostMonitoring.getFacebookPostDTO().getDescription())));
+//		
+//		Cell cellCreatedAt = row.createCell(6);
+//		cellCreatedAt.setCellValue(new Date(facePostMonitoring.getFacebookPostDTO().getCreatedTime() * 1000L));
+//		cellCreatedAt.setCellStyle(cellDateStyle);
+//		
+//		Cell cellProfileUrl = row.createCell(7);
+//		cellProfileUrl.setCellValue(facePostMonitoring.getFacebookPostDTO().getProfileLinkFrom());
+//		
+//		Cell cellUserName = row.createCell(8);
+//		cellUserName.setCellValue(facePostMonitoring.getFacebookPostDTO().getProfileNameFrom());
+//		
+//		Cell cellSex = row.createCell(9);
+//		cellSex.setCellValue(WordUtils.capitalize(UtilFunctions.getUserSex(facePostMonitoring.getUserSex())));
+//		
+//		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(facePostMonitoring.getQualification()));
+//		
+//		Cell cellSentiment = row.createCell(10);
+//		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+//		
+//		Cell cellTags = row.createCell(11);
+//		cellTags.setCellValue(getTagsNamesInCSV(facePostMonitoring.getMonitoringPostTags()));
+//		
+		//TODO
+//		Cell cellTerms = row.createCell(12);
+//		cellTags.setCellValue(getTermNamesInCSV(facePostMonitoring.getMonitoringPostTerms()));
+//		
+//		Cell cellWords = row.createCell(13);
+//		cellTags.setCellValue(getWordsInCSV(facePostMonitoring.getMonitoringPostWordss()));
+//	}
+//	
+//	private void addFacebookPostHeader(Sheet sheetDataPosts) {
+//		
+//		Row row = sheetDataPosts.createRow(1);
+//		
+//		Cell cellURL = row.createCell(0);
+//		cellURL.setCellValue("URL do post");
+//		cellURL.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellMessage = row.createCell(1);
+//		cellMessage.setCellValue("Mensagem");
+//		cellMessage.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellType = row.createCell(2);
+//		cellType.setCellValue("Tipo");
+//		cellType.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellName = row.createCell(3);
+//		cellName.setCellValue("Nome do link");
+//		cellName.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellCaption = row.createCell(4);
+//		cellCaption.setCellValue("Título do link");
+//		cellCaption.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellDescription = row.createCell(5);
+//		cellDescription.setCellValue("Descrição do link");
+//		cellDescription.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellCreatedAt = row.createCell(6);
+//		cellCreatedAt.setCellValue("Data e hora da publicação");
+//		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellProfileUrl = row.createCell(7);
+//		cellProfileUrl.setCellValue("URL do usuário");
+//		cellProfileUrl.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellUserName = row.createCell(8);
+//		cellUserName.setCellValue("Nome do usuário");
+//		cellUserName.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellSex = row.createCell(9);
+//		cellSex.setCellValue("Sexo");
+//		cellSex.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellSentiment = row.createCell(10);
+//		cellSentiment.setCellValue("Sentimento");
+//		cellSentiment.setCellStyle(cellStyleHeaderData);
+//		
+//		Cell cellTags = row.createCell(11);
+//		cellTags.setCellValue("Tags");
+//		cellTags.setCellStyle(cellStyleHeaderData);
+//		
+//	}
+	
+	private void addTwitterPostMonitoring(Sheet sheetDataPosts, TwitterPostMonitoringDTO twitterPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellPostURL = row.createCell(0);
+		cellPostURL.setCellValue(validateCellValue("http://www.twitter.com/" + twitterPostMonitoring.getTwitterPostDTO().getScreenName() + "/status/" + twitterPostMonitoring.getTwitterPostDTO().getStatusId()));
+		
+		Cell cellText = row.createCell(1);
+		cellText.setCellValue(validateCellValue(twitterPostMonitoring.getTwitterPostDTO().getText()));
+		
+		Cell cellCreatedAt = row.createCell(2);
+		cellCreatedAt.setCellValue(new Date(twitterPostMonitoring.getTwitterPostDTO().getCreatedAt() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellProfileUrl = row.createCell(3);
+		cellProfileUrl.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getProfileUrl());
+		
+		Cell cellUserName = row.createCell(4);
+		cellUserName.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getUserName());
+		
+		Cell cellScreenName = row.createCell(5);
+		cellScreenName.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getScreenName());
+		
+		Cell cellUserSex = row.createCell(6);
+		cellUserSex.setCellValue(WordUtils.capitalize(UtilFunctions.getUserSex(twitterPostMonitoring.getUserSex())));
+		
+		Cell cellLocation = row.createCell(7);
+		cellLocation.setCellValue(twitterPostMonitoring.getMonitoringPostLocation() != null ? 
+				twitterPostMonitoring.getMonitoringPostLocation().getMonitoringLocation().getFullName() : "-");
+		
+		Cell cellRetweetCount = row.createCell(8);
+		cellRetweetCount.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getRetweetCount());
+		
+		Cell cellFavoriteCount = row.createCell(9);
+		cellFavoriteCount.setCellValue(twitterPostMonitoring.getTwitterPostDTO().getFavoriteCount());
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(twitterPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(10);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(11);
+		cellTags.setCellValue(getTagsNamesInCSV(twitterPostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(12);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(13);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private void addTwitterPostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL do tweet");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellText = row.createCell(1);
+		cellText.setCellValue("Texto");
+		cellText.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(2);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellProfileUrl = row.createCell(3);
+		cellProfileUrl.setCellValue("URL do usuário");
+		cellProfileUrl.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellUserName = row.createCell(4);
+		cellUserName.setCellValue("Nome");
+		cellUserName.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellScreenName = row.createCell(5);
+		cellScreenName.setCellValue("Nome do usuário");
+		cellScreenName.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSex = row.createCell(6);
+		cellSex.setCellValue("Sexo");
+		cellSex.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellLocation = row.createCell(7);
+		cellLocation.setCellValue("Localização");
+		cellLocation.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellRetweetCount = row.createCell(8);
+		cellRetweetCount.setCellValue("Retweets");
+		cellRetweetCount.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellFavoriteCount = row.createCell(9);
+		cellFavoriteCount.setCellValue("Curtir");
+		cellFavoriteCount.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(10);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(11);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(12);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(13);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+
+	private void addGooglePlusPostMonitoring(Sheet sheetDataPosts, GooglePlusPostMonitoringDTO googlePlusPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(validateCellValue(googlePlusPostMonitoring.getGooglePlusPostDTO().getUrl()));
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue(validateCellValue(googlePlusPostMonitoring.getGooglePlusPostDTO().getTitle()));
+		
+		Cell cellText = row.createCell(2);
+		cellText.setCellValue(truncateCellValue(validateCellValue(googlePlusPostMonitoring.getGooglePlusPostDTO().getObject().getContent())));
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue(new Date(googlePlusPostMonitoring.getGooglePlusPostDTO().getPublished() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellProfileUrl = row.createCell(4);
+		cellProfileUrl.setCellValue(googlePlusPostMonitoring.getGooglePlusPostDTO().getActor().getUrl());
+		
+		Cell cellScreenName = row.createCell(5);
+		cellScreenName.setCellValue(googlePlusPostMonitoring.getGooglePlusPostDTO().getActor().getDisplayName());
+		
+		Cell cellSex = row.createCell(6);
+		cellSex.setCellValue(WordUtils.capitalize(UtilFunctions.getUserSex(googlePlusPostMonitoring.getUserSex())));
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(googlePlusPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(7);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(8);
+		cellTags.setCellValue(getTagsNamesInCSV(googlePlusPostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(9);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(10);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private void addGooglePostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL do post");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue("Título");
+		cellTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellText = row.createCell(2);
+		cellText.setCellValue("Conteúdo");
+		cellText.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellProfileUrl = row.createCell(4);
+		cellProfileUrl.setCellValue("URL do usuário");
+		cellProfileUrl.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellScreenName = row.createCell(5);
+		cellScreenName.setCellValue("Nome do usuário");
+		cellScreenName.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSex = row.createCell(6);
+		cellSex.setCellValue("Sexo");
+		cellSex.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(7);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(8);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(9);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(10);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private void addYoutubePlusPostMonitoring(Sheet sheetDataPosts, YoutubePostMonitoringDTO youtubePostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(youtubePostMonitoring.getYoutubePostDTO().getSnippet().getUrl());
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue(youtubePostMonitoring.getYoutubePostDTO().getSnippet().getTitle());
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue(truncateCellValue(validateCellValue(youtubePostMonitoring.getYoutubePostDTO().getSnippet().getDescription())));
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue(new Date(youtubePostMonitoring.getYoutubePostDTO().getSnippet().getPublishedAt() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellProfileUrl = row.createCell(4);
+		cellProfileUrl.setCellValue(youtubePostMonitoring.getYoutubePostDTO().getSnippet().getChannelURL());
+		
+		Cell cellChannelTitle = row.createCell(5);
+		cellChannelTitle.setCellValue(validateCellValue(youtubePostMonitoring.getYoutubePostDTO().getSnippet().getChannelTitle()));
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(youtubePostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(6);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(7);
+		cellTags.setCellValue(getTagsNamesInCSV(youtubePostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(8);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(9);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private void addYoutubePostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL do vídeo");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue("Título");
+		cellTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue("Descrição");
+		cellDescription.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellProfileUrl = row.createCell(4);
+		cellProfileUrl.setCellValue("URL do canal");
+		cellProfileUrl.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellChannelTitle = row.createCell(5);
+		cellChannelTitle.setCellValue("Nome do canal");
+		cellChannelTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(6);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(7);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(8);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(9);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private void addInstagramPostMonitoring(Sheet sheetDataPosts, InstagramPostMonitoringDTO instagramPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(validateCellValue(instagramPostMonitoring.getInstagramPostDTO().getMediaLink()));
+		
+		Cell cellText = row.createCell(1);
+		cellText.setCellValue(truncateCellValue(validateCellValue(instagramPostMonitoring.getInstagramPostDTO().getPictureCaption())));
+		
+		Cell cellCreatedAt = row.createCell(2);
+		cellCreatedAt.setCellValue(new Date(Long.valueOf(instagramPostMonitoring.getInstagramPostDTO().getCreateTime()) * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellProfileUrl = row.createCell(3);
+		cellProfileUrl.setCellValue(UtilFunctions.INSTAGRAM_URL + instagramPostMonitoring.getInstagramPostDTO().getUserName());
+		
+		Cell cellProfileName = row.createCell(4);
+		cellProfileName.setCellValue(instagramPostMonitoring.getInstagramPostDTO().getUserName());
+		
+		Cell cellSex = row.createCell(5);
+		cellSex.setCellValue(WordUtils.capitalize(UtilFunctions.getUserSex(instagramPostMonitoring.getUserSex())));
+		
+		Cell cellFollowers = row.createCell(6);
+		cellFollowers.setCellValue(instagramPostMonitoring.getInstagramPostDTO().getFollowers());
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(instagramPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(7);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(8);
+		cellTags.setCellValue(getTagsNamesInCSV(instagramPostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(9);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(10);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private void addInstagramPostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL do post");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellText = row.createCell(1);
+		cellText.setCellValue("Texto");
+		cellText.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(2);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellProfileUrl = row.createCell(3);
+		cellProfileUrl.setCellValue("URL do usuário");
+		cellProfileUrl.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellProfileName = row.createCell(4);
+		cellProfileName.setCellValue("Nome do usuário");
+		cellProfileName.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSex = row.createCell(5);
+		cellSex.setCellValue("Sexo");
+		cellSex.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellFollowers = row.createCell(6);
+		cellFollowers.setCellValue("Seguidores");
+		cellFollowers.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(7);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(8);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(9);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(10);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private void addReclameAquiPostMonitoring(Sheet sheetDataPosts, ReclameAquiPostMonitoringDTO reclameAquiPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(reclameAquiPostMonitoring.getReclameAquiPostDTO().getLink());
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue(reclameAquiPostMonitoring.getReclameAquiPostDTO().getTitle());
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue(reclameAquiPostMonitoring.getReclameAquiPostDTO().getSnippet());
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue(new Date(reclameAquiPostMonitoring.getReclameAquiPostDTO().getCreatedTime() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(reclameAquiPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(4);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(5);
+		cellTags.setCellValue(getTagsNamesInCSV(reclameAquiPostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(6);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(7);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private void addReclameAquiPostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL do Reclame Aqui");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue("Título");
+		cellTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue("Descrição");
+		cellDescription.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(4);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(5);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(6);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(7);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private void addNewsPostMonitoring(Sheet sheetDataPosts, NewsPostMonitoringDTO newsPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(newsPostMonitoring.getNewsPostDTO().getUrl());
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue(newsPostMonitoring.getNewsPostDTO().getTitle());
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue(truncateCellValue(newsPostMonitoring.getNewsPostDTO().getDescription()));
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue(new Date(newsPostMonitoring.getNewsPostDTO().getCreatedTime() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellPublisherURL = row.createCell(4);
+		cellPublisherURL.setCellValue(newsPostMonitoring.getNewsPostDTO().getPublisherUrl());
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(newsPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(5);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(6);
+		cellTags.setCellValue(getTagsNamesInCSV(newsPostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(7);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(8);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private void addNewsPostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL do artigo");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue("Título");
+		cellTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue("Descrição");
+		cellDescription.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellPublisherURL = row.createCell(4);
+		cellPublisherURL.setCellValue("URL do publicador");
+		cellPublisherURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(5);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(6);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(7);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(8);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private void addBlogPostHeader(Sheet sheetDataPosts) {
+		
+		Row row = sheetDataPosts.createRow(1);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue("URL da postagem");
+		cellURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue("Título");
+		cellTitle.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue("Descrição");
+		cellDescription.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue("Data e hora da publicação");
+		cellCreatedAt.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellBlogURL = row.createCell(4);
+		cellBlogURL.setCellValue("URL do blog");
+		cellBlogURL.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellSentiment = row.createCell(5);
+		cellSentiment.setCellValue("Sentimento");
+		cellSentiment.setCellStyle(cellStyleHeaderData);
+		
+		Cell cellTags = row.createCell(6);
+		cellTags.setCellValue("Tags");
+		cellTags.setCellStyle(cellStyleHeaderData);
+
+		Cell cellTerms = row.createCell(7);
+		cellTerms.setCellValue("Termos");
+		cellTerms.setCellStyle(cellStyleHeaderData);
+
+		Cell cellWords = row.createCell(8);
+		cellWords.setCellValue("Palavras");
+		cellWords.setCellStyle(cellStyleHeaderData);
+	}
+	
+	private void addBlogPostMonitoring(Sheet sheetDataPosts, BlogPostMonitoringDTO blogPostMonitoring, int rowNumber) {
+		
+		Row row = sheetDataPosts.createRow(rowNumber);
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(blogPostMonitoring.getBlogPostDTO().getUrl());
+		
+		Cell cellTitle = row.createCell(1);
+		cellTitle.setCellValue(blogPostMonitoring.getBlogPostDTO().getTitle());
+		
+		Cell cellDescription = row.createCell(2);
+		cellDescription.setCellValue(truncateCellValue(blogPostMonitoring.getBlogPostDTO().getDescription()));
+		
+		Cell cellCreatedAt = row.createCell(3);
+		cellCreatedAt.setCellValue(new Date(blogPostMonitoring.getBlogPostDTO().getCreatedTime() * 1000L));
+		cellCreatedAt.setCellStyle(cellDateStyle);
+		
+		Cell cellPublisherURL = row.createCell(4);
+		cellPublisherURL.setCellValue(blogPostMonitoring.getBlogPostDTO().getPublisherUrl());
+		
+		String sentimentName = WordUtils.capitalize(UtilFunctions.getSentimentName(blogPostMonitoring.getQualification()));
+		
+		Cell cellSentiment = row.createCell(5);
+		cellSentiment.setCellValue(!sentimentName.isEmpty() ? sentimentName : "-");
+		
+		Cell cellTags = row.createCell(6);
+		cellTags.setCellValue(getTagsNamesInCSV(blogPostMonitoring.getMonitoringPostTags()));
+		
+		Cell cellTerms = row.createCell(7);
+		cellTerms.setCellValue(getTermNamesInCSV(this.monitoringHistoricFilter.getMonitoringTerms()));
+		
+		Cell cellWords = row.createCell(8);
+		cellWords.setCellValue(getWordsInCSV(this.monitoringHistoricFilter.getMonitoringWords()));
+	}
+	
+	private String getTagsNamesInCSV(List<MonitoringPostTag> monitoringPostTags) {
+		
+		String tagsNames = "";
+		
+		if(!monitoringPostTags.isEmpty()) {
+			
+			tagsNames += monitoringPostTags.get(0).getMonitoringTag().getName();
+			
+			for (int i = 1; i < monitoringPostTags.size(); i++) {
+				tagsNames += "," + monitoringPostTags.get(i).getMonitoringTag().getName();
+			}
+		}
+		
+		if(tagsNames.isEmpty()) {
+			tagsNames = "-";
+		}
+		
+		return tagsNames;
+	}
+	
+	private String getTermNamesInCSV(List<String> monitoringPostTerms) {
+		
+		String termNames = "";
+		
+		if(monitoringPostTerms != null && !monitoringPostTerms.isEmpty()) {
+			
+			termNames += monitoringPostTerms.get(0);
+			
+			for (int i = 1; i < monitoringPostTerms.size(); i++) {
+				termNames += "," + monitoringPostTerms.get(i);
+			}
+		}
+		
+		if(termNames.isEmpty()) {
+			termNames = "-";
+		}
+		
+		return termNames;
+	}
+	
+	private String getWordsInCSV(StringList monitoringPostWords) {
+		
+		String words = "";
+		
+		if(monitoringPostWords != null && !monitoringPostWords.getValue().isEmpty()) {
+			
+			words += monitoringPostWords.getValue().get(0);
+			
+			for (int i = 1; i < monitoringPostWords.getValue().size(); i++) {
+				words += "," + monitoringPostWords.getValue().get(i);
+			}
+		}
+		
+		if(words.isEmpty()) {
+			words = "-";
+		}
+		
+		return words;
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+	
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+	
+	private String validateCellValue(String value) {
+		return value != null ? (!value.isEmpty() ? value : " ") : " ";
+	}
+	
+	/**
+	 * Trunca um texto que tenha mais do que 32767 caracteres, 
+	 * devido a limitação de 32767 caracteres em uma coluna de um arquivo xls. 
+	 */  
+	private String truncateCellValue(String text) {
+		return text.length() > 32767 ? text.substring(0, 32767 - 3) + "..." : text; 
+	}
+}

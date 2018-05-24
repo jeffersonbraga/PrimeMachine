@@ -1,0 +1,256 @@
+package br.com.opsocial.ejb.entity.application;
+
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.security.Authority;
+
+@Entity
+@Table(name="users", schema="opsocial")
+public class User extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	public static final char ACTIVE = 'T';
+	public static final char INACTIVE = 'F';
+	
+	public static final Character ADMINISTRATOR = 'A';
+	public static final Character ANALYST = 'N';
+
+	@Id
+	@Column(name = "iduser")
+	@GeneratedValue(strategy = GenerationType.IDENTITY, generator = "users_iduser_seq")
+	private Long idUser;
+	
+	@Column(name = "name")
+	private String name;
+	
+	@Column(name = "email")
+	private String email;
+	
+	@Column(name = "password")
+	private String password;
+	
+    @Column(name = "active")
+	private char active = 'T';
+    
+    @Column(name="cadastredate")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date cadastreDate;
+    
+    @Column(name="type")
+    private Character type;
+    
+    @Column(name="avatar")
+    private String avatar;
+    
+	@JoinColumn(name = "idaccount", referencedColumnName = "idaccount")
+	@ManyToOne()
+	private Account account;
+
+	@Column(name="sessionid")
+	private String sessionId = "";
+	
+	@Column(name="phone")
+	private String phone;
+	
+	@Column(name = "showinstagramauthwindow")
+	private Character showInstagramAuthWindow = 'F';
+	
+	@Column(name = "showletterstoclientswindow")
+	private Character showLettersToClientsWindow = 'F';
+	
+	@Column(name = "urlactivation")
+	private String urlActivation;
+	
+	@Column(name = "iduserinvitation")
+	private Long idUserInvitation;
+	
+	@Column(name = "nameuserinvitation")
+	private String nameUserInvitation;
+	
+	@Transient
+	private Long idTimestamp;
+    
+	public User() {
+	}
+    
+	public Long getIdUser() {
+		return idUser;
+	}
+
+	public void setIdUser(Long idUser) {
+		this.idUser = idUser;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+	
+	public char getActive() {
+		return active;
+	}
+
+	public void setActive(char active) {
+		this.active = active;
+	}
+	
+	public Date getCadastreDate() {
+		return cadastreDate;
+	}
+
+	public void setCadastreDate(Date cadastreDate) {
+		this.cadastreDate = cadastreDate;
+	}
+
+	public Character getType() {
+		return type;
+	}
+
+	public void setType(Character type) {
+		this.type = type;
+	}
+
+	@Override
+	public Boolean isActive() {		
+		return active == 'T';
+	}
+	
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+
+	public Account getAccount() {
+		return account;
+	}
+
+	public void setAccount(Account account) {
+		this.account = account;
+	}
+
+	public String getSessionId() {
+		return sessionId;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
+	public Character getShowInstagramAuthWindow() {
+		return showInstagramAuthWindow;
+	}
+
+	public void setShowInstagramAuthWindow(Character showInstagramAuthWindow) {
+		this.showInstagramAuthWindow = showInstagramAuthWindow;
+	}
+
+	public Character getShowLettersToClientsWindow() {
+		return showLettersToClientsWindow;
+	}
+
+	public void setShowLettersToClientsWindow(Character showLettersToClientsWindow) {
+		this.showLettersToClientsWindow = showLettersToClientsWindow;
+	}
+
+	public Long getIdTimestamp() {
+		return idTimestamp;
+	}
+
+	public void setIdTimestamp(Long idTimestamp) {
+		this.idTimestamp = idTimestamp;
+	}
+
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	public String getUrlActivation() {
+		return urlActivation;
+	}
+
+	public void setUrlActivation(String urlActivation) {
+		this.urlActivation = urlActivation;
+	}
+
+	public Long getIdUserInvitation() {
+		return idUserInvitation;
+	}
+
+	public void setIdUserInvitation(Long idUserInvitation) {
+		this.idUserInvitation = idUserInvitation;
+	}
+
+	public String getNameUserInvitation() {
+		return nameUserInvitation;
+	}
+
+	public void setNameUserInvitation(String nameUserInvitation) {
+		this.nameUserInvitation = nameUserInvitation;
+	}
+
+	@Override
+	public Long getId() {		
+		return idUser;
+	}
+
+	@Override
+	public void setId(Long id) {
+		this.idUser = id;		
+	}
+
+    public Set<Authority> getAuthorities() {
+
+		Authority aut = new Authority();
+    	if(this.getType().equals('A')) {
+    		aut.setName("ADMIN");
+    	} else {
+    		aut.setName("ANALIST");
+    	}
+
+    	Set<Authority> setAuth = new HashSet<>();
+    	setAuth.add(aut);
+    	return setAuth;
+    }
+}

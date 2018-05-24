@@ -1,0 +1,83 @@
+package br.com.opsocial.server.actions.reports.twitter;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterOverviewDTO;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportControlRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportTwitterOverviewAction {
+
+	private Profile profile;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@CrossOrigin
+	@RequestMapping(value = "/report_twitter_overview",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> doActionNew(Long idProfile, Long dateFrom, Long dateUntil) throws Exception, OptimisticLockException {
+		
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote) 
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		ReportTwitterOverviewDTO reportTwitterOverview;
+		
+		try {
+			
+			profile = remote.getById(idProfile);
+			
+			Calendar fromDate = Calendar.getInstance();
+			fromDate.setTimeInMillis(dateFrom);
+			
+			Calendar untilDate = Calendar.getInstance();
+			untilDate.setTimeInMillis(dateUntil);
+			
+			genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+			
+			Character reportState;
+			if(!reportControlRemote.hasReportTwitterForProfile(profile.getNetworkId(), Profile.TWITTER)) {
+				reportState = Profile.REPORT_GENERATING;
+			} else {
+				reportState = Profile.REPORT_FINALIZED;
+			}
+			
+			reportTwitterOverview = UtilReports.mountReportTwitterOverviewDTO(profile, genericDateInterval, 5);
+			
+			JsonObject response = new JsonObject();
+			response.add("reportTwitterOverview", new Gson().toJsonTree(reportTwitterOverview));
+			response.addProperty("reportState", reportState);
+			
+			return new ResponseEntity<>(response.toString(), HttpStatus.OK);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+}

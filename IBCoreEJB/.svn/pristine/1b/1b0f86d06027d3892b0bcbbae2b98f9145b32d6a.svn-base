@@ -1,0 +1,11 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.application.Timezone;
+
+public interface TimezoneDAO  extends AbstractDAO<Timezone>{
+
+	List<Timezone> listTimezones();
+}

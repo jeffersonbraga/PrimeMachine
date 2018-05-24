@@ -1,0 +1,31 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.monitoring.MonitoringTagDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringTag;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class AddTagAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MonitoringTagDTO monitoringTagDTO = (MonitoringTagDTO) getParameters().get("monitoringTag");
+
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceMonitoringTagRemote monitoringTagRemote = (MaintenanceMonitoringTagRemote) 
+				RecoverMaintenance.recoverMaintenance("MonitoringTag");
+		
+		MonitoringTag monitoringTag = monitoringTagRemote.save(MountDTO.mountMonitoringTag(monitoringTagDTO));
+		
+		getParameters().put("monitoringTag", MountDTO.mountMonitoringTag(monitoringTag));
+	}
+
+}

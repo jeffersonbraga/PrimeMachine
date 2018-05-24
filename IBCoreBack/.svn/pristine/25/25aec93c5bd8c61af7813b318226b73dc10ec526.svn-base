@@ -1,0 +1,723 @@
+package br.com.opsocial.server.utils.reports.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import br.com.opsocial.client.entity.report.PostEngagementStatsDTO;
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+import br.com.opsocial.client.entity.report.facebook.FanPageGrowthDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportDetailedFacebookDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookOverviewDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+public class ReportFacebookOverviewXLS {
+
+	private ReportFacebookOverviewDTO reportFacebookOverview;
+	private Profile profile;
+	
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+	
+	private HSSFWorkbook wb;
+	private Sheet sheetOverview;
+	
+	private CreationHelper createHelper;
+	
+	private CellStyle cellStyleHeader;
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellStyleHeaderDataPositive;
+	private CellStyle cellStyleHeaderDataNegative;
+	private CellStyle cellSecondaryHeaderData;
+	private CellStyle cellSecondaryHeaderNumber;
+	private CellStyle cellSecondaryHeaderCenter;
+	private CellStyle cellDateStyle;
+	private CellStyle cellStylePreAnalysis;
+	private CellStyle cellStylePreAnalysisResult;
+	private CellStyle cellStyleHLink;
+	private CellStyle cellDataPercentage;
+	
+	private Font fontHeader;
+	private Font fontHeaderData;
+	
+	private Float headerDataRowHeight;
+	
+	private String startDate;
+	private String endDate;
+	
+	private int rowSheetOverviewCount;
+	
+	public ReportFacebookOverviewXLS(ReportFacebookOverviewDTO reportFacebookOverview, Profile profile) {
+		this.reportFacebookOverview = reportFacebookOverview;
+		this.profile = profile;
+	}
+	
+	public void createXLS() {
+		
+		wb = new HSSFWorkbook();
+		
+		initiateDefautStyles();
+		
+		this.reportsPath = ServicesImpl.context.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		SimpleDateFormat dateFormatToFileName = new SimpleDateFormat("dd-MM-yyyy");
+		
+		startDate = dateFormat.format(new Date(reportFacebookOverview.getDateFrom() * 1000L));
+		endDate = dateFormat.format(new Date(reportFacebookOverview.getDateUntil() * 1000L));
+		
+		sheetOverview = wb.createSheet("Facebook Visão Geral");
+		
+		headerDataRowHeight = 1.2F * sheetOverview.getDefaultRowHeightInPoints();
+		
+		addMainHeader(sheetOverview, profile.getScreenName() + " - Relatório Facebook - Visão Geral - Período de " + startDate + " a " + endDate, 4);
+		
+		addFanPageGrowth();
+		addFansLikeSource();
+		addAboutReachedUsers();
+		addEngagementWithContent();
+		addPageStats();
+		
+		sheetOverview.setDefaultColumnWidth(25);
+		sheetOverview.setColumnWidth(0, 8000);
+		
+		try {
+			
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+			
+			formattedFileName = profile.getScreenName() + "-facebook-visao-geral-" 
+					+ dateFormatToFileName.format(new Date(reportFacebookOverview.getDateFrom() * 1000L)) + "--" 
+					+ dateFormatToFileName.format(new Date(reportFacebookOverview.getDateUntil() * 1000L));
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void addPageStats() {
+		
+		rowSheetOverviewCount += 2;
+		Row rowOtherActivitiesTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowOtherActivitiesTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellOtherActivitiesTitle = rowOtherActivitiesTitle.createCell(0);
+		cellOtherActivitiesTitle.setCellValue("OUTRAS ATIVIDADES NA PÁGINA");
+		cellOtherActivitiesTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowOtherActivitiesSubTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowOtherActivitiesSubTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellActivityTitle = rowOtherActivitiesSubTitle.createCell(0);
+		cellActivityTitle.setCellValue("Atividade");
+		cellActivityTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellActivityTotalTitle = rowOtherActivitiesSubTitle.createCell(1);
+		cellActivityTotalTitle.setCellValue("Total");
+		cellActivityTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(Map.Entry<String, Long> storyType : reportFacebookOverview.getOtherActivities().entrySet()) {
+			
+			Row rowActivityValues = sheetOverview.createRow(rowSheetOverviewCount);
+			
+			Cell cellActivityValue = rowActivityValues.createCell(0);
+			cellActivityValue.setCellValue(UtilFunctions.getStoryTypeName(storyType.getKey()));
+			
+			Cell cellActivityTotalValue = rowActivityValues.createCell(1);
+			cellActivityTotalValue.setCellValue(storyType.getValue());
+			
+			rowSheetOverviewCount++;
+		}
+		
+		rowSheetOverviewCount++;
+		Row rowExternalReferencesTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowExternalReferencesTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellExternalReferencesTitle = rowExternalReferencesTitle.createCell(0);
+		cellExternalReferencesTitle.setCellValue("REFERÊNCIAS EXTERNAS");
+		cellExternalReferencesTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowExternalReferencesSubTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowExternalReferencesSubTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellReferenceTitle = rowExternalReferencesSubTitle.createCell(0);
+		cellReferenceTitle.setCellValue("Referência");
+		cellReferenceTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellReferenceTotalTitle = rowExternalReferencesSubTitle.createCell(1);
+		cellReferenceTotalTitle.setCellValue("Total");
+		cellReferenceTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(Map.Entry<String, Long> externalReference : reportFacebookOverview.getExternalReferences().entrySet()) {
+			
+			Row rowReferenceValues = sheetOverview.createRow(rowSheetOverviewCount);
+			
+			Cell cellReferenceValue = rowReferenceValues.createCell(0);
+			cellReferenceValue.setCellValue(externalReference.getKey());
+			
+			Cell cellReferenceTotalValue = rowReferenceValues.createCell(1);
+			cellReferenceTotalValue.setCellValue(externalReference.getValue());
+			
+			rowSheetOverviewCount++;
+		}
+	}
+	
+	private void addEngagementWithContent() {
+		
+		rowSheetOverviewCount += 2;
+		Row rowEngagementWithContentTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowEngagementWithContentTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellEngagementWithContentTitle = rowEngagementWithContentTitle.createCell(0);
+		cellEngagementWithContentTitle.setCellValue("ENVOLVIMENTO DO PÚBLICO POR TIPO DE INTERAÇÃO");
+		cellEngagementWithContentTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowEngagementWithContentSubTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowEngagementWithContentSubTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellDateTitle = rowEngagementWithContentSubTitle.createCell(0);
+		cellDateTitle.setCellValue("Data");
+		cellDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellLikesByDayTitle = rowEngagementWithContentSubTitle.createCell(1);
+		cellLikesByDayTitle.setCellValue("Curtir");
+		cellLikesByDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentsByDayTitle = rowEngagementWithContentSubTitle.createCell(2);
+		cellCommentsByDayTitle.setCellValue("Comentários");
+		cellCommentsByDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellSharesByDayTitle = rowEngagementWithContentSubTitle.createCell(3);
+		cellSharesByDayTitle.setCellValue("Compartilhamentos");
+		cellSharesByDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellEngagementTotalByDayTitle = rowEngagementWithContentSubTitle.createCell(4);
+		cellEngagementTotalByDayTitle.setCellValue("Total");
+		cellEngagementTotalByDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(PostEngagementStatsDTO postEngagementStats : reportFacebookOverview.getPostEngagementStats()) {
+			
+			Row rowEngagementWithContentValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellDateValue = rowEngagementWithContentValues.createCell(0);
+			cellDateValue.setCellValue(postEngagementStats.getDay() + "/" 
+					+ postEngagementStats.getMonth() + "/"
+					+ postEngagementStats.getYear());
+			
+			Cell cellLikesByDayValue = rowEngagementWithContentValues.createCell(1);
+			cellLikesByDayValue.setCellValue(postEngagementStats.getLikes());
+			
+			Cell cellCommentsByDayValue = rowEngagementWithContentValues.createCell(2);
+			cellCommentsByDayValue.setCellValue(postEngagementStats.getComments());
+			
+			Cell cellSharesByDayValue = rowEngagementWithContentValues.createCell(3);
+			cellSharesByDayValue.setCellValue(postEngagementStats.getShares());
+			
+			Cell cellEngagementTotalByDayValue = rowEngagementWithContentValues.createCell(4);
+			cellEngagementTotalByDayValue.setCellValue(postEngagementStats.getLikes() 
+					+ postEngagementStats.getComments()
+					+ postEngagementStats.getShares());
+			
+			rowSheetOverviewCount++;
+		}
+		
+		Long postsLikes = reportFacebookOverview.getPostsEngagementTotalStats().containsKey(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_LIKE) ? 
+				reportFacebookOverview.getPostsEngagementTotalStats().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_LIKE) : 0L;
+		
+		Long postsComments = reportFacebookOverview.getPostsEngagementTotalStats().containsKey(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_COMMENT) ? 
+				reportFacebookOverview.getPostsEngagementTotalStats().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_COMMENT) : 0L;
+				
+		Long postsShares = reportFacebookOverview.getPostsEngagementTotalStats().containsKey(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_SHARE) ? 
+				reportFacebookOverview.getPostsEngagementTotalStats().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_SHARE) : 0L;
+		
+		rowSheetOverviewCount++;
+		Row rowInteractionsByPeriod = sheetOverview.createRow(rowSheetOverviewCount);
+		rowInteractionsByPeriod.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellInteractionsByPeriodTitle = rowInteractionsByPeriod.createCell(0);
+		cellInteractionsByPeriodTitle.setCellValue("Total de interações no período:");
+		cellInteractionsByPeriodTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellInteractionsByPeriodValue = rowInteractionsByPeriod.createCell(1);
+		cellInteractionsByPeriodValue.setCellValue(postsLikes + postsComments + postsShares);
+		cellInteractionsByPeriodValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowLikesByPeriod = sheetOverview.createRow(rowSheetOverviewCount);
+		rowLikesByPeriod.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLikesByPeriodTitle = rowLikesByPeriod.createCell(0);
+		cellLikesByPeriodTitle.setCellValue("Total curtir:");
+		cellLikesByPeriodTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellLikesByPeriodValue = rowLikesByPeriod.createCell(1);
+		cellLikesByPeriodValue.setCellValue(postsLikes);
+		cellLikesByPeriodValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowCommentsByPeriod = sheetOverview.createRow(rowSheetOverviewCount);
+		rowCommentsByPeriod.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentsByPeriodTitle = rowCommentsByPeriod.createCell(0);
+		cellCommentsByPeriodTitle.setCellValue("Total comentários:");
+		cellCommentsByPeriodTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellCommentsByPeriodValue = rowCommentsByPeriod.createCell(1);
+		cellCommentsByPeriodValue.setCellValue(postsComments);
+		cellCommentsByPeriodValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowSharesByPeriod = sheetOverview.createRow(rowSheetOverviewCount);
+		rowSharesByPeriod.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellSharesByPeriodTitle = rowSharesByPeriod.createCell(0);
+		cellSharesByPeriodTitle.setCellValue("Total compartilhamentos:");
+		cellSharesByPeriodTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellSharesByPeriodValue = rowSharesByPeriod.createCell(1);
+		cellSharesByPeriodValue.setCellValue(postsShares);
+		cellSharesByPeriodValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addAboutReachedUsers() {
+		
+		rowSheetOverviewCount += 2;
+		Row rowAboutReachedUsersStatsTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowAboutReachedUsersStatsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAboutReachedUsersStatsTitle = rowAboutReachedUsersStatsTitle.createCell(0);
+		cellAboutReachedUsersStatsTitle.setCellValue("DIVISÃO DEMOGRÁFICA DO PÚBLICO");
+		cellAboutReachedUsersStatsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowAgeGroupUsersTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowAgeGroupUsersTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAgeGroupUsersTitle = rowAgeGroupUsersTitle.createCell(0);
+		cellAgeGroupUsersTitle.setCellValue("Faixa etária");
+		cellAgeGroupUsersTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellMaleUsersTitle = rowAgeGroupUsersTitle.createCell(1);
+		cellMaleUsersTitle.setCellValue("Homens");
+		cellMaleUsersTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellFemaleUsersTitle = rowAgeGroupUsersTitle.createCell(2);
+		cellFemaleUsersTitle.setCellValue("Mulheres");
+		cellFemaleUsersTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		Row rowThirteenSeventeenValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellThirteenSeventeenTitle = rowThirteenSeventeenValues.createCell(0);
+		cellThirteenSeventeenTitle.setCellValue("13-17");
+		
+		Cell cellThirteenSeventeenMaleValue = rowThirteenSeventeenValues.createCell(1);
+		cellThirteenSeventeenMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_13_AMONG_17) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_13_AMONG_17) : 0);
+		
+		Cell cellThirteenSeventeenFemaleValue = rowThirteenSeventeenValues.createCell(2);
+		cellThirteenSeventeenFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_13_AMONG_17) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_13_AMONG_17): 0);
+		
+		rowSheetOverviewCount++;
+		Row rowEighteenTwentyFourValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellEighteenTwentyFourTitle = rowEighteenTwentyFourValues.createCell(0);
+		cellEighteenTwentyFourTitle.setCellValue("18-24");
+		
+		Cell cellEighteenTwentyFourMaleValue = rowEighteenTwentyFourValues.createCell(1);
+		cellEighteenTwentyFourMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_18_AMONG_24) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_18_AMONG_24) : 0);
+		
+		Cell cellEighteenTwentyFourFemaleValue = rowEighteenTwentyFourValues.createCell(2);
+		cellEighteenTwentyFourFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_18_AMONG_24) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_18_AMONG_24): 0);
+		
+		rowSheetOverviewCount++;
+		Row rowTwentyFiveThirtyFourValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellTwentyFiveThirtyFourTitle = rowTwentyFiveThirtyFourValues.createCell(0);
+		cellTwentyFiveThirtyFourTitle.setCellValue("25-34");
+		
+		Cell cellTwentyFiveThirtyFourMaleValue = rowTwentyFiveThirtyFourValues.createCell(1);
+		cellTwentyFiveThirtyFourMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_25_AMONG_34) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_25_AMONG_34) : 0);
+		
+		Cell cellTwentyFiveThirtyFourFemaleValue = rowTwentyFiveThirtyFourValues.createCell(2);
+		cellTwentyFiveThirtyFourFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_25_AMONG_34) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_25_AMONG_34): 0);
+		
+		rowSheetOverviewCount++;
+		Row rowThirtyFiveFortyFourValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellThirtyFiveFortyFourTitle = rowThirtyFiveFortyFourValues.createCell(0);
+		cellThirtyFiveFortyFourTitle.setCellValue("35-44");
+		
+		Cell cellThirtyFiveFortyFourMaleValue = rowThirtyFiveFortyFourValues.createCell(1);
+		cellThirtyFiveFortyFourMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_35_AMONG_44) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_35_AMONG_44) : 0);
+		
+		Cell cellThirtyFiveFortyFourFemaleValue = rowThirtyFiveFortyFourValues.createCell(2);
+		cellThirtyFiveFortyFourFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_35_AMONG_44) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_35_AMONG_44): 0);
+		
+		rowSheetOverviewCount++;
+		Row rowFortyFiveFiftyFourValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellFortyFiveFiftyFourTitle = rowFortyFiveFiftyFourValues.createCell(0);
+		cellFortyFiveFiftyFourTitle.setCellValue("45-54");
+		
+		Cell cellFortyFiveFiftyFourMaleValue = rowFortyFiveFiftyFourValues.createCell(1);
+		cellFortyFiveFiftyFourMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_45_AMONG_54) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_45_AMONG_54) : 0);
+		
+		Cell cellFortyFiveFiftyFourFemaleValue = rowFortyFiveFiftyFourValues.createCell(2);
+		cellFortyFiveFiftyFourFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_45_AMONG_54) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_45_AMONG_54): 0);
+		
+		rowSheetOverviewCount++;
+		Row rowFiftyFiveSixtyFourValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellFiftyFiveSixtyFourTitle = rowFiftyFiveSixtyFourValues.createCell(0);
+		cellFiftyFiveSixtyFourTitle.setCellValue("55-64");
+		
+		Cell cellFiftyFiveSixtyFourMaleValue = rowFiftyFiveSixtyFourValues.createCell(1);
+		cellFiftyFiveSixtyFourMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_55_AMONG_64) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_55_AMONG_64) : 0);
+		
+		Cell cellFiftyFiveSixtyFourFemaleValue = rowFiftyFiveSixtyFourValues.createCell(2);
+		cellFiftyFiveSixtyFourFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_55_AMONG_64) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_55_AMONG_64): 0);
+		
+		rowSheetOverviewCount++;
+		Row rowSixtyFourPlusValues = sheetOverview.createRow(rowSheetOverviewCount);
+		
+		Cell cellSixtyFivePlusTitle = rowSixtyFourPlusValues.createCell(0);
+		cellSixtyFivePlusTitle.setCellValue("65+");
+		
+		Cell cellSixtyFivePlusMaleValue = rowSixtyFourPlusValues.createCell(1);
+		cellSixtyFivePlusMaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_65_PLUS) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_MALE_65_PLUS) : 0);
+		
+		Cell cellSixtyFivePlusFemaleValue = rowSixtyFourPlusValues.createCell(2);
+		cellSixtyFivePlusFemaleValue.setCellValue(reportFacebookOverview.getAboutReachedUsers().containsKey(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_65_PLUS) ? 
+				reportFacebookOverview.getAboutReachedUsers().get(ReportDetailedFacebookDTO.PAGE_IMPRESSIONS_FEMALE_65_PLUS): 0);
+		
+		rowSheetOverviewCount += 2;
+		Row rowMajorAgeGroupUsers = sheetOverview.createRow(rowSheetOverviewCount);
+		rowMajorAgeGroupUsers.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellMajorAgeGroupUsersTitle = rowMajorAgeGroupUsers.createCell(0);
+		cellMajorAgeGroupUsersTitle.setCellValue("Maior faixa etária:");
+		cellMajorAgeGroupUsersTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellMajorAgeGroupUsersValue = rowMajorAgeGroupUsers.createCell(1);
+		cellMajorAgeGroupUsersValue.setCellValue(reportFacebookOverview.getMajorAgeGroupReacheUsers().getInitialAgeGroup() + "-" +
+				reportFacebookOverview.getMajorAgeGroupReacheUsers().getEndAgeGroup() + " / " + reportFacebookOverview.getMajorAgeGroupReacheUsers().getPercentage() + "%");
+		cellMajorAgeGroupUsersValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowMenUsers = sheetOverview.createRow(rowSheetOverviewCount);
+		rowMenUsers.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellMenUsersTitle = rowMenUsers.createCell(0);
+		cellMenUsersTitle.setCellValue("Homens:");
+		cellMenUsersTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellMenUsersValue = rowMenUsers.createCell(1);
+		cellMenUsersValue.setCellValue(reportFacebookOverview.getMenReachedUsersPerc() + "%");
+		cellMenUsersValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowWomenUsers = sheetOverview.createRow(rowSheetOverviewCount);
+		rowWomenUsers.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellWomenUsersTitle = rowWomenUsers.createCell(0);
+		cellWomenUsersTitle.setCellValue("Mulheres:");
+		cellWomenUsersTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellWomenUsersValue = rowWomenUsers.createCell(1);
+		cellWomenUsersValue.setCellValue(reportFacebookOverview.getWomenReachedUsersPerc() + "%");
+		cellWomenUsersValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addFansLikeSource() {
+		
+		rowSheetOverviewCount += 2;
+		Row rowFansLikeSourceTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFansLikeSourceTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFansLikeSourceTitle = rowFansLikeSourceTitle.createCell(0);
+		cellFansLikeSourceTitle.setCellValue("ORIGEM DAS OPÇÕES CURTIR");
+		cellFansLikeSourceTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowFansLikeSourceSubTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFansLikeSourceSubTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFansLikeSourceSubTitle = rowFansLikeSourceSubTitle.createCell(0);
+		cellFansLikeSourceSubTitle.setCellValue("Origem");
+		cellFansLikeSourceSubTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellFansLikeSourceTotalTitle = rowFansLikeSourceSubTitle.createCell(1);
+		cellFansLikeSourceTotalTitle.setCellValue("Total");
+		cellFansLikeSourceTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(Map.Entry<String, Long> fansLikeSource : reportFacebookOverview.getFansLikeSource().entrySet()) {
+			
+			Row rowFansLikeSourceValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellSourceValue = rowFansLikeSourceValues.createCell(0);
+			cellSourceValue.setCellValue(UtilFunctions.getLikeSourceName(fansLikeSource.getKey()));
+			
+			Cell cellSourceTotalValue = rowFansLikeSourceValues.createCell(1);
+			cellSourceTotalValue.setCellValue(fansLikeSource.getValue());
+			
+			rowSheetOverviewCount++;
+		}
+	}
+	
+	private void addFanPageGrowth() {
+		
+		rowSheetOverviewCount = 2;
+		
+		Row rowFanPageGrowthTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFanPageGrowthTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFanPageGrowthTitle = rowFanPageGrowthTitle.createCell(0);
+		cellFanPageGrowthTitle.setCellValue("CRESCIMENTO DE FÃS NA PÁGINA");
+		cellFanPageGrowthTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowFanPageGrowthTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFanPageGrowthTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFanPageDateTitle = rowFanPageGrowthTitleItems.createCell(0);
+		cellFanPageDateTitle.setCellValue("Data");
+		cellFanPageDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellFanPageTotalTitle = rowFanPageGrowthTitleItems.createCell(1);
+		cellFanPageTotalTitle.setCellValue("Total de fãs");
+		cellFanPageTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		Long accumulatedFanPageGrowth = reportFacebookOverview.getFansUntilDateFrom();
+		for(FanPageGrowthDTO fanPageGrowth : reportFacebookOverview.getFanPageGrowth()) {
+			
+			accumulatedFanPageGrowth = accumulatedFanPageGrowth + fanPageGrowth.getSum();
+			
+			Row rowFanPageGrowthValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellDateValue = rowFanPageGrowthValues.createCell(0);
+			cellDateValue.setCellValue(new SimpleDateFormat("dd/MM/yy").format(fanPageGrowth.getDate()));
+			
+			Cell cellTotalValue = rowFanPageGrowthValues.createCell(1);
+			cellTotalValue.setCellValue(accumulatedFanPageGrowth);
+
+			rowSheetOverviewCount++;
+		}
+		
+		rowSheetOverviewCount++;
+		Row rowGrowthFansPeak = sheetOverview.createRow(rowSheetOverviewCount);
+		rowGrowthFansPeak.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellGrowthFansPeakTitle = rowGrowthFansPeak.createCell(0);
+		cellGrowthFansPeakTitle.setCellValue("Pico de crescimento:");
+		cellGrowthFansPeakTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellGrowthFansPeakValue = rowGrowthFansPeak.createCell(1);
+		cellGrowthFansPeakValue.setCellValue(new SimpleDateFormat("dd/MM/yy").format(reportFacebookOverview.getMajorFanPageGrowth().getDate()));
+		cellGrowthFansPeakValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowConqueredFans = sheetOverview.createRow(rowSheetOverviewCount);
+		rowConqueredFans.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellConqueredFansTitle = rowConqueredFans.createCell(0);
+		cellConqueredFansTitle.setCellValue("Total de fãs conquistados:");
+		cellConqueredFansTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellConqueredFansValue = rowConqueredFans.createCell(1);
+		cellConqueredFansValue.setCellValue(reportFacebookOverview.getConqueredFans());
+		cellConqueredFansValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowLostFans = sheetOverview.createRow(rowSheetOverviewCount);
+		rowLostFans.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLostFansTitle = rowLostFans.createCell(0);
+		cellLostFansTitle.setCellValue("Total de fãs perdidos:");
+		cellLostFansTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellLostFansValue = rowLostFans.createCell(1);
+		cellLostFansValue.setCellValue(reportFacebookOverview.getLostFans());
+		cellLostFansValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+		
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+		
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+	
+	private void initiateDefautStyles() {
+		
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+		
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte) 102, (byte) 153, (byte) 204);
+		palette.setColorAtIndex(IndexedColors.YELLOW.index, (byte) 255, (byte) 211, (byte) 32);
+		palette.setColorAtIndex(IndexedColors.GREEN.index, (byte) 174, (byte) 207, (byte) 0);
+		
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
+		fontHeaderData = wb.createFont();
+		fontHeaderData.setFontHeightInPoints((short) 11);
+		fontHeaderData.setBold(true);
+		
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.YELLOW.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataPositive = wb.createCellStyle();
+		cellStyleHeaderDataPositive.setFillForegroundColor(IndexedColors.GREEN.index);
+		cellStyleHeaderDataPositive.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataPositive.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataNegative = wb.createCellStyle();
+		cellStyleHeaderDataNegative.setFillForegroundColor(IndexedColors.RED.index);
+		cellStyleHeaderDataNegative.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataNegative.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderData = wb.createCellStyle();
+		cellSecondaryHeaderData.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderNumber = wb.createCellStyle();
+		cellSecondaryHeaderNumber.setFont(fontHeaderData);
+		cellSecondaryHeaderNumber.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		cellSecondaryHeaderCenter = wb.createCellStyle();
+		cellSecondaryHeaderCenter.setFont(fontHeaderData);
+		cellSecondaryHeaderCenter.setAlignment(CellStyle.ALIGN_CENTER);
+		
+		cellStylePreAnalysis = wb.createCellStyle();
+		cellStylePreAnalysis.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysis.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysis.setFont(fontHeaderData);
+		
+		cellStylePreAnalysisResult = wb.createCellStyle();
+		cellStylePreAnalysisResult.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysisResult.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysisResult.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		createHelper = wb.getCreationHelper();
+		
+		cellDateStyle = wb.createCellStyle();
+	    cellDateStyle.setDataFormat(
+	        createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+	        
+    	//by default hyperlinks are blue and underlined
+    	cellStyleHLink = wb.createCellStyle();
+    	
+    	Font fontHLink = wb.createFont();
+    	fontHLink.setUnderline(Font.U_SINGLE);
+    	fontHLink.setColor(IndexedColors.BLUE.getIndex());
+    	
+    	cellStyleHLink.setFont(fontHLink);
+    	
+    	cellDataPercentage = wb.createCellStyle();
+    	cellDataPercentage.setAlignment(CellStyle.ALIGN_RIGHT);
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+	
+	public static String getStoryTypeName(String storyType) {
+		
+		if(storyType.equals(ReportDetailedFacebookDTO.PAGE_STORIES_BY_MENTION)) {
+			return "MenÃ§Ãµes";
+		} else if(storyType.equals(ReportDetailedFacebookDTO.PAGE_STORIES_BY_CHECKIN)) {
+			return "Check-ins";
+		} else if(storyType.equals(ReportDetailedFacebookDTO.PAGE_STORIES_BY_USER_POST)) {
+			return "PublicaÃ§Ãµes de outras pessoas";
+		} else {
+			return "";
+		}
+		
+	}
+}

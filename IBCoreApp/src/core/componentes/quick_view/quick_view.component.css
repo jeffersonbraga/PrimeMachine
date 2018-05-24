@@ -1,0 +1,9 @@
+.nav-flex{
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.defaulCursor {
+    cursor: default !important;
+}

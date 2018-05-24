@@ -1,0 +1,32 @@
+<div class="panel-group m-b-10" id="accordion_{{group.idGroup}}" role="tablist" aria-multiselectable="true">
+	<div class="panel panel-transparent" >
+		<div class="panel-heading m-h-25 z-i-0">
+			<h4 class="panel-title accordion">
+				<a class="p-t-0 p-b-0" (click)="manageEditingGroup($event)" [class.collapsed]="!(isEditingGroup || allOpened)" data-toggle="collapse" href="#collapse_{{group.idGroup}}">{{group.name}}</a>
+			</h4>
+		</div>
+		<!-- <div [ngClass]="{'show': index == 0 || isGroupDefault}" *ngIf="groupType == 'P'" class="panel-collapse collapse" id="collapse_{{group.idGroup}}"> -->
+		<div *ngIf="groupType == 'P'" class="panel-collapse collapse" [class.in]="isEditingGroup || allOpened" 
+			id="collapse_{{group.idGroup}}">
+			<div *ngFor="let item of group.groupsObject;">
+				<button_channels [profile]="item.profile" (objectChecked)="addRemoveObjectChecked($event)" 
+				[singleSelect]="singleSelect" [isExcludable]="false" [validateSchedule]="validateSchedule"></button_channels>
+			</div>
+			<button_check_all *ngIf="showCheckAllBtn" (checkAll)="checkAllObjects($event)" [isClassVisible]="checkAll"></button_check_all>
+		</div>
+		<div [class.in]="isEditingGroup || allOpened" *ngIf="groupType == 'R'" 
+				class="panel-collapse collapse" id="collapse_{{group.idGroup}}">
+			<input #checkedButtonRss type="radio" name="checked-button-rss" class="checked-button">
+			<button [class.disabled]="loading" (click)="checkAllRssFeeds(group)" class="btn btn-block btn-default rssfeed-button" type="button">
+				<div class="rssfeed-icon rssfeed-clicked"></div>
+				<div class="pull-left">
+					<span class="p-l-10 channel-text">Ver todos</span>
+				</div>
+			</button>
+			<div *ngFor="let item of group.groupsObject;">
+				<button_rssfeed [group]="group" [isEditable]="item.type == 'I'" [isExcludable]="false" 
+            		[isSelectable]="true" [rssFeed]="item.rssFeed"></button_rssfeed>
+			</div>
+		</div>
+	</div>
+</div>

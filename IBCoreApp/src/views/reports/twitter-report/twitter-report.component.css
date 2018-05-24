@@ -1,0 +1,27 @@
+.top-report-container{
+    position: absolute;
+    right: 0;
+    width: 560px;
+    z-index: 2;
+}
+
+#content-pdf{
+    width: 650px;
+    max-height: 0px;
+    overflow: hidden; 
+}
+
+.page-break{
+    page-break-before: always;
+}
+
+.fa-twitter-square{
+    color: #17c6ff;
+    font-size: 24px
+}
+
+@media print{
+    #content-pdf{
+        max-height: none;
+    }
+}

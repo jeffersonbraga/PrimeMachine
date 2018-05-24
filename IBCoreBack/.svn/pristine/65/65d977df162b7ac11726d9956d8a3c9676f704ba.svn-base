@@ -1,0 +1,38 @@
+package br.com.opsocial.server.actions.feeds.instagram;
+
+import javax.persistence.OptimisticLockException;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.exceptions.InstagramBadRequestException;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.primitive.Long;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+
+public class InstagramLikeAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Long idMedia = (Long) getParameters().get("id_media");
+		Profile profileDTO = (Profile) getParameters().get("profile");
+		
+		InstagramIntegration instagramIntegration = new InstagramIntegration();
+		
+		Profile profile = MountDTO.mountProfile(profileDTO);
+		Instagram instagram = instagramIntegration.getInstagram(profile);
+		
+		try {
+			
+			instagram.setUserLike(idMedia.getValue().toString());
+			
+		} catch (InstagramBadRequestException e) {
+			ValidateTokensController.validatingTokens(profile.getAccount(), ServicesImpl.context);
+			e.printStackTrace();
+		}	
+	}
+}

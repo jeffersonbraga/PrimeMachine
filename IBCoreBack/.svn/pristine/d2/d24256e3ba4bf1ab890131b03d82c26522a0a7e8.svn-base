@@ -1,0 +1,59 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.Twitter;
+import twitter4j.auth.RequestToken;
+
+@RestController
+@RequestMapping("opsocial")
+public class InsertByTwitterAction extends ServerAction {
+	
+	@CrossOrigin
+	@RequestMapping(value = "/insertby_twitter",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> doActionNew(HttpSession session, HttpServletRequest request) throws Exception {
+		
+		Twitter twitterSystem = new TwitterIntegration().getSystemTwitter();
+		
+		//TODO: Colocando usuário na sessão apenas para uso na autenticação de perfis do Facebook.
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		session.setAttribute("user", userRemote.getById(1L));
+		
+		session.setAttribute("twitterSystem", twitterSystem);
+		
+        String callbackURL = "http://localhost:8080/OpSocialBack/opsocial/refresh_tokenby_twitter/callback";
+
+        RequestToken requestToken = twitterSystem.getOAuthRequestToken(callbackURL);
+        
+        session.setAttribute("requestToken", requestToken);
+        
+        JsonObject response = new JsonObject();
+	    response.addProperty("authenticationUrl", requestToken.getAuthorizationURL());
+		
+		return new ResponseEntity<String>(response.toString(), HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+}

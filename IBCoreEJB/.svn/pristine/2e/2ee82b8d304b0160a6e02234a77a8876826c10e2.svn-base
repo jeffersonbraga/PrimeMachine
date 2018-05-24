@@ -1,0 +1,21 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.Remote;
+
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.linkedin.LinkedinPost;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+
+@Remote
+public interface MaintenanceLinkedinPostRemote extends AbstractDAS<LinkedinPost> {
+
+	Integer countLinkedinPosts(Long profileId);
+
+	List<LinkedinPost> getLinkedinPosts(Long idProfile);
+
+	List<LinkedinPost> getLinkedinPostsOnPeriod(Long profileId, Long dateFrom, Long dateUntil);
+
+	List<SumByDate> getLinkedinPostsCountByDay(Long profileId, Long dateFrom, Long dateUntil);
+}

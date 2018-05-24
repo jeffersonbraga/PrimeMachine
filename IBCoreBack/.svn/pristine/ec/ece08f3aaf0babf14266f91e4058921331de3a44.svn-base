@@ -1,0 +1,70 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.report.ReportLogoDTO;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportLogoRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.application.idclass.ReportLogoId;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.report.ReportLogo;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class ShowMonitoringsAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/show_monitorings",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		User user = (User) getSession().getAttribute("user");
+		
+		MaintenanceMonitoringRemote remote = (MaintenanceMonitoringRemote) RecoverMaintenance.recoverMaintenance("Monitoring");
+		MaintenanceMonitoringTagRemote monitoringTagRemote = (MaintenanceMonitoringTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringTag");
+		MaintenanceReportLogoRemote reportLogoRemote = (MaintenanceReportLogoRemote) RecoverMaintenance.recoverMaintenance("ReportLogo");
+
+		List<Monitoring> monitorings = remote.getMonitoringsByAccount(user.getAccount().getIdAccount());
+		List<MonitoringDTO> monitoringsDTO = new ArrayList<MonitoringDTO>();
+		
+		for(Monitoring monitoring : monitorings) {
+		
+			MonitoringDTO monitoringDTO = MountDTO.mountMonitoring(monitoring);
+			
+			if(monitorings.indexOf(monitoring) == 0) {
+				monitoringDTO.setMonitoringTags(MountDTO.mountMonitoringTag(
+						monitoringTagRemote.listByMonitoring(monitoringDTO.getIdMonitoring(), monitoringDTO.getAccount().getIdAccount())));	
+			}
+			
+			ReportLogoId reportLogoId = new ReportLogoId();
+			reportLogoId.setObjectId(monitoring.getIdMonitoring());
+			reportLogoId.setType(ReportLogo.MONITORING);
+			
+			ReportLogo reportLogo = reportLogoRemote.getById(reportLogoId);
+			
+			if(reportLogo != null) {
+				monitoringDTO.setReportLogo((ReportLogoDTO) MountDTO.mountReportLogo(reportLogo));
+			}
+			
+			monitoringsDTO.add(monitoringDTO);
+		}
+		
+		setParameters(new HashMap<String, Object>());
+		
+		getParameters().put("monitorings", monitoringsDTO);
+	}
+}

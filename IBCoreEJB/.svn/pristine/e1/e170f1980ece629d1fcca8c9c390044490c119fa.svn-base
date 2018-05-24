@@ -1,0 +1,94 @@
+package br.com.opsocial.ejb.entity.instagram;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
+import br.com.opsocial.ejb.entity.application.idclass.InstagramPostLikeId;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@Entity
+@Table(name="instagrampostslikes", schema="opsocial")
+@IdClass(InstagramPostLikeId.class)
+public class InstagramPostLike extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	@Id
+	@ManyToOne()
+	@JoinColumn(name="idmedia")
+	private InstagramReportPost instagramReportPost;
+	
+	@Id
+	@Column(name="idinstagramuser")
+	private Long idInstagramUser;
+	
+	@Column(name="username")
+	private String userName;
+	
+	@Column(name="fullname")
+	private String fullName;
+	
+	@Column(name="profilepicture")
+	private String profilePicture;
+	
+	@Column(name="createtime")
+	private String createTime;
+	
+	public InstagramPostLike() {
+		
+	}
+
+	public InstagramReportPost getInstagramReportPost() {
+		return instagramReportPost;
+	}
+
+	public void setInstagramReportPost(InstagramReportPost instagramReportPost) {
+		this.instagramReportPost = instagramReportPost;
+	}
+
+	public Long getIdInstagramUser() {
+		return idInstagramUser;
+	}
+
+	public void setIdInstagramUser(Long idInstagramUser) {
+		this.idInstagramUser = idInstagramUser;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getFullName() {
+		return fullName;
+	}
+
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+
+	public String getProfilePicture() {
+		return profilePicture;
+	}
+
+	public void setProfilePicture(String profilePicture) {
+		this.profilePicture = profilePicture;
+	}
+
+	public String getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+
+}

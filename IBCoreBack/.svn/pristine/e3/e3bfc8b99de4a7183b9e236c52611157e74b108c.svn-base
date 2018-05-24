@@ -1,0 +1,110 @@
+package br.com.opsocial.server.actions.groups;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.common.reflect.Reflection;
+import com.google.gson.Gson;
+
+import br.com.opsocial.ejb.das.MaintenanceGroupRemote;
+import br.com.opsocial.ejb.das.MaintenanceGroupsProfilesRemote;
+import br.com.opsocial.ejb.entity.groups.Groups;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class GroupsController extends ServerAction {
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/create",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void createGroup() throws Exception {
+		
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/delete",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void deleteGroup() throws Exception {
+		
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/insert",
+    method = RequestMethod.PUT,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> insertProfileOnGroup(@Valid @RequestBody ArrayList<Object> objPersistir) throws Exception {
+
+//		try {
+//
+//			Gson gsonDeserializer = new Gson();
+//			Groups groups = new Groups();
+//			Reflection.montarObjetoAbstrato(groups, (LinkedHashMap<String, Object>) objPersistir.get(0));
+//			ArrayList<LinkedHashMap<String, Object>> listProfiles = (ArrayList<LinkedHashMap<String, Object>>) objPersistir.get(1);
+//
+//			MaintenanceGroupRemote remote = (MaintenanceGroupRemote) RecoverMaintenance.recoverMaintenance("Groups");
+//			
+//			for ( LinkedHashMap<String, Object> itemProfile : listProfiles ) {
+//				Profile profile = new Profile();
+//				Reflection.montarObjetoAbstrato(profile, itemProfile);
+//				Post post_item = SerializationUtils.clone(post);
+//				post_item.setProfile(profile);
+//				remote.save(post_item);
+//			}
+//
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//
+		return null;// new ResponseEntity<>(objPersistir, HttpStatus.OK);
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/update",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void updateGroup() throws Exception {
+		
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/list",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Groups>> listGroups(Long idAccount) throws Exception {
+		
+		MaintenanceGroupRemote maintenanceGroupRemote = (MaintenanceGroupRemote) RecoverMaintenance.recoverMaintenance("Groups");
+		List<Groups> groups = maintenanceGroupRemote.listGroupsByAccount(idAccount);
+		
+		MaintenanceGroupsProfilesRemote maintenanceGroupsProfilesRemote = 
+				(MaintenanceGroupsProfilesRemote) RecoverMaintenance.recoverMaintenance("GroupsProfiles");
+		
+		for (Groups group : groups) {
+			group.setGroupsProfiles(maintenanceGroupsProfilesRemote.getByGroup(group.getIdGroup()));
+		}
+
+		return new ResponseEntity<>(groups, HttpStatus.OK);
+	}
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub	
+	}
+}

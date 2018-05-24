@@ -1,0 +1,30 @@
+<div class="panel panel-opsocial panel-transparent">
+	<ul class="nav nav-tabs nav-tabs-opsocial hidden-print" data-init-reponsive-tabs="dropdownfx">
+		<li class="active">
+			<a data-toggle="tab" href="#overview" aria-expanded="true" (click)="changeReportTab('O')"><span> Visão Geral</span></a>
+		</li>
+		<li class="">
+			<a data-toggle="tab" href="#historical" aria-expanded="true" (click)="changeReportTab('H')"><span> Histórico</span></a>
+		</li>
+	</ul>
+	<div class="tab-content">
+	<div class="tab-pane slide-left active" id="overview">
+		<div class="col-sm-12 text-center" *ngIf="isLoading">
+			<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+		</div>
+		<div class="col-sm-12 text-center p-t-60" *ngIf="!isLoading && reportState == 'G'" >
+			<p class="small hint-text">Aguarde um momento, gerando relatórios de sua página.</p>
+		</div>
+		<instagram-report-overview *ngIf="reportType == 'O' && !isLoading && reportState == 'F'" [dateFrom]="dateFrom" [dateUntil]="dateUntil" [profile]="profile" [dataOverview]="reportInstagramOverview" [period]="period"></instagram-report-overview>
+	</div>
+    <div class="tab-pane slide-left" id="historical">
+		<div class="col-sm-12 text-center" *ngIf="isLoading">
+			<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+		</div>
+		<div class="col-sm-12 text-center p-t-60" *ngIf="!isLoading && reportState == 'G'" >
+			<p class="small hint-text">Aguarde um momento, gerando relatórios de sua página.</p>
+		</div>
+		<instagram-report-historical *ngIf="reportType == 'H' && !isLoading && reportState == 'F'" [profile]="profile" [dataHistorical]="reportInstagramHistorical"></instagram-report-historical>
+	</div>
+	</div>
+</div>

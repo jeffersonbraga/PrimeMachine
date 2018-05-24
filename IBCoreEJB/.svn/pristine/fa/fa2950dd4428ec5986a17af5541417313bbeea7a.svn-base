@@ -1,0 +1,26 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.application.User;
+
+@Local
+public interface UserDAO extends AbstractDAO<User> {
+	
+	public User getUser(String where);
+	
+	public User getByLoginPassword(String login, String password);
+	
+	public User getByEmail(String email);
+
+	public List<User> listUsersByAccount(Long idAccount, Character type, Long currentUser);
+	
+	public List<User> listUsersByAccount(Long idAccount, Character type);
+	
+	public List<User> listUsersByAccount(Long idAccount);
+
+	User getByUrlActivation(String url) throws IllegalArgumentException;
+}

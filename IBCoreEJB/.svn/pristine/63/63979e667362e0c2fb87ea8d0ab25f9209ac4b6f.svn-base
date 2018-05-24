@@ -1,0 +1,52 @@
+package br.com.opsocial.ejb.das;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.InstagramDeviceDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramDevice;
+
+@Stateless
+public class MaintenanceInstagramDeviceBean extends AbstractDASImpl<InstagramDevice> implements MaintenanceInstagramDeviceRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	InstagramDeviceDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<InstagramDevice> dao) {
+		this.dao = (InstagramDeviceDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramDevice> getDao() {
+		return dao;
+	}
+
+	@Override
+	public InstagramDeviceDAO getDAO() {
+		return dao;
+	}
+
+	@Override
+	public Long getInstagramDeviceLessUsedId() {
+		return dao.getInstagramDeviceLessUsedId();
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

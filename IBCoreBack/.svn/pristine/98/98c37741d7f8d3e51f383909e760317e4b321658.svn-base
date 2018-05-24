@@ -1,0 +1,151 @@
+package br.com.opsocial.server.actions.profiles;
+
+import java.util.UUID;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.das.MaintenanceInstagramDeviceRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.instagram.InstagramDevice;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.instagram.InstagramPostHelper;
+
+@RestController
+@RequestMapping("woopsocial")
+public class InsertInstagramSchedulingAction {
+
+	@CrossOrigin
+	@RequestMapping(value = "/edit-instagram-scheduling",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> editInstagramScheduling(@RequestBody Profile profileToInsert) throws Exception, OptimisticLockException {
+		
+		Boolean isAuthenticated;
+		ResponseEntity<Object> responseEntity;
+		
+		MaintenanceInstagramDeviceRemote instagramDeviceRemote = (MaintenanceInstagramDeviceRemote) 
+				RecoverMaintenance.recoverMaintenance("InstagramDevice");
+		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote)
+				RecoverMaintenance.recoverMaintenance("Profile");
+		
+		Profile profile = profileRemote.getById(profileToInsert.getIdProfile());
+		
+		String instagramGUID;
+		String instagramDeviceId;
+		String instagramPhoneId;
+		InstagramDevice instagramDevice;
+		if(profile.getInstagramDevice() == null) {
+			
+			instagramGUID = UUID.randomUUID().toString();
+			instagramPhoneId = UUID.randomUUID().toString();
+			instagramDeviceId = "android-" + UtilFunctions.generateMD5Hash(profile.getScreenName() + profile.getInstagramPassword());
+			
+			instagramDevice = instagramDeviceRemote.getById(instagramDeviceRemote.getInstagramDeviceLessUsedId());
+		} else {
+			instagramGUID = profile.getInstagramGUID();
+			instagramDeviceId = profile.getInstagramDeviceId();
+			instagramPhoneId = profile.getInstagramPhoneId();
+			instagramDevice = profile.getInstagramDevice();
+		}
+		
+		profile = profileRemote.getById(profileToInsert.getIdProfile());
+		profile.setInstagramGUID(instagramGUID);
+		profile.setInstagramDeviceId(instagramDeviceId);
+		profile.setInstagramPhoneId(instagramPhoneId);
+		profile.setInstagramDevice(instagramDevice);
+		profile.setScreenName(profileToInsert.getScreenName());
+		profile.setInstagramPassword(profileToInsert.getInstagramPassword());
+		
+		InstagramPostHelper instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		isAuthenticated = instagramPostHelper.authenticateUser(profile, instagramDevice, true);
+		
+		if(isAuthenticated) {
+			profile.setIsSchedulingAuthenticated(Profile.ACTIVE);
+			profile.setInstagramCookies(instagramPostHelper.getCookies());
+			profile.setInstagramLastLoginTime(instagramPostHelper.getLastLoginTime());
+		}
+		
+		profileRemote.save(profile);
+		profile = profileRemote.getById(profile.getIdProfile());
+		
+		if(isAuthenticated) {
+			responseEntity = new ResponseEntity<Object>(profile, HttpStatus.OK);
+		} else {
+			
+			JsonObject response = new JsonObject();
+			response.addProperty("error", instagramPostHelper.extractLoginErrorMessage());
+			
+			responseEntity = new ResponseEntity<Object>(response.toString(), HttpStatus.FORBIDDEN);
+		}
+		
+		return responseEntity;
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/insert_instagram_scheduling",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> insertInstagramScheduling(@RequestBody Profile profileToInsert) throws Exception, OptimisticLockException {
+		
+		Boolean isAuthenticated;
+		ResponseEntity<Object> responseEntity;
+		
+		MaintenanceInstagramDeviceRemote instagramDeviceRemote = (MaintenanceInstagramDeviceRemote) 
+				RecoverMaintenance.recoverMaintenance("InstagramDevice");
+		
+		Profile profile = profileToInsert;
+		
+		String instagramGUID;
+		String instagramDeviceId;
+		String instagramPhoneId;
+		InstagramDevice instagramDevice;
+		
+		instagramGUID = UUID.randomUUID().toString();
+		instagramPhoneId = UUID.randomUUID().toString();
+		instagramDeviceId = "android-" + UtilFunctions.generateMD5Hash(profile.getScreenName() + profile.getInstagramPassword());
+
+		instagramDevice = instagramDeviceRemote.getById(instagramDeviceRemote.getInstagramDeviceLessUsedId());
+		
+		profile.setInstagramGUID(instagramGUID);
+		profile.setInstagramDeviceId(instagramDeviceId);
+		profile.setInstagramPhoneId(instagramPhoneId);
+		profile.setInstagramDevice(instagramDevice);
+		profile.setScreenName(profileToInsert.getScreenName());
+		profile.setInstagramPassword(profileToInsert.getInstagramPassword());
+		
+		InstagramPostHelper instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		isAuthenticated = instagramPostHelper.authenticateUser(profile, instagramDevice, true);
+		
+		if(isAuthenticated) {
+			profile.setIsSchedulingAuthenticated(Profile.ACTIVE);
+			profile.setInstagramCookies(instagramPostHelper.getCookies());
+			profile.setInstagramLastLoginTime(instagramPostHelper.getLastLoginTime());
+		}
+		
+		if(isAuthenticated) {
+			responseEntity = new ResponseEntity<Object>(profile, HttpStatus.OK);
+		} else {
+			
+			JsonObject response = new JsonObject();
+			response.addProperty("error", instagramPostHelper.extractLoginErrorMessage());
+			
+			responseEntity = new ResponseEntity<Object>(response.toString(), HttpStatus.FORBIDDEN);
+		}
+		
+		return responseEntity;
+	}
+
+}

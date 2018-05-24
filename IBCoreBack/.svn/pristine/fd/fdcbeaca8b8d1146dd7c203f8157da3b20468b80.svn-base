@@ -1,0 +1,106 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.Date;
+
+import entity.generic.Persistent;
+
+public class FaceReportPostCommentDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private String commentId;
+	private FaceReportPostDTO faceReportPost;
+	private String userId;
+	private String userName;
+	private String message;
+	private Date createdTime;
+	private Integer likes;
+	private Integer comments;
+	private String attachmentType;
+	private String attachmentUrl;
+	
+	public FaceReportPostCommentDTO() {
+		
+	}
+
+	public String getCommentId() {
+		return commentId;
+	}
+
+	public void setCommentId(String commentId) {
+		this.commentId = commentId;
+	}
+
+	public FaceReportPostDTO getFaceReportPost() {
+		return faceReportPost;
+	}
+
+	public void setFaceReportPost(FaceReportPostDTO faceReportPost) {
+		this.faceReportPost = faceReportPost;
+	}
+
+	public String getUserId() {
+		return userId;
+	}
+
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	public Date getCreatedTime() {
+		return createdTime;
+	}
+
+	public void setCreatedTime(Date createdTime) {
+		this.createdTime = createdTime;
+	}
+
+	public Integer getLikes() {
+		return likes;
+	}
+
+	public void setLikes(Integer likes) {
+		this.likes = likes;
+	}
+
+	public Integer getComments() {
+		return comments;
+	}
+
+	public void setComments(Integer comments) {
+		this.comments = comments;
+	}
+
+	public String getAttachmentType() {
+		return attachmentType;
+	}
+
+	public void setAttachmentType(String attachmentType) {
+		this.attachmentType = attachmentType;
+	}
+
+	public String getAttachmentUrl() {
+		return attachmentUrl;
+	}
+
+	public void setAttachmentUrl(String attachmentUrl) {
+		this.attachmentUrl = attachmentUrl;
+	}
+	
+}

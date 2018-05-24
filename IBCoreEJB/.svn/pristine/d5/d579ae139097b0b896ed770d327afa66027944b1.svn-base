@@ -1,0 +1,250 @@
+package br.com.opsocial.ejb.entity.application;
+
+import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@Entity
+@Table(name="accounts", schema="opsocial")
+public class Account extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	public static final Byte FREE = 0; // até 5
+	public static final Byte OPLAY = 1; // até 5
+	public static final Byte OPOP = 2; // até 10
+	public static final Byte OPOWER = 3; // até 15
+	public static final Byte OPLUS = 4; // até 25
+	public static final Byte OPRIME = 5; // até 35
+	public static final Byte OPREMIUM = 6; // até 50
+	public static final Byte CUSTOM = 7; // customizado
+	
+	@Id
+	@Column(name = "idaccount")
+	@GeneratedValue(strategy = GenerationType.IDENTITY, generator = "account_idaccount_seq")
+	private Long idAccount;
+	
+    @Column(name = "active")
+	private char active = 'T';
+    
+    @Column(name = "city")
+    private String city;
+    
+    @Column(name = "state")
+    private String state;
+    
+    @Column(name = "enterprise")
+    private String enterprise;
+    
+    @Column(name="plantype")
+    private Byte planType;
+    
+    @Column(name="cadastredate")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date cadastreDate;
+    
+    @Column(name="testexpire")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date testExpire;
+    
+    @Column(name="planexpire")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date planExpire;
+    
+    @Column(name="extendTest")
+	private Character extendTest = 'F';
+    
+	@Column(name="clienttype")
+	private Character clientType = 'T';
+
+    @Column(name="usessac")
+	private Boolean usesSac = false;
+
+    @Column(name="saclastuse")
+    @Temporal(TemporalType.TIMESTAMP)
+	private Date sacLastUse;
+    
+    @Column(name="promotionalcode")
+    private String promotionalCode;
+
+    @Column(name="monitorings")
+	private Integer monitorings;
+
+    @Column(name="profiles")
+	private Integer profiles;
+
+    @Column(name="users")
+	private Integer users;
+    
+    @JoinColumn(name = "idtimezone", referencedColumnName = "idtimezone")
+	@ManyToOne()
+	private Timezone timezone;
+	
+  	public Account() {
+	}
+  		
+	public Long getIdAccount() {
+		return idAccount;
+	}
+
+	public void setIdAccount(Long idAccount) {
+		this.idAccount = idAccount;
+	}
+
+	public char getActive() {
+		return active;
+	}
+
+	public void setActive(char active) {
+		this.active = active;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public String getEnterprise() {
+		return enterprise;
+	}
+
+	public void setEnterprise(String enterprise) {
+		this.enterprise = enterprise;
+	}
+
+	public Byte getPlanType() {
+		return planType;
+	}
+
+	public void setPlanType(Byte planType) {
+		this.planType = planType;
+	}
+
+	public Date getCadastreDate() {
+		return cadastreDate;
+	}
+
+	public void setCadastreDate(Date cadastreDate) {
+		this.cadastreDate = cadastreDate;
+	}
+
+	public Date getTestExpire() {
+		return testExpire;
+	}
+
+	public void setTestExpire(Date testExpire) {
+		this.testExpire = testExpire;
+	}
+
+	public Date getPlanExpire() {
+		return planExpire;
+	}
+
+	public void setPlanExpire(Date planExpire) {
+		this.planExpire = planExpire;
+	}
+
+	public Character getExtendTest() {
+		return extendTest;
+	}
+
+	public void setExtendTest(Character extendTest) {
+		this.extendTest = extendTest;
+	}
+
+	public Character getClientType() {
+		return clientType;
+	}
+
+	public void setClientType(Character clientType) {
+		this.clientType = clientType;
+	}
+
+	public Boolean getUsesSac() {
+		return usesSac;
+	}
+
+	public void setUsesSac(Boolean usesSac) {
+		this.usesSac = usesSac;
+	}
+
+	public Date getSacLastUse() {
+		return sacLastUse;
+	}
+
+	public void setSacLastUse(Date sacLastUse) {
+		this.sacLastUse = sacLastUse;
+	}
+
+	public String getPromotionalCode() {
+		return promotionalCode;
+	}
+
+	public void setPromotionalCode(String promotionalCode) {
+		this.promotionalCode = promotionalCode;
+	}
+
+	public Integer getMonitorings() {
+		return monitorings;
+	}
+
+	public void setMonitorings(Integer monitorings) {
+		this.monitorings = monitorings;
+	}
+
+	public Integer getProfiles() {
+		return profiles;
+	}
+
+	public void setProfiles(Integer profiles) {
+		this.profiles = profiles;
+	}
+
+	public Integer getUsers() {
+		return users;
+	}
+
+	public void setUsers(Integer users) {
+		this.users = users;
+	}
+
+	public Timezone getTimezone() {
+		return timezone;
+	}
+
+	public void setTimezone(Timezone timezone) {
+		this.timezone = timezone;
+	}
+
+	@Override
+	public Long getId() {		
+		return idAccount;
+	}
+
+	@Override
+	public void setId(Long id) {
+		this.idAccount = id;		
+	}
+}

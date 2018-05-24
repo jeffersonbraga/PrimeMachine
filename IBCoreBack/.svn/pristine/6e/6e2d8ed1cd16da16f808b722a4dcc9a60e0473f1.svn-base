@@ -1,0 +1,131 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.locale.MessageByLocaleServiceImpl;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.instagram.InstagramAPI;
+import br.com.opsocial.server.utils.linkedin.LinkedInApi;
+import br.com.opsocial.server.utils.twitter.TwitterAPI;
+import twitter4j.TwitterException;
+
+@RestController
+@RequestMapping("opsocial")
+public class PostAction extends ServerAction {
+	
+	@Autowired
+    MessageByLocaleServiceImpl messageByLocaleService;
+	
+	/*@RequestMapping(value = "/post_action",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)*/
+	public HashMap<Boolean, String> generatePost(List<Profile> profilesToPost, Post postDTO) throws TwitterException {
+
+		//Character imageType = (Character) getParameters().get("imageType");
+		setParameters(new HashMap<String, Object>());
+/*
+		if(imageType != null) {
+			if(imageType.equals(FacebookPost.FILTERED_PICTURE)) {
+				postDTO.setPicture(UtilFunctions.createFilteredPicture(postDTO.getPicture()));
+			}
+		}
+*/
+		HashMap<Boolean, String> mapPostsSent = new HashMap<Boolean, String>();
+
+		for(Profile profileDTO : profilesToPost) {
+			this.makeSingleProfilePost(profileDTO, postDTO, mapPostsSent);
+		}
+
+		return mapPostsSent;
+	}
+
+	public void makeSingleProfilePost(Profile profileToPost, Post postDTO, HashMap<Boolean, String> mapPostsSent) {
+
+		Object[] messageArgs = new Object[]{profileToPost.getScreenName(), UtilFunctions.getNetworkName(profileToPost.getType())};
+		
+		try {
+
+			if(profileToPost.getType() == Profile.TWITTER) {
+
+				Boolean wasSent;
+
+				wasSent = new TwitterAPI().post(postDTO, profileToPost);
+
+				if(wasSent) {
+					mapPostsSent.put(true, messageByLocaleService.getMessage("post.sent.ok", messageArgs));
+				} else {
+					mapPostsSent.put(false, messageByLocaleService.getMessage("post.sent.notok", messageArgs));
+				}
+
+			} else if(profileToPost.getType().equals(Profile.INSTAGRAM)) {
+
+				Boolean wasSent;
+				MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+				Profile profile = profileRemote.getById(profileToPost.getIdProfile());
+
+				InstagramAPI instagramAPI = new InstagramAPI();
+
+				wasSent = instagramAPI.post(postDTO, profile);
+
+				if(wasSent) {
+					
+					mapPostsSent.put(true, messageByLocaleService.getMessage("post.sent.ok", messageArgs));
+					
+					profile = profileRemote.getById(profile.getIdProfile());
+					profile.setInstagramCookies(instagramAPI.getCookies());
+					profile.setInstagramLastLoginTime(instagramAPI.getLastLoginTime());
+					
+					profileRemote.save(profile);
+					
+				} else {
+					mapPostsSent.put(false, instagramAPI.extractSendImageErrorMessage());
+				}
+
+			} else if(profileToPost.getType().equals(Profile.FACEBOOK) ||
+					profileToPost.getType().equals(Profile.FACEBOOK_PAGE)) {
+				
+				Boolean wasSent;
+				
+				wasSent = new FacebookAPI().post(postDTO, profileToPost);
+				
+				if(wasSent) {
+					mapPostsSent.put(true, messageByLocaleService.getMessage("post.sent.ok", messageArgs));
+				} else {
+					mapPostsSent.put(false, messageByLocaleService.getMessage("post.sent.notok", messageArgs));
+				}
+			} else if(profileToPost.getType().equals(Profile.LINKEDIN) ||
+					profileToPost.getType().equals(Profile.LINKEDIN_PAGE)) {
+				
+				Boolean wasSent;
+				
+				wasSent = new LinkedInApi().post(postDTO, profileToPost);
+				
+				if(wasSent) {
+					mapPostsSent.put(true, messageByLocaleService.getMessage("post.sent.ok", messageArgs));
+				} else {
+					mapPostsSent.put(false, messageByLocaleService.getMessage("post.sent.notok", messageArgs));
+				}
+			}
+			
+		} catch (Exception e) {
+			mapPostsSent.put(false, messageByLocaleService.getMessage("post.sent.notok", messageArgs));
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public void doAction() throws TwitterException {
+		
+	}
+}

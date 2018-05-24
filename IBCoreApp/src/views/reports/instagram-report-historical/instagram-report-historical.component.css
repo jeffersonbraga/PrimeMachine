@@ -1,0 +1,51 @@
+#content-pdf{
+    width: 650px;
+    max-height: 0px;
+    overflow: hidden; 
+}
+
+.page-break{
+    page-break-before: always;
+}
+
+.fa-instagram{
+    color: #ff4169;
+    font-size: 24px
+}
+
+.instagram-post-container {
+    position: relative;
+    display: block;
+    height: 100%;
+}
+
+.img-instagram-post {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
+
+.post-interactions-box {
+    background-color: #ffffff;
+    display: block;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 5px;
+    width: 70%;
+}
+
+.post-interaction-box {
+    padding: 0 5%;
+    position: relative;
+    display: block;
+    float: left;
+    width: 50%
+}
+
+@media print{
+    #content-pdf{
+        max-height: none;
+    }
+}

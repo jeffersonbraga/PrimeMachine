@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.0" xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+	
+<!-- 	<persistence-unit name="opsocial_debug" transaction-type="RESOURCE_LOCAL">
+		
+		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+		
+		<class>entity.application.User</class>
+		<class>entity.application.Monitoring</class>
+		<class>entity.application.Notification</class>
+		<class>entity.application.Profile</class>
+		<class>entity.sets.Set</class>
+		<class>entity.sets.Post</class>
+		<class>entity.application.Monitoring</class>
+
+		<class>entity.facebook.FacebookPost</class>
+		<class>entity.facebook.FacePostMonitoring</class>
+
+		<class>entity.google.GooglePlusPost</class>
+		<class>entity.google.GooglePlusPostMonitoring</class>
+		<class>entity.google.ObjectAttachment</class>
+	
+		<class>entity.instagram.InstagramPost</class>
+		<class>entity.instagram.InstagramPostMonitoring</class>
+		
+		<class>entity.report.FacebookInfluentialUser</class>
+        <class>entity.report.FaceReportLocation</class>
+        <class>entity.report.FaceReportPost</class>
+        <class>entity.report.ReportControl</class>
+        <class>entity.report.ReportDetailed</class>
+        <class>entity.report.ReportGenerate</class>
+        <class>entity.report.TwitterReport</class>
+        <class>entity.report.TwitterReportValue</class>
+        <class>entity.report.TwitterStatus</class>
+        <class>entity.report.TwitterStatusReport</class>
+        <class>entity.report.TwitterFollower</class>
+        <class>entity.report.TwitterFollowerReport</class>
+        <class>entity.report.TwitterFollowerControl</class>
+    	
+    	<class>entity.twitter.RateLimitStatus</class>
+    	<class>entity.twitter.TwitterPost</class>
+    	<class>entity.twitter.TwitterPostMonitoring</class>
+
+    	<class>entity.youtube.YoutubePost</class>
+        <class>entity.youtube.YoutubePostMonitoring</class>
+        
+        <class>entity.application.Suggestion</class>
+        <class>entity.application.Anniversarie</class>
+        <class>entity.application.System</class>
+        <class>entity.application.Account</class>
+
+     	<properties> 
+             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+             <property name="javax.persistence.jdbc.user" value="postgres"/>
+             <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/opsocial"/>
+             <property name="javax.persistence.jdbc.password" value="within"/>
+             <property name="hibernate.default_schema" value="myschema"/>
+	    </properties>
+
+	</persistence-unit> -->
+	
+	<persistence-unit name="opsocial" transaction-type="JTA">	
+		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+		<jta-data-source>java:jboss/datasources/opsocial</jta-data-source>
+<!-- 
+		<class>br.com.opsocial.ejb.entity.application.User</class>
+		<class>br.com.opsocial.ejb.entity.monitoring.Monitoring</class>
+		<class>br.com.opsocial.ejb.entity.application.Notification</class>
+		<class>br.com.opsocial.ejb.entity.application.Profile</class>
+		<class>br.com.opsocial.ejb.entity.sets.Set</class>
+		<class>br.com.opsocial.ejb.entity.sets.Post</class>
+
+		<class>br.com.opsocial.ejb.entity.facebook.FacebookPost</class>
+		<class>br.com.opsocial.ejb.entity.facebook.FacePostMonitoring</class>
+
+		<class>br.com.opsocial.ejb.entity.google.GooglePlusPost</class>
+		<class>br.com.opsocial.ejb.entity.google.GooglePlusPostMonitoring</class>
+		<class>br.com.opsocial.ejb.entity.google.ObjectAttachment</class>
+	
+		<class>br.com.opsocial.ejb.entity.instagram.InstagramPost</class>
+		<class>br.com.opsocial.ejb.entity.instagram.InstagramPostMonitoring</class>
+		
+		<class>br.com.opsocial.ejb.entity.report.FacebookInfluentialUser</class>
+        <class>br.com.opsocial.ejb.entity.report.FaceReportLocation</class>
+        <class>br.com.opsocial.ejb.entity.report.FaceReportPost</class>
+        <class>br.com.opsocial.ejb.entity.report.ReportControl</class>
+        <class>br.com.opsocial.ejb.entity.report.ReportDetailed</class>
+        <class>br.com.opsocial.ejb.entity.report.ReportGenerate</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterReport</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterReportValue</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterStatus</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterStatusReport</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterFollower</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterFollowerReport</class>
+        <class>br.com.opsocial.ejb.entity.report.TwitterFollowerControl</class>
+    	
+    	<class>br.com.opsocial.ejb.entity.twitter.RateLimitStatus</class>
+    	<class>br.com.opsocial.ejb.entity.twitter.TwitterPost</class>
+    	<class>br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring</class>
+
+    	<class>br.com.opsocial.ejb.entity.youtube.YoutubePost</class>
+        <class>br.com.opsocial.ejb.entity.youtube.YoutubePostMonitoring</class>
+        
+        <class>br.com.opsocial.ejb.entity.application.Suggestion</class>
+        <class>br.com.opsocial.ejb.entity.application.Anniversarie</class>
+        <class>br.com.opsocial.ejb.entity.application.Account</class>
+ -->
+     	<properties> 
+			<property name="javax.persistence.default_schema" value="opsocial"/>
+	    </properties>
+	</persistence-unit>
+	
+</persistence> 
+	

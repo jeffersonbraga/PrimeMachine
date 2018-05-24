@@ -1,0 +1,36 @@
+package br.com.opsocial.server.utils.comparators;
+
+import java.util.Comparator;
+
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+
+public class FaceReportPostDTOComparator implements Comparator<FaceReportPostDTO> {
+
+	public static final Integer COMPARE_BY_DATE = 0;
+	public static final Integer COMPARE_BY_REACH = 1;
+	public static final Integer COMPARE_BY_INTERACTIONS = 2;
+	
+	private Integer compareMode = COMPARE_BY_DATE;
+	
+	public FaceReportPostDTOComparator() {
+	}
+	
+	public FaceReportPostDTOComparator(Integer compareMode) {
+		this.compareMode = compareMode;
+	}
+	
+	@Override
+	public int compare(FaceReportPostDTO o1, FaceReportPostDTO o2) {
+		
+		if(compareMode.equals(COMPARE_BY_DATE)) {
+			return o1.getCreatedTime().compareTo(o2.getCreatedTime());
+		} else if(compareMode.equals(COMPARE_BY_REACH)) {
+			return o1.getTotalReach().compareTo(o2.getTotalReach());
+		} else if(compareMode.equals(COMPARE_BY_INTERACTIONS)) {
+			return o1.getTotalInteractions().compareTo(o2.getTotalInteractions());
+		} else {
+			return 0;
+		}
+	}
+
+}

@@ -1,0 +1,45 @@
+.aside-content {
+    position: relative;
+}
+
+.aside-content > article.center {
+    display: table;
+    margin: 0 auto;
+}
+
+header h5.center {
+    text-align: center;
+}
+
+p{
+    font-size: 12px;
+    clear: both;
+}
+
+header h5 {
+    line-height: 14px;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: center;
+}
+
+.legend-item {
+    width: 100%;
+}
+
+/* .legend .row{
+    width: 100%;
+}
+
+.legend .value{
+    float: right;
+    width: 15px;
+} */
+
+/* .margin-adjust{
+    margin-top: -15px;
+} */

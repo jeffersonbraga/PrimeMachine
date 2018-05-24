@@ -1,0 +1,20 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+
+@Local
+public interface InstagramReportDAO extends AbstractDAO<InstagramReport> {
+
+	public InstagramReport getEntity(String idInstagramUser, String property, Long date);
+	public InstagramReport getEntityBeforeDate(String idInstagramUser, String property, Long date);
+	
+	public List<InstagramFollowerTrend> getInstagramFollowersTrends(String idInstagramUser, Long dateFrom, Long dateUntil);
+	public InstagramFollowerTrend getInstagramFollowersTrend(String idInstagramUser, Long dateFrom, Long dateUntil);
+	
+}

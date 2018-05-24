@@ -1,0 +1,79 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.instagram.InstagramPostHelper;
+import br.com.opsocial.server.utils.sets.PostMessage;
+import das.MaintenanceSetRemote;
+import entity.application.Profile;
+import entity.sets.Post;
+import entity.sets.Set;
+
+public class SetsInstagramController {
+	
+	private Timer timer;
+	
+	public SetsInstagramController() {
+		timer = new Timer();
+		timer.schedule(new Task(), 0, 1000 * 60);
+	}
+	
+	class Task extends TimerTask {
+
+		public void run() {
+
+			try {
+
+				MaintenanceSetRemote setRemote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+
+				Date now = new Date();
+				now.setSeconds(0);
+
+				Long time = now.getTime() / 1000;
+
+				List<Set> startingSets = setRemote.getByStartDate(time);
+
+				for(Set set : startingSets) {
+
+					try {
+						
+						if(set.getIsSchedule().equals('T') && set.getProfile().getType().equals(Profile.INSTAGRAM)) {
+
+							Post post = set.getPosts().get(0);
+							
+							Boolean sendingNow = false;
+							
+							if(post.getPosted().equals(Post.NOT_POSTED)) {
+								sendingNow = true;
+								new Thread(new PostMessage(post, set.getProfile())).start();
+							}
+							
+							if(!sendingNow) {
+								
+								// Verify possible post that, for some reason, got stuck in posting status for more than the POST_STUCK_TIME * post.getCountPostingAttempts().
+								Long stuckTime = (new Date().getTime() / 1000L) - (post.getPostDate().getTime() / 1000L); 
+								if(post.getPosted().equals(Post.POSTING) && stuckTime > (InstagramPostHelper.POST_STUCK_TIME * post.getCountPostingAttempts())) {
+									new Thread(new PostMessage(post, set.getProfile())).start();
+								}
+							}
+							
+						}
+						
+					} catch (Exception e) {
+						System.out.println("Exception interceptada com sucesso!!!");
+						e.printStackTrace();
+					}
+				}
+				
+			} catch (Exception e) {
+				System.out.println("Exception interceptada com sucesso!!!");
+				e.printStackTrace();
+			}
+		}
+	}
+
+}

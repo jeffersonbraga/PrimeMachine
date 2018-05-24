@@ -1,0 +1,23 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.Remote;
+
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.application.User;
+
+@Remote
+public interface MaintenanceUserRemote extends AbstractDAS<User>{
+
+	public User getByLoginPassword(String login, String password) throws IllegalArgumentException;
+	
+	public User getByEmail(String email) throws IllegalArgumentException;
+	
+	public List<User> listUsersByAccount(Long idAccount, Character type, Long currentUser);
+	
+	public List<User> listUsersByAccount(Long idAccount, Character type);
+	
+	public List<User> listUsersByAccount(Long idAccount);
+
+}

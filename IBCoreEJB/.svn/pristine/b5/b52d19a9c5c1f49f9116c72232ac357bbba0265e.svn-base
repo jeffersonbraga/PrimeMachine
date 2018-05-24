@@ -1,0 +1,59 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.InstagramPostTagDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostTag;
+import br.com.opsocial.ejb.entity.instagram.InstagramTopPostTag;
+
+@Stateless
+public class MaintenanceInstagramPostTagBean extends AbstractDASImpl<InstagramPostTag> implements MaintenanceInstagramPostTagRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	InstagramPostTagDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<InstagramPostTag> dao) {
+		this.dao = (InstagramPostTagDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramPostTag> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramPostTag> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public List<InstagramTopPostTag> getInstagramTopPostTags(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getInstagramTopPostTags(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<InstagramTopPostTag> getInstagramTopPostTags(Long idInstagramUser) {
+		return dao.getInstagramTopPostTags(idInstagramUser);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

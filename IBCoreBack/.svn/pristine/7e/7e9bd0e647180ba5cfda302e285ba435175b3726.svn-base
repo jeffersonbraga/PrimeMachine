@@ -1,0 +1,42 @@
+package br.com.opsocial.server.actions.dashboard;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterDashboardDTO;
+import br.com.opsocial.ejb.das.MaintenanceReportControlRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+public class DashboardReportTwitterAction extends ServerAction {
+	
+	private Profile profile;
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote) 
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+		
+		profile = (Profile) getParameters().get("profile");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		ReportTwitterDashboardDTO reportTwitterDashboard;
+		
+		if(!reportControlRemote.hasReportTwitterForProfile(profile.getNetworkId(), Profile.TWITTER)) {
+			profile.setReportState(Profile.REPORT_GENERATING);
+			reportTwitterDashboard = new ReportTwitterDashboardDTO();
+		} else {
+			profile.setReportState(Profile.REPORT_FINALIZED);			
+			reportTwitterDashboard = UtilReports.mountReportTwitterDashboard(profile);
+		}
+		
+		getParameters().put("reportTwitterDashboard", reportTwitterDashboard);
+		getParameters().put("profile", profile);
+	}
+
+}

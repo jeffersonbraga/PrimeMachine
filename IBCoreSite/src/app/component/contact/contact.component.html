@@ -1,0 +1,53 @@
+<div class="modal-dialog md-modal-op">
+	<div class="modal-content-wrapper padding-10">
+		<div class="modal-content">
+			<div class="modal-header modal-header-generic clearfix text-left">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true" (click)="hideModal()">
+					<i class="pg-close fs-28"></i>
+				</button>
+				<img src="assets/images/logo-svg-fundo-branco.svg" width="100" class="op-logo-modal m-r-15"/>
+			</div>
+			<div class="modal-body m-t-30 p-t-0 p-b-25 p-l-30 p-r-30">
+				<p class="all-caps color-purple bold m-b-0 fs-13">Contact Us</p>
+				<h5 class="all-caps bold m-t-0 m-b-0 block-title fs-24">We are always available to help!</h5>
+				<p class="m-t-10 m-b-10">Feel free to contact us for doubts, feedback, partnerships or any other demand.</p>
+
+				<form [formGroup]="form">
+					<div class="row">
+						<div class="col-xs-12 no-padding m-l-0 m-r-0">
+							<div class="form-group form-group-default required">
+								<label>Name
+								<input formControlName="name" type="text" name="name" id="name" class="form-control" placeholder="Your name" [(ngModel)]="name" autofocus></label>
+								<label *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="error" for="name">Name is required</label>
+							</div>
+						</div>
+						<div class="col-xs-12 no-padding m-l-0 m-r-0">
+							<div class="form-group form-group-default required">
+								<label>E-mail</label>
+								<input formControlName="email" type="text" name="email" id="email" class="form-control" placeholder="ex: contact@example.com" (blur)="validateEmail()" [(ngModel)]="email">
+								<label *ngIf="emailInput.errors?.required && (emailInput.dirty || emailInput.touched)" class="error" for="email">E-mail is required</label> 
+								<label *ngIf="!emailInput.errors?.required && !emailValid && (emailInput.dirty || emailInput.touched)" class="error" for="email">Enter a valid email address</label>
+							</div>
+						</div>
+						<div class="col-xs-12 no-padding m-l-0 m-r-0">
+							<div class="form-group form-group-default message-contact required">
+								<label>Message</label>
+								<textarea style="height: 70px;" formControlName="message" name="message" id="message" class="form-control" placeholder="ex: some@example.com" [(ngModel)]="message"></textarea>
+								<label *ngIf="messageInput.invalid && (messageInput.dirty || messageInput.touched)" class="error" for="message">Message is required</label>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div class="p-b-60">
+						<a class="bold btn btn-rounded btn-secondary text-white text-uppercase all-caps color-white pull-right sm-full-width" 
+						href="javascript:void(0)" (click)="sendMessage()" [class.disabled]="!form.valid || !emailValid">
+							<span *ngIf="!emailSending && !emailSent">Submit</span>
+							<i *ngIf="emailSending && !emailSent" class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+							<i *ngIf="emailSent" class="fa fa-check" aria-hidden="true"></i>
+						</a>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>

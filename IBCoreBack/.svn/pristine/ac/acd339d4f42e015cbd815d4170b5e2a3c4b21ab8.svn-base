@@ -1,0 +1,188 @@
+package br.com.opsocial.server.actions.upload;
+
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+
+import org.apache.commons.lang3.RandomStringUtils;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+public class VideoThumbnailAction {
+
+	public VideoThumbnailAction() {	
+		
+	}
+	
+//	public File createVideoIcon(Post post, File videoFile) throws Exception {
+//
+//		String uploadDirThumbnails = "C:\\Program Files (x86)\\wildfly-10.1.0.Final\\standalone\\deployments\\OpSocialBack.war\\opsocial\\images\\thumbnails\\";
+//		if (post.getIdPost() != null) {
+//
+//			uploadDirThumbnails = uploadDirThumbnails + post.getIdPost() + "\\";
+//			File diretorioConf = new File(uploadDirThumbnails);
+//			if (!diretorioConf.exists()) {
+//				diretorioConf.mkdir();
+//			}
+//		}
+//
+//		String previewVideo = uploadDirThumbnails + RandomStringUtils.randomAlphanumeric(12) + ".jpg";
+//		String previewVideoThumbnail = uploadDirThumbnails + RandomStringUtils.randomAlphanumeric(12) + "_thumb.jpg";
+//
+//		//capture video preview
+//		String command = "ffmpeg -i " + videoFile.toString() + " -f mjpeg -ss 00:00:01 -vframes 1 " + previewVideo;
+//		Process p = Runtime.getRuntime().exec(command);
+//		p.waitFor();
+//		p.getInputStream().close();
+//
+//		BufferedImage imgThumbnail = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+//		imgThumbnail.createGraphics().drawImage(ImageIO.read(new File(previewVideo)).getScaledInstance(100, 100, Image.SCALE_SMOOTH),0,0,null);
+//		ImageIO.write(imgThumbnail, "jpg", new File(previewVideoThumbnail));
+//
+//		return new File(previewVideoThumbnail);
+//	}
+
+	public List<String> createListVideoIcon(File videoFile) throws Exception {
+
+		//String uploadDirThumbnails = "D:\\wildfly-10.1.0.Final\\standalone\\deployments\\OpSocialBack.war\\opsocial\\images\\thumbnails\\";
+		String uploadDirThumbnails = OpSocialBackApplication.UPLOAD_DIR_THUMBNAILS + "/";
+
+		List<String> listUrlThumbnail = new ArrayList<String>();
+		Double videoDuration;
+		Double videoPartDuration;
+		List<Object> framesPicture = new ArrayList<Object>();
+		{
+			videoDuration = UtilFunctions.getSecondsFromVideo(videoFile);
+			videoPartDuration = videoDuration / 5;
+			Double controlTime = new Double(1);
+			Double controlPlusTime = new Double(0);
+			framesPicture.add("00:00:01");
+			for (int i = 1; i < 5; i++) {
+				controlTime = (i * videoPartDuration);
+
+				if (videoDuration < controlTime) {
+					break;
+				}
+
+				controlTime = controlTime / 60;
+				if (controlTime < 1) {
+					framesPicture.add("00:00:" + controlTime.toString().substring(2, 4));
+				} else {
+
+					if (controlTime < 10) {
+
+						String minutes = "0" + controlTime.toString().substring(0, 1);
+						String seconds = controlTime.toString().substring(2, 4);
+
+						if (new Integer(seconds) >= 60) {
+
+							if (new Integer(minutes) >= 9) {
+								minutes = (new Integer(minutes) + 1) + "";
+							} else {
+								minutes = "0" + (new Integer(minutes) + 1);
+							}
+
+							if ((new Integer(seconds) - 60) >= 10) {
+								seconds = ((new Integer(seconds) - 60)) + "";
+							} else {
+								seconds = "0" + (new Integer(seconds) - 60);
+							}
+						}
+
+						framesPicture.add("00:" + minutes  + ":" + seconds );
+					} else {
+
+						String minutes = controlTime.toString().substring(0, 2);
+						String seconds = controlTime.toString().substring(3, 5);
+
+						if (new Integer(seconds) >= 60) {
+
+							if (new Integer(minutes) >= 9) {
+								minutes = (new Integer(minutes) + 1) + "";
+							} else {
+								minutes = "0" + (new Integer(minutes) + 1);
+							}
+
+							if ((new Integer(seconds) - 60) >= 10) {
+								seconds = ((new Integer(seconds) - 60)) + "";
+							} else {
+								seconds = "0" + (new Integer(seconds) - 60);
+							}
+						}
+
+						framesPicture.add("00:" + minutes + ":" + seconds);
+					}
+				}
+			}
+		}
+
+		ThreadGroup groupThreadThumbnailGenerator = new ThreadGroup("thumbnailGenerator");
+
+		for (int i = 0; i < 5; i++) {
+
+			String timeOfThumbnail = (String) framesPicture.get(i);
+			try {
+				new Thread(groupThreadThumbnailGenerator, ("timeOfThumbnail" + i)) {
+
+					@Override
+					public void run() {
+
+						String previewVideo = RandomStringUtils.randomAlphanumeric(12) + ".jpg";
+
+						previewVideo = uploadDirThumbnails + previewVideo;
+						String previewVideoThumbnail = RandomStringUtils.randomAlphanumeric(12) + "_thumb.jpg";
+
+						String fileName = previewVideoThumbnail;
+						previewVideoThumbnail = uploadDirThumbnails + previewVideoThumbnail;
+
+						//capture video preview
+						String command = "ffmpeg -ss " + timeOfThumbnail + " -i " + videoFile.toString() + " -vframes 1 -q:v 2 " + previewVideo;
+						Process p;
+						try {
+							p = Runtime.getRuntime().exec(command);
+							p.waitFor();
+							p.getInputStream().close();
+						} catch (IOException e) {
+
+							e.printStackTrace();
+							this.run();
+						} catch (InterruptedException e) {
+
+							e.printStackTrace();
+							this.run();
+						}
+
+						BufferedImage imgThumbnail = new BufferedImage(500, 285, BufferedImage.TYPE_INT_RGB);
+						try {
+							imgThumbnail.createGraphics().drawImage(ImageIO.read(new File(previewVideo)).getScaledInstance(500, 285, Image.SCALE_SMOOTH),0,0,null);
+							ImageIO.write(imgThumbnail, "jpg", new File(previewVideoThumbnail));
+
+							listUrlThumbnail.add(fileName);			
+						} catch (IOException e) {
+							System.out.println(previewVideo);
+							e.printStackTrace();
+						}
+					}
+				}.start();
+			} catch (Exception e) {
+
+				e.printStackTrace();
+			}
+		}
+
+		while (true) {
+			if (groupThreadThumbnailGenerator.activeCount() == 0) {
+				break;
+			}
+		}
+
+		return listUrlThumbnail;
+	}
+	
+}

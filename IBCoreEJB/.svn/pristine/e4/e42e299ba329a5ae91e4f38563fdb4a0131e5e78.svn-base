@@ -1,0 +1,391 @@
+package br.com.opsocial.ejb.dao;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.persistence.NoResultException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+@Stateless
+public class ProfileDAOImpl extends AbstractDAOImpl<Profile> implements ProfileDAO {
+	
+	@Override
+	public List<Profile> getEntityByNetworkType(Character type) { 
+		
+		sql = "SELECT p FROM Profile p WHERE p.type = :type ORDER BY p.screenName";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", type);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+	
+	@Override
+	public Profile getEntityByNetworkId(String networkId, Long idAccount) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.networkId = :networkId and p.account.idAccount = :idAccount order by p.type";	
+		
+		query = em.createQuery(sql);
+		query.setParameter("networkId", networkId);
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return (Profile) query.getSingleResult();
+		} catch (Exception e) {
+			return null;
+		}
+	} 
+	
+	@Override
+	public List<Profile> getEntityByNetworkType(List<Character> types, Long idAccount) {
+		
+		String profileTypes = "(";
+		boolean first = true;
+		for(Character type : types) {
+			if(first) {
+				profileTypes = profileTypes.concat("p.type = '"+type+"'");
+				first = false;
+			} else {
+				profileTypes = profileTypes.concat(" or p.type = '"+type+"'");
+			}
+		}
+		profileTypes = profileTypes.concat(")");
+		
+		sql = "SELECT p FROM Profile p WHERE p.account.idAccount = :idAccount AND " + profileTypes + " ORDER BY p.type, p.screenName";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> getEntityByNetworkType(Character type, Long idAccount) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.type = :type and p.account.idAccount = :idAccount order by p.screenName";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", type);
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+	
+	public List<Profile> getChildrenByProfile(Long idProfile) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.parentProfile.idProfile = :idprofile ";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idprofile", idProfile);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+	
+	@Override
+	public List<Profile> getEntitiesByProfileInformation(String profileInformation, Long idAccount, Long idProfile) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.profileInformation like :profileinformation and p.account.idAccount = :idAccount and p.idProfile <> :idprofile";
+		
+		query = em.createQuery(sql);
+		query.setParameter("profileinformation", profileInformation + "♪%");
+		query.setParameter("idAccount", idAccount);
+		query.setParameter("idprofile", idProfile);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> getEntitiesByProfileInformation(String profileInformation, Long idAccount) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.profileInformation like :profileinformation and p.account.idAccount = :idAccount";
+		
+		query = em.createQuery(sql);
+		query.setParameter("profileinformation", profileInformation + "♪%");
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+    @Override
+    public Profile getFacebookProfileTurn() {
+
+        sql = "SELECT p FROM Profile p WHERE (p.type = 'P' OR p.type = 'F') AND p.active = 'T' ORDER BY p.idProfile";
+
+        query = em.createQuery(sql); 
+
+        Profile profileInTurn = null;
+
+        try {
+            List<Profile> profiles = (List<Profile>) query.getResultList(); 
+
+            Integer currentTurn = null;
+            Integer nextTurn = null;
+
+            if(profiles.size() == 1) {
+                profileInTurn = profiles.get(0);
+            } else {
+                for(int i = 0; i < profiles.size(); i++) {
+                    if(profiles.get(i).getTurn() != null && profiles.get(i).getTurn().equals('T')) {
+
+                        if(profiles.size() > i + 1) {
+                        	
+                            currentTurn = i;
+                            nextTurn = i + 1;
+                            
+                        } else if(i > 0) {
+
+                            currentTurn = i;
+                            nextTurn = 0;
+                            
+                        }
+
+                        // Desabilitando perfil que está na vez.
+                        profiles.get(currentTurn).setTurn('F');
+
+                        try {
+                            profiles.set(currentTurn, save(profiles.get(currentTurn)));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            profileInTurn = profiles.get(currentTurn);
+                        }
+
+                        // Habilitando próximo perfil.
+                        profiles.get(nextTurn).setTurn('T');
+
+                        try {
+                            profiles.set(nextTurn, save(profiles.get(nextTurn)));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            profileInTurn = profiles.get(nextTurn);
+                        }
+
+                        break;
+                    }
+	            }
+            }
+        } catch (NoResultException e) {
+            return profileInTurn;
+        }
+
+        return profileInTurn;
+    }
+
+    @Override
+    public Boolean hasFacebookProfileInTurn() {
+
+        sql = "SELECT p FROM Profile p WHERE p.turn = :turn AND (p.type = 'P' OR p.type = 'F') AND p.active = 'T'";
+
+        query = em.createQuery(sql);
+        query.setParameter("turn", 'T');
+        query.setMaxResults(1);
+
+        try {
+            query.getSingleResult();
+            return true;
+        } catch (NoResultException e) {
+            return false;
+        }
+    }
+
+	@Override
+	public List<Profile> listByAccount(Long idAccount) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.account.idAccount = :idAccount";
+		
+		query = em.createQuery(sql);
+        query.setParameter("idAccount", idAccount);
+	    
+        return query.getResultList();
+	}
+
+	@Override
+	public List<Profile> listProfilesByActiveAccount() {
+		
+		sql = "SELECT p FROM Profile p WHERE p.account.active='T'";
+			
+		query = em.createQuery(sql);
+	    
+        return query.getResultList();
+	}
+
+	@Override
+	public List<Profile> listProfilesByAccount(Long idAccount) {
+
+		sql = "SELECT p FROM Profile p WHERE p.account.idAccount = :idAccount";
+		
+		query = em.createQuery(sql);
+        query.setParameter("idAccount", idAccount);
+	    
+        return query.getResultList();
+	}
+
+	@Override
+	public List<Profile> listActivesByType(Character type) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.account.active='T' and p.type = :type";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", type);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listInactivesByType(Character type) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.account.active='F' p.type = :type";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", type);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listInactivesByType(Character type, Date date) {
+		
+		sql = "SELECT p FROM Profile p WHERE " +
+				"p.type = :type and " +
+				"((p.account.testExpire < :now and p.account.planType = 0)" +
+				" or " +
+				"(p.account.planExpire < :now and p.account.planType <> 0))" +
+				" and p.account.planType = 0 order by p.type";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", type);
+		query.setParameter("now", new Timestamp(date.getTime()));
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listByIdMonitoringForGroups(Character type,
+			Long idMonitoring) {
+
+		sql = "SELECT p FROM Profile p WHERE p.type = :type and p.idMonitoringForGroups = :idMonitoring order by p.idProfile";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", type);
+		query.setParameter("idMonitoring", idMonitoring);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listGroupsWithNoMonitoring(Long beforeInsertionDate) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.idMonitoringForGroups IS NULL AND p.insertionDate < :beforeInsertionDate AND p.type :type";
+		
+		query = em.createQuery(sql);
+		query.setParameter("beforeInsertionDate", beforeInsertionDate);
+		query.setParameter("type", Profile.FACEBOOK_GROUP);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listInstagramProfilesToReconnect(Long idAccount) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.type = :type AND p.account.idAccount = :idAccount " +
+				"AND p.isSchedulingAuthenticated = :isSchedulingAuthenticated AND p.instagramPassword IS NOT NULL " + 
+				"ORDER BY p.screenName";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", Profile.INSTAGRAM);
+		query.setParameter("idAccount", idAccount);
+		query.setParameter("isSchedulingAuthenticated", 'F');
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listInstagramProfilesToAuthenticate(Long idAccount) {
+		
+		sql = "SELECT p FROM Profile p WHERE p.type = :type AND p.account.idAccount = :idAccount " +
+				"AND p.isSchedulingAuthenticated = :isSchedulingAuthenticated AND p.instagramPassword IS NULL " + 
+				"ORDER BY p.screenName";
+		
+		query = em.createQuery(sql);
+		query.setParameter("type", Profile.INSTAGRAM);
+		query.setParameter("idAccount", idAccount);
+		query.setParameter("isSchedulingAuthenticated", 'F');
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+
+	@Override
+	public List<Profile> listInvalidTokenProfiles(Long idAccount, char invalidToken) {
+		sql = "SELECT p FROM Profile p WHERE p.account.idAccount = :idAccount "
+				+ "AND p.isTokenValid = :invalidToken " +
+				"ORDER BY p.screenName";
+		
+		query = em.createQuery(sql);
+		query.setParameter("invalidToken", invalidToken);
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Profile>();
+		}
+	}
+}

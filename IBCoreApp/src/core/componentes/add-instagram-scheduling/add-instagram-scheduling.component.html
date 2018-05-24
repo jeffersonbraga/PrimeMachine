@@ -1,0 +1,59 @@
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="row p-t-6">
+      <div class="col-sm-10 col-xs-10">
+        <button_channels [isExcludable]="false" [isSelectable]="false" [profile]="profileInserted" [verifySelected]="false">
+        </button_channels>
+      </div>
+      <div class="col-sm-2 col-xs-2">
+        <div class="pull-right" *ngIf="fromAddChannels">
+          <span class="center-block text-center">
+            <i class="fa fa-check" aria-hidden="true"></i>
+          </span>
+          <span class="small center-block">Pronto</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+      <div class="overlay-mask" [hidden]="!isAuthenticating">
+          <div class="text-center">
+            <div class="progress-circle-indeterminate progress-circle-complete" data-color="complete"></div>
+            <br>
+          </div>
+      </div>
+      <form role="form" autocomplete="off" 
+          [formGroup]="authInstagramShedulingForm" (ngSubmit)="doAuthInstagramSheduling(authInstagramShedulingForm.value, authInstagramShedulingForm.valid)">
+        <div class="form-group-attached">
+          <div class="row clearfix">
+            <div class="col-sm-5">
+              <div class="form-group form-group-default required">
+                <label for="screenName">Usuário</label>
+                <input #inputUserName formControlName="screenName" type="text" class="form-control input-sm" name="screenName" required aria-required="true">
+              </div>
+            </div>
+            <div class="col-sm-5">
+              <div class="form-group form-group-default before-button required">
+                <label for="instagramPassword">Senha</label>
+                <input formControlName="instagramPassword" type="password" class="form-control input-sm" name="instagramPassword" required aria-required="true">
+              </div>
+            </div>
+            <div class="col-sm-2">
+              <button [hidden]="hasSchedulingAuthenticated" type="submit" class="btn btn-primary btn-sm m-t-5 pull-right btn-mobile">Login</button>
+              <div [hidden]="!hasSchedulingAuthenticated" class="pull-right">
+                <span class="center-block text-center">
+                  <i class="fa fa-check" aria-hidden="true"></i>
+                </span>
+                <span class="small center-block">Pronto</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+</div>
+<div [hidden]="!hasError" class="alert alert-warning m-b-5 m-t-5" role="alert">
+  <button class="close" type="button" (click)="hideErrorMessage()"></button>
+  {{errorMessage}}
+</div>

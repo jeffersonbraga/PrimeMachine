@@ -1,0 +1,319 @@
+package br.com.opsocial.client.entity.report.instagram;
+
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+
+public class ReportInstagramOverviewDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Long dateFrom;
+	private Long dateUntil;
+	
+	private Long followers;
+	
+	private List<InstagramFollowerTrend> instagramFollowerTrends;
+	private InstagramFollowerTrend instagramFollowerTrend;
+	
+	private Long likes;
+	private Long comments;
+	private Double likesAverage;
+	private Double commentsAverage;
+	
+	private Map<String, Long> likesPerDay;
+	private Map<String, Long> commentsPerDay;
+	
+	private List<InstagramReportPostDTO> postsWithMoreLikes;
+	private List<InstagramReportPostDTO> postsWithMoreComments;
+	
+	private List<InstagramEngagedFollowerDTO> mostEngagedFollowers;
+	
+	private Integer likesFollowers;
+	private Integer likesNoFollowers;
+	
+	private Integer commentsFollowers;
+	private Integer commentsNoFollowers;
+	
+	private List<InstagramTopPostTagDTO> instagramTopPostTags;
+	
+	private Map<Integer, Long> likesPerHour;
+	private Integer timeWithMoreLikes;
+	private Integer timeWithMoreLikesPerc;
+	private Integer timeWithLessLikes;
+	private Integer timeWithLessLikesPerc;
+	
+	private Map<Integer, Long> commentsPerHour;
+	private Integer timeWithMoreComments;
+	private Integer timeWithMoreCommentsPerc;
+	private Integer timeWithLessComments;
+	private Integer timeWithLessCommentsPerc;
+	
+	private Map<Integer, Long> interactionsPerHour;
+	private List<InstagramInteractionRankingDTO> instagramInteractionsRanking;
+	private Long interactionsCount;
+	
+	public ReportInstagramOverviewDTO() {
+		
+	}
+
+	public Long getDateFrom() {
+		return dateFrom;
+	}
+
+	public void setDateFrom(Long dateFrom) {
+		this.dateFrom = dateFrom;
+	}
+
+	public Long getDateUntil() {
+		return dateUntil;
+	}
+
+	public void setDateUntil(Long dateUntil) {
+		this.dateUntil = dateUntil;
+	}
+
+	public Long getFollowers() {
+		return followers;
+	}
+
+	public void setFollowers(Long followers) {
+		this.followers = followers;
+	}
+
+	public List<InstagramFollowerTrend> getInstagramFollowerTrends() {
+		return instagramFollowerTrends;
+	}
+
+	public void setInstagramFollowerTrends(
+			List<InstagramFollowerTrend> instagramFollowerTrends) {
+		this.instagramFollowerTrends = instagramFollowerTrends;
+	}
+
+	public InstagramFollowerTrend getInstagramFollowerTrend() {
+		return instagramFollowerTrend;
+	}
+
+	public void setInstagramFollowerTrend(
+			InstagramFollowerTrend instagramFollowerTrend) {
+		this.instagramFollowerTrend = instagramFollowerTrend;
+	}
+
+	public Long getLikes() {
+		return likes;
+	}
+
+	public void setLikes(Long likes) {
+		this.likes = likes;
+	}
+
+	public Long getComments() {
+		return comments;
+	}
+
+	public void setComments(Long comments) {
+		this.comments = comments;
+	}
+
+	public Map<String, Long> getLikesPerDay() {
+		return likesPerDay;
+	}
+
+	public void setLikesPerDay(Map<String, Long> likesPerDay) {
+		this.likesPerDay = likesPerDay;
+	}
+
+	public Map<String, Long> getCommentsPerDay() {
+		return commentsPerDay;
+	}
+
+	public void setCommentsPerDay(Map<String, Long> commentsPerDay) {
+		this.commentsPerDay = commentsPerDay;
+	}
+
+	public Double getLikesAverage() {
+		return likesAverage;
+	}
+
+	public void setLikesAverage(Double likesAverage) {
+		this.likesAverage = likesAverage;
+	}
+
+	public Double getCommentsAverage() {
+		return commentsAverage;
+	}
+
+	public void setCommentsAverage(Double commentsAverage) {
+		this.commentsAverage = commentsAverage;
+	}
+
+	public List<InstagramReportPostDTO> getPostsWithMoreLikes() {
+		return postsWithMoreLikes;
+	}
+
+	public void setPostsWithMoreLikes(
+			List<InstagramReportPostDTO> postsWithMoreLikes) {
+		this.postsWithMoreLikes = postsWithMoreLikes;
+	}
+
+	public List<InstagramReportPostDTO> getPostsWithMoreComments() {
+		return postsWithMoreComments;
+	}
+
+	public List<InstagramEngagedFollowerDTO> getMostEngagedFollowers() {
+		return mostEngagedFollowers;
+	}
+
+	public void setMostEngagedFollowers(
+			List<InstagramEngagedFollowerDTO> mostEngagedFollowers) {
+		this.mostEngagedFollowers = mostEngagedFollowers;
+	}
+
+	public Integer getLikesFollowers() {
+		return likesFollowers;
+	}
+
+	public void setLikesFollowers(Integer likesFollowers) {
+		this.likesFollowers = likesFollowers;
+	}
+
+	public Integer getLikesNoFollowers() {
+		return likesNoFollowers;
+	}
+
+	public void setLikesNoFollowers(Integer likesNoFollowers) {
+		this.likesNoFollowers = likesNoFollowers;
+	}
+
+	public Integer getCommentsFollowers() {
+		return commentsFollowers;
+	}
+
+	public void setCommentsFollowers(Integer commentsFollowers) {
+		this.commentsFollowers = commentsFollowers;
+	}
+
+	public Integer getCommentsNoFollowers() {
+		return commentsNoFollowers;
+	}
+
+	public void setCommentsNoFollowers(Integer commentsNoFollowers) {
+		this.commentsNoFollowers = commentsNoFollowers;
+	}
+
+	public List<InstagramTopPostTagDTO> getInstagramTopPostTags() {
+		return instagramTopPostTags;
+	}
+
+	public void setInstagramTopPostTags(
+			List<InstagramTopPostTagDTO> instagramTopPostTags) {
+		this.instagramTopPostTags = instagramTopPostTags;
+	}
+
+	public Map<Integer, Long> getLikesPerHour() {
+		return likesPerHour;
+	}
+
+	public void setLikesPerHour(Map<Integer, Long> likesPerHour) {
+		this.likesPerHour = likesPerHour;
+	}
+
+	public Integer getTimeWithMoreLikes() {
+		return timeWithMoreLikes;
+	}
+
+	public void setTimeWithMoreLikes(Integer timeWithMoreLikes) {
+		this.timeWithMoreLikes = timeWithMoreLikes;
+	}
+
+	public Integer getTimeWithMoreLikesPerc() {
+		return timeWithMoreLikesPerc;
+	}
+
+	public void setTimeWithMoreLikesPerc(Integer timeWithMoreLikesPerc) {
+		this.timeWithMoreLikesPerc = timeWithMoreLikesPerc;
+	}
+
+	public Integer getTimeWithLessLikes() {
+		return timeWithLessLikes;
+	}
+
+	public void setTimeWithLessLikes(Integer timeWithLessLikes) {
+		this.timeWithLessLikes = timeWithLessLikes;
+	}
+
+	public Integer getTimeWithLessLikesPerc() {
+		return timeWithLessLikesPerc;
+	}
+
+	public void setTimeWithLessLikesPerc(Integer timeWithLessLikesPerc) {
+		this.timeWithLessLikesPerc = timeWithLessLikesPerc;
+	}
+
+	public Map<Integer, Long> getCommentsPerHour() {
+		return commentsPerHour;
+	}
+
+	public void setCommentsPerHour(Map<Integer, Long> commentsPerHour) {
+		this.commentsPerHour = commentsPerHour;
+	}
+
+	public Integer getTimeWithMoreComments() {
+		return timeWithMoreComments;
+	}
+
+	public void setTimeWithMoreComments(Integer timeWithMoreComments) {
+		this.timeWithMoreComments = timeWithMoreComments;
+	}
+
+	public Integer getTimeWithMoreCommentsPerc() {
+		return timeWithMoreCommentsPerc;
+	}
+
+	public void setTimeWithMoreCommentsPerc(Integer timeWithMoreCommentsPerc) {
+		this.timeWithMoreCommentsPerc = timeWithMoreCommentsPerc;
+	}
+
+	public Integer getTimeWithLessComments() {
+		return timeWithLessComments;
+	}
+
+	public void setTimeWithLessComments(Integer timeWithLessComments) {
+		this.timeWithLessComments = timeWithLessComments;
+	}
+
+	public Integer getTimeWithLessCommentsPerc() {
+		return timeWithLessCommentsPerc;
+	}
+
+	public void setTimeWithLessCommentsPerc(Integer timeWithLessCommentsPerc) {
+		this.timeWithLessCommentsPerc = timeWithLessCommentsPerc;
+	}
+
+	public Map<Integer, Long> getInteractionsPerHour() {
+		return interactionsPerHour;
+	}
+
+	public void setInteractionsPerHour(Map<Integer, Long> interactionsPerHour) {
+		this.interactionsPerHour = interactionsPerHour;
+	}
+
+	public List<InstagramInteractionRankingDTO> getInstagramInteractionsRanking() {
+		return instagramInteractionsRanking;
+	}
+
+	public void setInstagramInteractionsRanking(
+			List<InstagramInteractionRankingDTO> instagramInteractionsRanking) {
+		this.instagramInteractionsRanking = instagramInteractionsRanking;
+	}
+
+	public Long getInteractionsCount() {
+		return interactionsCount;
+	}
+
+	public void setInteractionsCount(Long interactionsCount) {
+		this.interactionsCount = interactionsCount;
+	}
+}

@@ -1,0 +1,770 @@
+package br.com.opsocial.server.utils.monitorings;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.services.plus.Plus;
+import com.google.api.services.plus.model.Activity;
+import com.google.api.services.plus.model.Activity.Actor;
+import com.google.api.services.plus.model.Activity.PlusObject.Attachments;
+import com.google.api.services.plus.model.ActivityFeed;
+import com.google.api.services.plus.model.Person;
+
+import br.com.opsocial.client.entity.googleplus.GooglePlusPostDTO;
+import br.com.opsocial.client.entity.googleplus.ObjectAttachmentDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.ejb.das.MaintenanceGooglePagingRemote;
+import br.com.opsocial.ejb.das.MaintenanceGooglePlusPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceGooglePlusPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringHashTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringInfluentialUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLinkRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringSearchRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceObjectAttachmentRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.GooglePlusPostMonitoringId;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringSearchId;
+import br.com.opsocial.ejb.entity.google.GooglePaging;
+import br.com.opsocial.ejb.entity.google.GooglePlusPost;
+import br.com.opsocial.ejb.entity.google.GooglePlusPostMonitoring;
+import br.com.opsocial.ejb.entity.google.ObjectAttachment;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringHashTag;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringInfluentialUser;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLink;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringSearch;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUser;
+import br.com.opsocial.server.utils.GenericImageAdapt;
+import br.com.opsocial.server.utils.LanguageIdentifier;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.networksintegrations.GoogleIntegration;
+import br.com.opsocial.server.utils.tasks.MonitoringController;
+
+public class MonitoringGooglePlus {
+
+	private Monitoring monitoring;
+	
+	private MaintenanceGooglePlusPostMonitoringRemote googlePlusPostMonitoringRemote;
+
+	private MaintenanceMonitoringUserRemote monitoringUserRemote;
+	private MaintenanceMonitoringInfluentialUserRemote monitoringInfluentialUserRemote;
+	
+	private MaintenanceMonitoringHashTagRemote monitoringHashTagRemote;
+	private MaintenanceMonitoringLinkRemote monitoringLinkRemote;
+	
+	private MaintenanceGooglePagingRemote googlePagingRemote;
+	private MaintenanceMonitoringSearchRemote monitoringSearchRemote;
+	
+	private Long generateDay;
+
+	public MonitoringGooglePlus() {
+		
+	}
+
+	public MonitoringGooglePlus(Monitoring monitoring) {
+
+		this.monitoring = monitoring;
+		
+		this.generateDay = UtilFunctions.getMidnightDateNoDaylightTime(new Date());
+
+		monitoringUserRemote = (MaintenanceMonitoringUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringUser");
+		monitoringInfluentialUserRemote = (MaintenanceMonitoringInfluentialUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringInfluentialUser");
+		
+		monitoringHashTagRemote = (MaintenanceMonitoringHashTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringHashTag");
+		monitoringLinkRemote = (MaintenanceMonitoringLinkRemote) RecoverMaintenance.recoverMaintenance("MonitoringLink");
+	}
+
+	public void getCurrentPosts(String term) {
+
+		try {
+			
+			GooglePaging googlePaging = getGooglePaging(term);
+
+			Plus.Activities.Search searchActivities = new GoogleIntegration().getGooglePlus().activities().search(term);
+			searchActivities.setMaxResults(googlePaging.getCount());
+			searchActivities.setLanguage("pt-BR");
+			searchActivities.setOrderBy("recent");
+			searchActivities.setFields(GooglePlusPostDTO.FIELDS_SEARCH);
+			searchActivities.setKey(GoogleIntegration.API_KEY);
+			
+			if(googlePaging.getEtag() != null) {
+				
+				HttpHeaders headers = new HttpHeaders();
+				headers.setIfNoneMatch(googlePaging.getEtag());
+				
+				searchActivities.setRequestHeaders(headers);
+			}
+
+			ActivityFeed activityFeed = searchActivities.execute();
+			List<Activity> activities = activityFeed.getItems();
+			
+			Long searchedDate = new Date().getTime() / 1000L;
+
+			Integer returnedPosts = saveGooglePlusPosts(activities, term);
+			
+			googlePaging = googlePagingRemote.getById(googlePaging.getIdGooglePaging());
+
+			if(googlePaging.getEtag() == null) {
+				googlePaging.setNextPageToken(activityFeed.getNextPageToken());
+			}
+			googlePaging.setEtag(activityFeed.getEtag());
+			
+			googlePagingRemote.save(googlePaging);
+			
+			MonitoringSearch monitoringSearch = getMonitoringSearch(term);
+			
+			if(returnedPosts > 0) {
+				monitoringSearch.setLastDateSearchedWithResults(searchedDate);
+				monitoringSearch.setSearchesWithResults(monitoringSearch.getSearchesWithResults() + 1L);
+			}
+			
+			Long cycles = monitoringSearch.getCycles(); 
+			
+			if((monitoringSearch.getReturnedPosts() == 0 && monitoringSearch.getReturnedPosts().equals(returnedPosts)) 
+					|| monitoringSearch.getReturnedPosts() > 0 && returnedPosts > 0) {
+				cycles++;
+			} else {
+				cycles = 1L;
+			}
+			
+			monitoringSearch.setCycles(cycles);
+			monitoringSearch.setLastDateSearched(searchedDate);
+			monitoringSearch.setExpectedPosts(MonitoringController.LIMIT_PER_CALL);
+			monitoringSearch.setSearches(monitoringSearch.getSearches() + 1L);
+			monitoringSearch.setReturnedPosts(returnedPosts);
+			
+			monitoringSearchRemote.save(monitoringSearch);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public Activity getCounts(String activityId) {
+
+		try {
+
+			Plus.Activities.Get getActivity = new GoogleIntegration().getGooglePlus().activities().get(activityId);
+			getActivity.setFields("object(replies/totalItems,plusoners/totalItems,resharers/totalItems)");
+			getActivity.setKey(GoogleIntegration.API_KEY);
+
+			Activity activity = getActivity.execute();
+
+			return activity;
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	private Integer saveGooglePlusPosts(List<Activity> activities, String term) {
+
+		MaintenanceGooglePlusPostRemote googlePlusPostRemote = (MaintenanceGooglePlusPostRemote) 
+				RecoverMaintenance.recoverMaintenance("GooglePlusPost");
+
+		MaintenanceObjectAttachmentRemote objectAttachmentRemote = (MaintenanceObjectAttachmentRemote) 
+				RecoverMaintenance.recoverMaintenance("ObjectAttachment");
+
+		googlePlusPostMonitoringRemote = (MaintenanceGooglePlusPostMonitoringRemote) 
+				RecoverMaintenance.recoverMaintenance("GooglePlusPostMonitoring");
+
+		Integer newPostsCount = 0;
+		
+		Long retrievedDate = new Date().getTime() / 1000L;
+
+		LanguageIdentifier languageIdentifier = new LanguageIdentifier();
+
+		boolean alreadyHasAttachments = true;
+
+		for(Activity activity : activities) {
+
+			if(validateIgnore(activity)) {
+
+				String auxToVerifyLanguage = "";
+
+				GooglePlusPost googlePlusPost = googlePlusPostRemote.getById(activity.getId());
+
+				try {
+
+					if(googlePlusPost == null) {
+
+						googlePlusPost = new GooglePlusPost();
+						alreadyHasAttachments = false;
+
+						googlePlusPost.setActivityId(activity.getId());
+						googlePlusPost.setTitle(activity.getTitle());
+						googlePlusPost.setPublished(activity.getPublished().getValue() / 1000L);
+						googlePlusPost.setUrl(activity.getUrl());
+						googlePlusPost.setVerb(activity.getVerb());
+
+						googlePlusPost.setActorId(activity.getActor().getId());
+						googlePlusPost.setActorDisplayName(activity.getActor().getDisplayName());
+						googlePlusPost.setActorUrl(activity.getActor().getUrl());
+						googlePlusPost.setActorImageUrl(activity.getActor().getImage().getUrl());
+
+						googlePlusPost.setObjectId(activity.getObject().getId());
+
+						googlePlusPost.setObjectContent(activity.getObject().getContent());
+
+						googlePlusPost.setObjectType(activity.getObject().getObjectType());
+
+						googlePlusPost.setLikes(activity.getObject().getPlusoners().getTotalItems().intValue());
+						googlePlusPost.setComments(activity.getObject().getReplies().getTotalItems().intValue());
+						googlePlusPost.setShares(activity.getObject().getResharers().getTotalItems().intValue());
+
+						googlePlusPost = googlePlusPostRemote.save(googlePlusPost);
+					}
+					
+					auxToVerifyLanguage += googlePlusPost.getObjectContent() + " ";
+
+					if(activity.getObject().getAttachments() != null && !alreadyHasAttachments) {
+						for(Attachments attachment : activity.getObject().getAttachments()) {
+							if(attachment.getObjectType() != null) {
+
+								ObjectAttachment objectAttachment = new ObjectAttachment();
+								objectAttachment.setGooglePlusPost(googlePlusPost);
+								objectAttachment.setObjectType(attachment.getObjectType());
+
+								objectAttachment.setDisplayName(attachment.getDisplayName());
+								auxToVerifyLanguage += objectAttachment.getDisplayName()  + " ";
+
+								objectAttachment.setContent(attachment.getContent() == null ? "" : attachment.getContent());
+								auxToVerifyLanguage += objectAttachment.getContent() + " ";
+
+								objectAttachment.setUrl(attachment.getUrl());
+
+								if(attachment.getImage() != null) {
+
+									objectAttachment.setImageUrl(attachment.getImage().getUrl());
+									objectAttachment.setImageType(attachment.getImage().getType());
+									objectAttachment.setImageHeight(attachment.getImage().getHeight() == null ? null : attachment.getImage().getHeight().intValue());
+									objectAttachment.setImageWidth(attachment.getImage().getWidth() == null ? null : attachment.getImage().getWidth().intValue());	
+								}
+
+								if(attachment.getEmbed() != null) {
+
+									objectAttachment.setEmbedUrl(UtilFunctions.convertToEmbedURL(attachment.getEmbed().getUrl()));
+									objectAttachment.setEmbedType(attachment.getEmbed().getType());
+								}
+
+								if(attachment.getObjectType().equals(ObjectAttachmentDTO.ARTICLE) && attachment.getImage() != null) {
+
+									GenericImageAdapt image = UtilFunctions.getImageSize(attachment.getImage().getUrl());
+
+									objectAttachment.setImageHeight(image.getHeight());
+									objectAttachment.setImageWidth(image.getWidth());
+								}
+
+								try {
+									objectAttachment = objectAttachmentRemote.save(objectAttachment);
+								} catch (IllegalArgumentException e) {
+									e.printStackTrace();
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+						}
+					}
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				if(googlePlusPostMonitoringRemote.getByComposedId(monitoring.getIdMonitoring(), googlePlusPost.getActivityId()) == null) { 
+
+					GooglePlusPostMonitoringId googlePlusPostMonitoringId = new GooglePlusPostMonitoringId();
+					googlePlusPostMonitoringId.setGooglePlusPost(googlePlusPost.getActivityId());
+					googlePlusPostMonitoringId.setMonitoring(monitoring.getIdMonitoring());
+					googlePlusPostMonitoringId.setTerm(term);
+
+					if(googlePlusPostMonitoringRemote.getById(googlePlusPostMonitoringId) == null) {
+						
+						newPostsCount++;
+
+						GooglePlusPostMonitoring googlePlusPostMonitoring = new GooglePlusPostMonitoring();
+						googlePlusPostMonitoring.setGooglePlusPost(googlePlusPost);
+						googlePlusPostMonitoring.setMonitoring(monitoring);
+						googlePlusPostMonitoring.setTerm(term);
+						googlePlusPostMonitoring.setVisible('T');
+						googlePlusPostMonitoring.setRetrievedDate(retrievedDate);
+						googlePlusPostMonitoring.setCreatedTime(googlePlusPost.getPublished());
+						googlePlusPostMonitoring.setHasHashTags(false);
+						googlePlusPostMonitoring.setHasLinks(false);
+
+						String response = languageIdentifier.recoverLanguage(auxToVerifyLanguage);
+
+						if(response == null || response.equals("\"pt\"") || response.isEmpty() || response.equals("[]")) {
+							googlePlusPostMonitoring.setGarbage('F');
+						} else {
+							googlePlusPostMonitoring.setGarbage('T');
+						}
+
+						executeAutomaticNeuterQualification(activity, googlePlusPostMonitoring);
+						executeAutomaticNegativeQualification(activity, googlePlusPostMonitoring);
+						executeAutomaticPositiveQualification(activity, googlePlusPostMonitoring);
+
+						try {
+
+							googlePlusPostMonitoring = googlePlusPostMonitoringRemote.save(googlePlusPostMonitoring);
+
+							if(googlePlusPostMonitoring.getGarbage().equals('F')) {
+								googlePlusPostMonitoring = saveMonitoringLinks(googlePlusPostMonitoring);
+								googlePlusPostMonitoring = saveMonitoringHashTags(googlePlusPostMonitoring);
+								saveMonitoringInfluentialUserStats(activity.getActor());
+							}
+
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}
+		
+		return newPostsCount;
+	}
+	
+	private boolean validateIgnore(Activity activity) {
+
+		if(monitoring.getIgnoreTerms() == null) {
+			return true;
+		} else {
+			String[] ignoreTerms = monitoring.getIgnoreTerms().split(";");
+
+			if(activity.getObject().getContent() != null) {
+				for(String ignoreTerm : ignoreTerms) {
+					if(removeLetterSpecialCharacter(activity.getObject().getContent()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						return false;
+					}
+				}
+			}
+
+			if(activity.getObject().getAttachments() != null) {
+				for(Attachments attachment : activity.getObject().getAttachments()) {
+					for(String ignoreTerm : ignoreTerms) {
+						if(removeLetterSpecialCharacter(attachment.getContent()).toLowerCase()
+								.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+							return false;
+						}
+					}
+				}	
+			}	
+		}
+
+		return true;
+	}
+
+	private GooglePlusPostMonitoring executeAutomaticPositiveQualification(Activity activity, GooglePlusPostMonitoring googlePlusPostMonitoring) {
+
+		if(monitoring.getAutoPositiveTerms() != null) {
+
+			String[] terms = monitoring.getAutoPositiveTerms().split(";");
+
+			if(activity.getObject().getContent() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(activity.getObject().getContent()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						googlePlusPostMonitoring.setQualification(PostMonitoringDTO.POSITIVE);
+						return googlePlusPostMonitoring;
+					}
+				}
+			}
+
+			if(activity.getObject().getAttachments() != null) {
+				for(Attachments attachment : activity.getObject().getAttachments()) {
+					for(String term : terms) {
+						if(removeLetterSpecialCharacter(attachment.getContent()).toLowerCase()
+								.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+							googlePlusPostMonitoring.setQualification(PostMonitoringDTO.POSITIVE);
+							return googlePlusPostMonitoring;
+						}
+					}
+				}	
+			}
+		}
+
+		return googlePlusPostMonitoring;
+	}
+
+	private GooglePlusPostMonitoring executeAutomaticNegativeQualification(Activity activity, GooglePlusPostMonitoring googlePlusPostMonitoring) {
+
+		if(monitoring.getAutoNegativeTerms() != null) {
+
+			String[] terms = monitoring.getAutoNegativeTerms().split(";");
+
+			if(activity.getObject().getContent() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(activity.getObject().getContent()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						googlePlusPostMonitoring.setQualification(PostMonitoringDTO.NEGATIVE);
+						return googlePlusPostMonitoring;
+					}
+				}
+			}
+
+			if(activity.getObject().getAttachments() != null) {
+				for(Attachments attachment : activity.getObject().getAttachments()) {
+					for(String term : terms) {
+						if(removeLetterSpecialCharacter(attachment.getContent()).toLowerCase()
+								.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+							googlePlusPostMonitoring.setQualification(PostMonitoringDTO.NEUTER);
+							return googlePlusPostMonitoring;
+						}
+					}
+				}	
+			}
+		}
+
+		return googlePlusPostMonitoring;
+	}
+
+	private GooglePlusPostMonitoring executeAutomaticNeuterQualification(Activity activity, GooglePlusPostMonitoring googlePlusPostMonitoring) {
+
+		if(monitoring.getAutoNeuterTerms() != null) {
+
+			String[] terms = monitoring.getAutoNeuterTerms().split(";");
+
+			if(activity.getObject().getContent() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(activity.getObject().getContent()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						googlePlusPostMonitoring.setQualification(PostMonitoringDTO.NEUTER);
+						return googlePlusPostMonitoring;
+					}
+				}
+			}
+
+			if(activity.getObject().getAttachments() != null) {
+				for(Attachments attachment : activity.getObject().getAttachments()) {
+					for(String term : terms) {
+						if(removeLetterSpecialCharacter(attachment.getContent()).toLowerCase()
+								.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+							googlePlusPostMonitoring.setQualification(PostMonitoringDTO.NEUTER);
+							return googlePlusPostMonitoring;
+						}
+					}
+				}	
+			}
+		}
+
+		return googlePlusPostMonitoring;
+	}
+
+	public String removeLetterSpecialCharacter(String value) {
+
+		if(value != null) {
+			
+			value = value.replaceAll("[ÂÀÁÄÃ]", "A");
+			value = value.replaceAll("[âãàáä]", "a");
+			value = value.replaceAll("[ÊÈÉË]", "E");
+			value = value.replaceAll("[êèéë]", "e");
+			value = value.replaceAll("ÎÍÌÏ", "I");
+			value = value.replaceAll("îíìï", "i");
+			value = value.replaceAll("[ÔÕÒÓÖ]", "O");
+			value = value.replaceAll("[ôõòóö]", "o");
+			value = value.replaceAll("[ÛÙÚÜ]", "U");
+			value = value.replaceAll("[ûúùü]", "u");
+			value = value.replaceAll("Ç", "C");
+			value = value.replaceAll("ç", "c");
+			
+		} else {
+			value = "";
+		}
+		
+		return value;
+	}
+
+	private Person getPeople(String actorId) {
+		
+		Person person = new Person();
+		
+		try {
+			
+			Plus.People.Get getPeole = new GoogleIntegration().getGooglePlus().people().get(actorId);
+			getPeole.setFields(GooglePlusPostDTO.FIELDS_GET_PEOPLE);
+			getPeole.setKey(GoogleIntegration.API_KEY);
+
+			person = getPeole.execute();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return person;
+	}
+	
+	private GooglePlusPostMonitoring saveMonitoringLinks(GooglePlusPostMonitoring googlePlusPostMonitoring) {
+		
+		List<URL> links = new ArrayList<URL>();
+		
+		try {
+			
+			if(googlePlusPostMonitoring.getGooglePlusPost().getObjectContent() != null) {
+				links.addAll(UtilFunctions.getHiperLinks(
+						Jsoup.parse(googlePlusPostMonitoring.getGooglePlusPost().getObjectContent()).text()));
+			} 
+			
+			if(googlePlusPostMonitoring.getGooglePlusPost().getObjectsAttachment() != null) {
+				for(ObjectAttachment attachment : googlePlusPostMonitoring.getGooglePlusPost().getObjectsAttachment()) {
+					if(attachment.getContent() != null) {
+						links.addAll(UtilFunctions.getHiperLinks(Jsoup.parse(attachment.getContent()).text()));
+					}
+				}
+			}
+			
+			for(URL link : links) {
+				
+				try {
+					
+					if(monitoringLinkRemote.hasEntity(link.toString(), googlePlusPostMonitoring.getMonitoring().getIdMonitoring(), 
+							Profile.GOOGLE, generateDay)) {
+						
+						MonitoringLink monitoringLink = monitoringLinkRemote.getEntity(link.toString(), 
+								googlePlusPostMonitoring.getMonitoring().getIdMonitoring(), Profile.GOOGLE, generateDay);
+						
+						monitoringLink.setLinksCount(monitoringLink.getLinksCount() + 1L);
+						
+						try {
+							
+							monitoringLinkRemote.save(monitoringLink);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+					} else {
+						
+						MonitoringLink monitoringLink = new MonitoringLink();
+						monitoringLink.setLink(link.toString());
+						monitoringLink.setMonitoring(monitoring);
+						monitoringLink.setNetworkType(Profile.GOOGLE);
+						monitoringLink.setLinksCount(1L);
+						monitoringLink.setDate(generateDay);
+						
+						try {
+							
+							monitoringLinkRemote.save(monitoringLink);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			if(!links.isEmpty()) {
+				
+				googlePlusPostMonitoring.setHasLinks(true);
+				googlePlusPostMonitoring = googlePlusPostMonitoringRemote.merge(googlePlusPostMonitoring);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return googlePlusPostMonitoring;
+	}
+	
+	private GooglePlusPostMonitoring saveMonitoringHashTags(GooglePlusPostMonitoring googlePlusPostMonitoring) {
+		
+		List<String> hashTags = new ArrayList<String>();
+		
+		try {
+			
+			if(googlePlusPostMonitoring.getGooglePlusPost().getObjectContent() != null) {
+				hashTags.addAll(UtilFunctions.getHashTags(Jsoup.parse(googlePlusPostMonitoring.getGooglePlusPost().getObjectContent()).text()));
+			} 
+			if(googlePlusPostMonitoring.getGooglePlusPost().getObjectsAttachment() != null) {
+				for(ObjectAttachment attachment : googlePlusPostMonitoring.getGooglePlusPost().getObjectsAttachment()) {
+					if(attachment.getContent() != null) {
+						hashTags.addAll(UtilFunctions.getHashTags(Jsoup.parse(attachment.getContent()).text()));
+					}
+				}
+			}
+			
+			for(String hashTag : hashTags) {
+				
+				try {
+					
+					if(monitoringHashTagRemote.hasEntity(hashTag, googlePlusPostMonitoring.getMonitoring().getIdMonitoring(), 
+							Profile.GOOGLE, generateDay)) {
+						
+						MonitoringHashTag monitoringHashTag = monitoringHashTagRemote.getEntity(hashTag, 
+								googlePlusPostMonitoring.getMonitoring().getIdMonitoring(), Profile.GOOGLE, generateDay);
+						
+						monitoringHashTag.setHashTagsCount(monitoringHashTag.getHashTagsCount() + 1L);
+						
+						try {
+							
+							monitoringHashTagRemote.save(monitoringHashTag);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+					} else {
+						
+						MonitoringHashTag monitoringHashTag = new MonitoringHashTag();
+						monitoringHashTag.setHashTag(hashTag);
+						monitoringHashTag.setMonitoring(monitoring);
+						monitoringHashTag.setNetworkType(Profile.GOOGLE);
+						monitoringHashTag.setHashTagsCount(1L);
+						monitoringHashTag.setDate(generateDay);
+						
+						try {
+							
+							monitoringHashTagRemote.save(monitoringHashTag);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			if(!hashTags.isEmpty()) {
+				
+				googlePlusPostMonitoring.setHasHashTags(true);
+				googlePlusPostMonitoring = googlePlusPostMonitoringRemote.merge(googlePlusPostMonitoring);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return googlePlusPostMonitoring;
+	}
+	
+	private void saveMonitoringInfluentialUserStats(Actor actor) {
+
+		MonitoringInfluentialUser monitoringInfluentialUser;
+
+		try {
+
+			if(monitoringInfluentialUserRemote.hasEntity(actor.getId(), monitoring.getIdMonitoring(), Profile.GOOGLE, generateDay)) {
+
+				monitoringInfluentialUser = monitoringInfluentialUserRemote.getEntity(actor.getId(), monitoring.getIdMonitoring(), Profile.GOOGLE, generateDay);
+
+				monitoringInfluentialUser.setPostsCount(monitoringInfluentialUser.getPostsCount() + 1L);
+
+				try {
+
+					monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			} else {
+				
+				Person person = getPeople(actor.getId());
+
+				try {
+
+					MonitoringUser monitoringUser = new MonitoringUser();
+					monitoringUser.setIdUser(actor.getId());
+					monitoringUser.setName(actor.getDisplayName());
+					monitoringUser.setNetworkType(Profile.GOOGLE);
+					monitoringUser.setProfileUrl(actor.getUrl());
+					monitoringUser.setProfileImageUrl(actor.getImage().getUrl());
+					monitoringUser.setSex(person.getGender());
+
+					monitoringUser = monitoringUserRemote.save(monitoringUser);
+
+					monitoringInfluentialUser = new MonitoringInfluentialUser();
+					monitoringInfluentialUser.setMonitoring(monitoring);
+					monitoringInfluentialUser.setMonitoringUser(monitoringUser);
+					monitoringInfluentialUser.setFollowers(person.getCircledByCount() == null ? 0L : person.getCircledByCount().longValue());
+					monitoringInfluentialUser.setPostsCount(1L);
+					monitoringInfluentialUser.setDate(generateDay);
+
+					monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	private GooglePaging getGooglePaging(String term) {
+		
+		googlePagingRemote = (MaintenanceGooglePagingRemote)
+				RecoverMaintenance.recoverMaintenance("GooglePaging");
+		
+		GooglePaging googlePaging = googlePagingRemote.getEntity(monitoring.getIdMonitoring(), term, GooglePaging.GOOGLE);
+		
+		if(googlePaging == null) {
+			
+			googlePaging = new GooglePaging();
+			googlePaging.setMonitoring(monitoring);
+			googlePaging.setTerm(term);
+			googlePaging.setNetwork(GooglePaging.GOOGLE);
+			googlePaging.setCount(MonitoringController.LIMIT_PER_CALL.longValue());
+			
+			try {
+				
+				googlePaging = googlePagingRemote.save(googlePaging);
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return googlePaging;
+	}
+	
+	private MonitoringSearch getMonitoringSearch(String term) {
+		
+		monitoringSearchRemote = (MaintenanceMonitoringSearchRemote) RecoverMaintenance.recoverMaintenance("MonitoringSearch");
+		
+		MonitoringSearchId monitoringSearchId = new MonitoringSearchId();
+		monitoringSearchId.setMonitoring(monitoring.getIdMonitoring());
+		monitoringSearchId.setTerm(term);
+		monitoringSearchId.setNetwork(Profile.GOOGLE);
+		
+		return monitoringSearchRemote.getById(monitoringSearchId);
+	}
+}

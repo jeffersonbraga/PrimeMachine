@@ -1,0 +1,27 @@
+	package br.com.opsocial.server.validation;
+
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+public class ReportsValidation {
+
+	private Boolean canGenerateReport;
+	
+	private static final Long FREEMIUM_REPORT_lIMIT = 864000L;
+	
+	public ReportsValidation() {
+		this.canGenerateReport = true;
+	}
+	
+	public Boolean canGenerateReport(Profile profile) {
+		
+		// Verify if user can generate report.
+		if(profile.getAccount().getPlanType().equals(Account.FREEMIUM) 
+				&& profile.getInsertionDate() > FREEMIUM_REPORT_lIMIT) {
+			this.canGenerateReport = false;
+		}
+		
+		return this.canGenerateReport;
+	}
+	
+}

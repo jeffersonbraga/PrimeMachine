@@ -1,0 +1,111 @@
+package br.com.opsocial.client.entity.news;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class NewsPostDTO extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+
+	private Long idNewsPost;
+	private String url;
+	private String title;
+	private String imageUrl;
+	private Integer imageWidth;
+	private Integer imageHeight;
+	private String description;
+	private Long createdTime;
+	private String publisher;
+	private String publisherPicture;
+	private String publisherUrl;
+	
+	public NewsPostDTO() {
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	public Integer getImageWidth() {
+		return imageWidth;
+	}
+
+	public void setImageWidth(Integer imageWidth) {
+		this.imageWidth = imageWidth;
+	}
+
+	public Integer getImageHeight() {
+		return imageHeight;
+	}
+
+	public void setImageHeight(Integer imageHeight) {
+		this.imageHeight = imageHeight;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public Long getCreatedTime() {
+		return createdTime;
+	}
+
+	public void setCreatedTime(Long createdTime) {
+		this.createdTime = createdTime;
+	}
+
+	public String getPublisher() {
+		return publisher;
+	}
+
+	public void setPublisher(String publisher) {
+		this.publisher = publisher;
+	}
+
+	public String getPublisherPicture() {
+		return publisherPicture;
+	}
+
+	public void setPublisherPicture(String publisherPicture) {
+		this.publisherPicture = publisherPicture;
+	}
+
+	public String getPublisherUrl() {
+		return publisherUrl;
+	}
+
+	public void setPublisherUrl(String publisherUrl) {
+		this.publisherUrl = publisherUrl;
+	}
+
+	public Long getIdNewsPost() {
+		return idNewsPost;
+	}
+
+	public void setIdNewsPost(Long idNewsPost) {
+		this.idNewsPost = idNewsPost;
+	}
+}

@@ -1,0 +1,29 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.server.services.ServerAction;
+
+public class RefreshTokenByInstagramContents extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		if(getSession().getAttribute("message") != null) {
+			getParameters().put("message", getSession().getAttribute("message"));
+		} else if(getSession().getAttribute("tryToLoginInstagramAgain") != null) {
+			getParameters().put("tryToLoginInstagramAgain", 
+					(Boolean) getSession().getAttribute("tryToLoginInstagramAgain"));
+		}
+		
+		if(getSession().getAttribute("alr_rec_instagram") != null) {
+			getParameters().put("alr_rec_instagram", getSession().getAttribute("alr_rec_instagram"));
+			if(((Boolean) getSession().getAttribute("alr_rec_instagram")).getValue()) {
+				getSession().removeAttribute("message");
+				getSession().removeAttribute("alr_rec_instagram");
+			}
+		}
+	}
+
+}

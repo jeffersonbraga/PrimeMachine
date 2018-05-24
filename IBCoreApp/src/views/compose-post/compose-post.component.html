@@ -1,0 +1,242 @@
+<!-- <div class="row relative">
+    <div class="pgn-wrapper" data-position="top" hidden="false" #containerError>
+        <div class="pgn push-on-sidebar-open pgn-bar">
+            <div class="alert alert-danger">
+                <span>{{error}}</span>
+            </div>
+        </div>
+    </div>
+    <div class="pgn-wrapper" data-position="top" hidden="false" #containerSuccess>
+        <div class="pgn push-on-sidebar-open pgn-bar">
+            <div class="alert alert-success" role="alert">
+                <strong>Success: </strong>{{successMessage}}.
+            </div>
+        </div>
+    </div>
+    <div class="pgn-wrapper" data-position="top" hidden="false" #containerAlert>
+        <div class="pgn push-on-sidebar-open pgn-bar">
+            <div class="alert alert-warning" role="alert">
+                <strong>Warning: </strong>{{alertMessage}}.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="col-md-2 no-padding m-l-35 m-r-15 m-t-20"> -->
+<div class="col-md-2 no-padding m-l-0 m-r-15 m-t-20 p-l-15">
+    <my_channels #mychannels [showCheckAllBtn]="showCheckAllBtn" (sendProfiles)="checkSocialMedia($event)" 
+        [groupType]="groupType" [singleSelect]="false" [validateSchedule]="true"></my_channels>
+</div>
+<div class="col-md-5 no-padding p-l-15 m-t-20 p-r-15 sm-m-t-0 xs-m-t-0" #containerPost  style="z-index: 1000;">
+
+    <div class="panel panel-transparent p-b-0" style="min-height: 0px;max-height: 10px; z-index: 0;">
+        <div class="panel-heading p-t-0 p-l-0 p-r-0 p-b-0 m-h-0">
+            <div class="panel-title">
+                CRIAR POST
+            </div>
+        </div>
+    </div>
+    <div class="form-group-attached p-t-0 p-l-0 p-r-0 p-b-0">
+        <div class="panel-body no-padding panel panel-default">
+            <div class="panel-heading no-padding" style="min-height: 20px;max-height: 20px; z-index: 0;">
+                <div class="panel-title no-padding">
+                    <label class="font-montserrat label-sm p-l-11 m-t-10" style="font-weight: bold;font-size: 11px;color: rgba(98, 98, 98, 1);">STATUS</label>
+                </div>
+                <div class="panel-controls no-padding">
+                    <ul>
+                        <label class="font-montserrat label-sm m-r-10 m-t-13" style="font-weight: bold;font-size: 11px;color: rgba(98, 98, 98, 1);">{{textComposeLength}}</label>
+                    </ul>
+                </div>
+            </div>
+
+            <textarea
+                class="form-control transparent p-t-0" 
+                style="resize: none;overflow: auto; min-height: 85px;z-index:10;" 
+                [(ngModel)]="post.text" 
+                placeholder="No que você está pensando"
+                rows="3" 
+                #postText 
+                autofocus
+                disabled="{{hasInstagramSelected && hasStoriesSelected}}"
+                getCursorPosition
+                (keyup)="checkIsLink()">
+            </textarea>
+            <div class="pull-right m-r-10 m-b-10 hidden-xs hidden-sm">
+                <i class="cp cp-teste"></i>
+                <!-- <i class="fa fa-bullseye" (click)="checkIsLink()"></i> -->
+                <i class="fa fa-link" [class.not-allowed]="hasStoriesSelected" [class.cursor]="!hasStoriesSelected" (click)="getUrlToShort()" title="URL Shortener"></i> 
+                <i class="fa fa-smile-o" [class.not-allowed]="hasStoriesSelected" [class.cursor]="!hasStoriesSelected" aria-hidden="true" #emojiTrigger (click)="showEmoji(emojiTrigger)" data-toggle-element="emoji" title="Emojis"></i>
+            </div>
+            <div class="hidden-lg hidden-md">
+                <div class="row">
+                    <div class="col-sm-6 col-xs-6 p-r-0">
+                        <button class="btn btn-default full-width relative" (click)="triggerDropzone()" id="btn-add-media">
+                            <i class="fa fa-paperclip" aria-hidden="true"></i>
+                            <span class="all-caps">Add Media</span>
+                        </button>
+                    </div>
+                    <div class="col-sm-6 col-xs-6 p-l-0">
+                        <button class="btn btn-default full-width relative" (click)="getUrlToShort()" id="btn-shortner">
+                            <i class="fa fa-link" aria-hidden="true"></i>
+                            <span class="all-caps">Shortner</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-default p-b-0 p-t-0" style="border-top: 0px;" *ngIf="hasInstagramSelected && (!post.targetFeed || post.targetFeed == 'T')">
+            <!--<label class="font-montserrat bold input-sm" style="height: 20px; font-weight: bold;font-size: 11px;color: rgba(98, 98, 98, 1); margin-bottom: 0px;">HASHTAGS NO PRIMEIRO COMENTÁRIO DO INSTAGRAM</label>
+            <input type="text" class="form-control transparent p-t-0 p-b-0" style="resize: none;height: 20px;color: rgba(0, 214, 246, 1);background-color: rgba(0, 0, 0, 0.07)"
+                placeholder="#hashtags" [(ngModel)]="post.hashtags">-->
+            <div class="panel-heading no-padding z-i-0" style="min-height: 20px;max-height: 20px;">
+                <div class="panel-title no-padding">
+                    <label class="font-montserrat bold input-sm hidden-sm hidden-xs" style="height: 20px; font-weight: bold;font-size: 11px;color: rgba(98, 98, 98, 1); margin-bottom: 0px;">HASHTAGS IN THE FIRST INSTAGRAM COMMENT</label>
+                    <label class="font-montserrat bold input-sm hidden-lg hidden-md" style="height: 20px; font-weight: bold;font-size: 11px;color: rgba(98, 98, 98, 1); margin-bottom: 0px;">HASHTAGS IN THE FIRST COMMENT</label>
+                </div>
+            </div>
+
+            <input type="text" class="form-control transparent p-t-0 p-b-0" style="resize: none;height: 20px;color: rgba(0, 214, 246, 1);"
+                placeholder="#hashtags" [(ngModel)]="post.hashtags">
+        </div>
+    </div>
+
+    <div>
+        <div class="panel panel-transparent p-b-0 p-t-0 m-b-0 pull-left" *ngIf="hasInstagramSelected">
+            <div class="checkbox check-danger m-b-0">
+                <input 
+                    #checkBoxStories
+                    type="checkbox"
+                    id="check-stories" 
+                    [(ngModel)]="hasStoriesSelected"
+                    (change)="storiesHandler()"
+                    disabled="{{invalidStoriesSelection}}"
+                    [style.border-color]="(invalidStoriesSelection)?'#aaa':'#ff4169'"
+                    [style.background]="(invalidStoriesSelection)?'#aaa':'#ff4169'"
+                    [style.color]="(invalidStoriesSelection)?'#aaa':'#ff4169'"
+                    [class.not-allowed]="invalidStoriesSelection"
+                    [title]="(invalidStoriesSelection)?'(Select instagram profiles only)':''">
+                <i class="fa fa-instagram" 
+                    [style.color]="(invalidStoriesSelection)?'#c7c7c7':'#ff4169'"
+                    [class.not-allowed]="invalidStoriesSelection" 
+                    data-toggle="tooltip" 
+                    data-placement="top"
+                    [title]="(invalidStoriesSelection)?'(Select instagram profiles only)':''"></i>
+                <label for="check-stories" 
+                    [style.color]="(invalidStoriesSelection)?'#aaa':'#ff4169'"
+                    [class.not-allowed]="invalidStoriesSelection">Post or schedule stories</label>
+                <span *ngIf="invalidStoriesSelection" 
+                    [style.color]="'#c7c7c7'">(Select instagram profiles only)</span>
+            </div>
+        </div>
+        <div *ngIf="showReloadPostFeature" class="panel panel-transparent p-b-0 p-t-10 pull-right">
+            <button class="btn btn-success btn-cons m-r-0" (click)="getLastPost()">
+                <i class="fa fa-paste"></i> 
+                <span class="bold">RELOAD POST</span>
+            </button>
+        </div>
+    </div>
+    <div class="panel panel-transparent p-t-0 p-b-0 m-b-0 clearfix resume-link" style="clear:both; z-index: 0;" *ngIf="showLinkEditor">
+        <div class="panel-heading p-l-0">
+            <div class="panel-title">
+                EDITAR LINK <i class="{{((showLinkEditor && (this.post.link == null)))?'fa fa-spinner fa-spin':''}}"></i> 
+            </div>
+        </div>
+        <div class="form-group-attached p-b-0">
+            <div class="row" style="border: 1px solid rgba(0, 0, 0, 0.07);">
+                <div class="col-md-4">
+                    <div class="resume-link-image-container" data-width="1" data-height="1">
+                        <img src="{{post.picture}}" alt="" class="resume-link-image">
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <p #textAreaTitle class="full-width form-control clearfix resume-title">{{ post.title }}</p>
+                    <p #textAreaDescription class="full-width form-control clearfix resume-description">{{ post.description }}</p>
+                    <div class="clearfix"></div>
+                    <div class="top-left full-width trash-container">
+                        <div class="pull-right m-t-10 m-r-10">
+                            <button type="button" class="btn btn-default btn-sm cursor" (click)="removeLinkPost()"><i class="pg-trash"></i></button>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-transparent p-b-0 p-t-0 m-b-0 clearfix" style="clear:both; z-index: 0;" *ngIf="!showLinkEditor">
+        <div class="panel-heading p-l-0 hidden-xs hidden-sm" style="z-index: 1;">
+            <div class="panel-title">
+                UPLOAD DE IMAGENS E VÍDEOS
+                <!--<i class="fa fa-info-circle cursor pull-right" aria-hidden="true" (click)="showSmartTip(smartTipTrigger)" title="Instagram Tip" style="font-size: 16px;"></i>-->
+            </div>
+            <div class="tools">
+                <a class="collapse" href="javascript:;"></a>
+                <a class="config" data-toggle="modal" href="#grid-config"></a>
+                <a class="reload" href="javascript:;"></a>
+                <a class="remove" href="javascript:;"></a>
+            </div>
+        </div>
+        <div class="panel-body no-scroll no-padding" style="border: 1px dashed rgba(0, 0, 0, 0.07);"
+            [hidden]="controlService.mobileAndTabletcheck() && !post.postsAttachments.length && !isUploading">
+            <div
+                class="dropzone upload-container op-dropzone" 
+                #dropZoneContainer 
+                [dropzone]="config" 
+                [disabled]="disabled" 
+                (error)="onUploadError($event)" 
+                (success)="onUploadSuccess($event)" 
+                (removedfile)="onRemoveFile($event)"
+                (processing)="validateCanSave($event)"
+                (success)="validateCanSave($event)"
+                (addedfile)="validateAddedFile($event)">
+            </div>
+            <!-- <div>
+                <input *ngIf="showAlbum" type="text" class="form-control transparent p-t-0 p-b-0" style="resize: none;height: 20px;font-weight: bold;"
+                    placeholder="Título do álbum" [(ngModel)]="post.title">
+                <input *ngIf="showAlbum" type="text" class="form-control transparent p-t-0 p-b-0" style="resize: none;height: 20px;font-weight: bold;"
+                    placeholder="Descrição do álbum" [(ngModel)]="post.description">
+            </div> -->
+        </div>
+    </div>
+    <div class="panel panel-transparent p-t-0 p-b-0 p-r-0 p-l-0">
+        <div class="panel-heading p-l-0" style="z-index:0;">
+            <div class="panel-title">
+                <span>DATA E HORA DA PUBLICAÇÃO</span>
+                <!--<i class="fa fa-exclamation-circle pull-right" [class.not-allowed]="hasStoriesSelected" [class.cursor]="!hasStoriesSelected" aria-hidden="true" #smartTipTrigger (click)="showSmartTip(smartTipTrigger)" data-toggle-element="smartTip" title="Smart Tip" style="font-size: 16px;"></i>-->
+
+            </div>
+        </div>
+        <div class="panel-body no-scroll no-padding col-md-12 p-t-0 p-b-0 p-r-0 p-l-0">
+            <div class="row no-padding">
+                <div class="col-md-4 col-sm-12 col-xs-12 no-padding z-i-0">
+                    <div class="col-md-12 no-padding z-i-0">
+                        <div class="checkbox check-success p-t-0 p-b-0 p-r-0 p-l-0 pull-left hidden=sm hidden-xs">
+                            <input type="checkbox" id="ck_agendar" [(ngModel)]="showSchedulePost" [checked]="showSchedulePost || datePost || timerPickerSchedule.optimerPicker.hours" #checkAgendar class="checkbox check-success" (change)="setFocusDate()">
+                            <label for="ck_agendar" class="label-schedule">&nbsp;</label>
+                        </div>
+                        <div id="datepicker-component" class="input-group date z-i-0" (click)="ativarDatePicker()" data-date-format="mm/dd/yyyy" style="z-index:10;">
+                            <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                            <input type="text" #datePickerSchedule [(ngModel)]="datePost" bsDatepicker #dp="bsDatepicker" [bsConfig]="bsConfig" [minDate]="minDate" (onShown)="checkDatePost()" placement="top" class="form-control" [readonly]="controlService.mobileAndTabletcheck()" style="color: rgba(98, 98, 98, 1);z-index:1000;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-12 col-xs-12 no-padding pull-left z-i-0 sm-p-t-5 xs-p-t-5" style="z-index:10;">
+                    <op-timepicker class="pull-left" #timerPickerSchedule [fieldDate]="datePost" [dataField]="hourPost"></op-timepicker>
+                </div>
+                <div class="col-md-4 col-sm-12 col-xs-12 no-padding sm-p-t-10 xs-p-t-10" style="z-index:10;">
+                    <button 
+                        style="width: 130px;"
+                        class="btn btn-success pull-right btn-mobile sm-padding-10 xs-padding-10 p-l-5" 
+                        (click)="validateFormPost()"
+                        [disabled]="(!canSave || isUploading)">
+                        <i class="{{(showSchedulePost || datePost || timerPickerSchedule.optimerPicker.hours)?'fa fa-paste':'fa fa-link'}}"></i> 
+                        <span class="bold">{{(showSchedulePost || datePost || timerPickerSchedule.optimerPicker.hours)?'SCHEDULE':'SEND NOW'}}</span>
+                        <i class="{{(canSave)?'':'fa fa-spinner fa-spin'}}"></i> 
+                    </button>
+                </div>
+            </div>
+            <div class="no-padding" style="height: 15px;">
+            </div>
+        </div>
+    </div>
+</div>
+<post-preview [(post)]="post" [mychannels]="mychannels.checkedProfiles" class="col-md-4 no-padding p-l-15 m-t-20 hidden-xs hidden-sm"></post-preview>

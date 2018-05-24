@@ -1,0 +1,53 @@
+<script>
+$(document).ready(function() {
+    $('#form-add-rssfeed').validate();
+});
+</script>
+<tr [ngClass]="{'shown': isClassVisible}" (click)="isClassVisible = !isClassVisible">
+    <td style="width:62%" class="v-align-middle text-uppercase groups-column__text">{{group.name}}</td>
+    <td style="width:14%" class="v-align-middle empty-group" [class.text-hide]="group.groupsObject != null && group.groupsObject.length">
+        Este grupo está vazio
+    </td>
+    <td *ngIf="groupType == 'P'" style="width:14%" class="v-align-middle p-l-0 p-r-0">
+        <a (click)="editGroup()" [class.hidden]="group.groupsProfiles != null && group.groupsProfiles.length" class="add-channels">
+            <i class="fa fa-plus p-r-2"></i>
+            Add Channels
+        </a>
+    </td>
+    <td *ngIf="groupType == 'P'" style="width:5%" class="v-align-middle col-lg-height p-r-5">
+        <a (click)="editGroup()">
+            <i class="fa fa-pencil p-r-2"></i>
+        </a>
+    </td>
+    <td style="width:5%" class="v-align-middle p-l-12 p-r-15">
+        <a (click)="confirmDeleteGroup(group);">
+            <i class="pg-trash p-r-2"></i>
+        </a>
+    </td>
+</tr>
+
+<form [ngClass]="{'hide': !isClassVisible}" *ngIf="groupType == 'R'" id="form-add-rssfeed" role="form">
+    <div class="form-group form-group-default pull-left m-l-20 m-t-15 width-85-percent p-t-9 p-b-6">
+        <input [(ngModel)]="rssFeed.url" name="rssFeedName" type="url" pattern="https?://.+" placeholder="Adicionar URL do feed RSS" class="form-control input-sm" required>
+    </div>
+    <button [class.disabled]="!rssFeed.url || rssFeedAdding" (click)="addRssFeed(group.idGroup)" class="btn btn-primary pull-right m-t-13 p-l-7 p-r-7 p-t-5 p-b-5" type="submit">
+        <i *ngIf="!rssFeedAdding && !rssFeedError" class="fa fa-plus p-r-5" aria-hidden="true"></i>
+        <i *ngIf="rssFeedAdding" class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+        <i *ngIf="rssFeedError" class="fa fa-exclamation-circle" aria-hidden="true"></i>
+        <i *ngIf="rssFeedAdd" class="fa fa-check" aria-hidden="true"></i>
+        Adicionar
+    </button>
+</form>
+<div class="clearfix"></div>
+<div id="alertRssExists_{{group.idGroup}}" class="alertRssExists alert alert-danger m-l-20" role="alert">
+    Este Rss Feed já existe no grupo
+</div>
+<div id="alertInvalidRss_{{group.idGroup}}" class="alertRssExists alert alert-danger m-l-20" role="alert">
+    Something went wrong - Rss Feed not available
+</div>
+
+<div *ngFor="let item of group.groupsObject" [ngClass]="{'hide': !isClassVisible}" class="button-channels__group pull-left">
+    <button_channels *ngIf="groupType == 'P'" [listCheckedProfiles]="[]" [isSelectable]="false" [profile]="item.profile"></button_channels>
+    <button_rssfeed *ngIf="groupType == 'R'" [group]="group" [index]="index" [isEditable]="item.type == 'I'" [isExcludable]="true" 
+    [isSelectable]="false" [rssFeed]="item.rssFeed"></button_rssfeed>
+</div>

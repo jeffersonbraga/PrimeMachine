@@ -1,0 +1,528 @@
+package br.com.opsocial.client.entity.report.instagram;
+
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+import br.com.opsocial.ejb.entity.instagram.InstagramReportPost;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+import br.com.opsocial.ejb.entity.instagram.InstagramTopPostTag;
+
+public class ReportInstagramHistoricalDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Long followers;
+	
+	private Long posts;
+	private Long likes;
+	private Long comments;
+	
+	private Double likesAverage;
+	private Double commentsAverage;
+	
+	private InstagramPostsStatsYearDTO instagramPostsStatsYearFirst;
+	private InstagramPostsStatsYearDTO instagramPostsStatsYearSecond;
+	private InstagramPostsStatsYearDTO instagramPostsStatsYearThird;
+	
+	private Integer yearWithMorePosts;
+	private Long yearWithMorePostsValue;
+	
+	private Integer yearBetterPostFrequency;
+	private Integer yearBetterPostFrequencyValue;
+	
+	private Map<Integer, Long> postsPerWeekDay;
+	private Map<Integer, Long> postsPerHour;
+ 	
+	private Integer weekDayWithMorePosts;
+	private Long weekDayWithMorePostsValue;
+	private Integer hourWithMorePosts;
+	private Long hourWithMorePostsValue;
+	
+	private List<InstagramReportPost> postsWithMoreInteractions;
+	private List<InstagramReportPostDTO> postsWithMoreLikes;
+	private List<InstagramReportPostDTO> postsWithMoreComments;
+	
+	private Map<String, Long> filtersCounts;
+	private List<FilterLikesCommentsDTO> filtersLikesComments;
+	
+	private String filterWithMoreLikes;
+	private Long filterWithMoreLikesValue;
+	private String filterWithMoreComments;
+	private Long filterWithMoreCommentsValue;
+	
+	private Integer likesFollowers;
+	private Integer likesNoFollowers;
+	
+	private Integer commentsFollowers;
+	private Integer commentsNoFollowers;
+	
+	private List<InstagramTopPostTag> instagramTopPostTags;
+	
+	private Map<Integer, Long> likesPerHour;
+	private Integer timeWithMoreLikes;
+	private Integer timeWithMoreLikesPerc;
+	private Integer timeWithLessLikes;
+	private Integer timeWithLessLikesPerc;
+	
+	private Map<Integer, Long> commentsPerHour;
+	private Integer timeWithMoreComments;
+	private Integer timeWithMoreCommentsPerc;
+	private Integer timeWithLessComments;
+	private Integer timeWithLessCommentsPerc;
+	
+	private Map<Integer, Long> interactionsPerHour;
+	private List<InstagramInteractionRankingDTO> instagramInteractionsRanking;
+	private Long interactionsCount;
+
+	private List<InstagramSimpleDataDTO> likesPerHourSimpleData;
+
+	private List<InstagramSimpleDataDTO> commentsPerHourSimpleData;
+
+	private List<InstagramSimpleDataDTO> postsPerWeekDaySimpleData;	
+
+	private List<InstagramSimpleDataDTO> postsPerHourSimpleData;
+
+	private List<InstagramReport> audiencesDemograph;
+	
+	private InstagramSimpleDataDTO audiencesAveragePublicAge;
+
+	private List<InstagramSimpleDataDTO> audiencesAveragePublicGender;
+
+	public ReportInstagramHistoricalDTO() {
+
+	}
+
+	public Long getFollowers() {
+		return followers;
+	}
+
+	public void setFollowers(Long followers) {
+		this.followers = followers;
+	}
+
+	public Long getPosts() {
+		return posts;
+	}
+
+	public void setPosts(Long posts) {
+		this.posts = posts;
+	}
+
+	public Long getLikes() {
+		return likes;
+	}
+
+	public void setLikes(Long likes) {
+		this.likes = likes;
+	}
+
+	public Long getComments() {
+		return comments;
+	}
+
+	public void setComments(Long comments) {
+		this.comments = comments;
+	}
+
+	public Double getLikesAverage() {
+		return likesAverage;
+	}
+
+	public void setLikesAverage(Double likesAverage) {
+		this.likesAverage = likesAverage;
+	}
+
+	public Double getCommentsAverage() {
+		return commentsAverage;
+	}
+
+	public void setCommentsAverage(Double commentsAverage) {
+		this.commentsAverage = commentsAverage;
+	}
+
+	public InstagramPostsStatsYearDTO getInstagramPostsStatsYearFirst() {
+		return instagramPostsStatsYearFirst;
+	}
+
+	public void setInstagramPostsStatsYearFirst(
+			InstagramPostsStatsYearDTO instagramPostsStatsYearFirst) {
+		this.instagramPostsStatsYearFirst = instagramPostsStatsYearFirst;
+	}
+
+	public InstagramPostsStatsYearDTO getInstagramPostsStatsYearSecond() {
+		return instagramPostsStatsYearSecond;
+	}
+
+	public void setInstagramPostsStatsYearSecond(
+			InstagramPostsStatsYearDTO instagramPostsStatsYearSecond) {
+		this.instagramPostsStatsYearSecond = instagramPostsStatsYearSecond;
+	}
+
+	public InstagramPostsStatsYearDTO getInstagramPostsStatsYearThird() {
+		return instagramPostsStatsYearThird;
+	}
+
+	public void setInstagramPostsStatsYearThird(
+			InstagramPostsStatsYearDTO instagramPostsStatsYearThird) {
+		this.instagramPostsStatsYearThird = instagramPostsStatsYearThird;
+	}
+
+	public Map<Integer, Long> getPostsPerWeekDay() {
+		return postsPerWeekDay;
+	}
+
+	public void setPostsPerWeekDay(Map<Integer, Long> postsPerWeekDay) {
+		this.postsPerWeekDay = postsPerWeekDay;
+	}
+
+	public Map<Integer, Long> getPostsPerHour() {
+		return postsPerHour;
+	}
+
+	public void setPostsPerHour(Map<Integer, Long> postsPerHour) {
+		this.postsPerHour = postsPerHour;
+	}
+
+	public Integer getWeekDayWithMorePosts() {
+		return weekDayWithMorePosts;
+	}
+
+	public void setWeekDayWithMorePosts(Integer weekDayWithMorePosts) {
+		this.weekDayWithMorePosts = weekDayWithMorePosts;
+	}
+
+	public Long getWeekDayWithMorePostsValue() {
+		return weekDayWithMorePostsValue;
+	}
+
+	public void setWeekDayWithMorePostsValue(Long weekDayWithMorePostsValue) {
+		this.weekDayWithMorePostsValue = weekDayWithMorePostsValue;
+	}
+
+	public Integer getHourWithMorePosts() {
+		return hourWithMorePosts;
+	}
+
+	public void setHourWithMorePosts(Integer hourWithMorePosts) {
+		this.hourWithMorePosts = hourWithMorePosts;
+	}
+
+	public Long getHourWithMorePostsValue() {
+		return hourWithMorePostsValue;
+	}
+
+	public void setHourWithMorePostsValue(Long hourWithMorePostsValue) {
+		this.hourWithMorePostsValue = hourWithMorePostsValue;
+	}
+
+	public List<InstagramReportPostDTO> getPostsWithMoreLikes() {
+		return postsWithMoreLikes;
+	}
+
+	public void setPostsWithMoreLikes(
+			List<InstagramReportPostDTO> postsWithMoreLikes) {
+		this.postsWithMoreLikes = postsWithMoreLikes;
+	}
+
+	public List<InstagramReportPostDTO> getPostsWithMoreComments() {
+		return postsWithMoreComments;
+	}
+
+	public void setPostsWithMoreComments(
+			List<InstagramReportPostDTO> postsWithMoreComments) {
+		this.postsWithMoreComments = postsWithMoreComments;
+	}
+
+	public Map<String, Long> getFiltersCounts() {
+		return filtersCounts;
+	}
+
+	public void setFiltersCounts(Map<String, Long> filtersCounts) {
+		this.filtersCounts = filtersCounts;
+	}
+
+	public List<FilterLikesCommentsDTO> getFiltersLikesComments() {
+		return filtersLikesComments;
+	}
+
+	public void setFiltersLikesComments(
+			List<FilterLikesCommentsDTO> filtersLikesComments) {
+		this.filtersLikesComments = filtersLikesComments;
+	}
+
+	public String getFilterWithMoreLikes() {
+		return filterWithMoreLikes;
+	}
+
+	public void setFilterWithMoreLikes(String filterWithMoreLikes) {
+		this.filterWithMoreLikes = filterWithMoreLikes;
+	}
+
+	public Long getFilterWithMoreLikesValue() {
+		return filterWithMoreLikesValue;
+	}
+
+	public void setFilterWithMoreLikesValue(Long filterWithMoreLikesValue) {
+		this.filterWithMoreLikesValue = filterWithMoreLikesValue;
+	}
+
+	public String getFilterWithMoreComments() {
+		return filterWithMoreComments;
+	}
+
+	public void setFilterWithMoreComments(String filterWithMoreComments) {
+		this.filterWithMoreComments = filterWithMoreComments;
+	}
+
+	public Long getFilterWithMoreCommentsValue() {
+		return filterWithMoreCommentsValue;
+	}
+
+	public void setFilterWithMoreCommentsValue(Long filterWithMoreCommentsValue) {
+		this.filterWithMoreCommentsValue = filterWithMoreCommentsValue;
+	}
+
+	public Integer getLikesFollowers() {
+		return likesFollowers;
+	}
+
+	public void setLikesFollowers(Integer likesFollowers) {
+		this.likesFollowers = likesFollowers;
+	}
+
+	public Integer getLikesNoFollowers() {
+		return likesNoFollowers;
+	}
+
+	public void setLikesNoFollowers(Integer likesNoFollowers) {
+		this.likesNoFollowers = likesNoFollowers;
+	}
+
+	public Integer getCommentsFollowers() {
+		return commentsFollowers;
+	}
+
+	public void setCommentsFollowers(Integer commentsFollowers) {
+		this.commentsFollowers = commentsFollowers;
+	}
+
+	public Integer getCommentsNoFollowers() {
+		return commentsNoFollowers;
+	}
+
+	public void setCommentsNoFollowers(Integer commentsNoFollowers) {
+		this.commentsNoFollowers = commentsNoFollowers;
+	}
+
+	public List<InstagramTopPostTag> getInstagramTopPostTags() {
+		return instagramTopPostTags;
+	}
+
+	public void setInstagramTopPostTags(
+			List<InstagramTopPostTag> instagramTopPostTags) {
+		this.instagramTopPostTags = instagramTopPostTags;
+	}
+
+	public Map<Integer, Long> getLikesPerHour() {
+		return likesPerHour;
+	}
+
+	public void setLikesPerHour(Map<Integer, Long> likesPerHour) {
+		this.likesPerHour = likesPerHour;
+	}
+
+	public Map<Integer, Long> getCommentsPerHour() {
+		return commentsPerHour;
+	}
+
+	public void setCommentsPerHour(Map<Integer, Long> commentsPerHour) {
+		this.commentsPerHour = commentsPerHour;
+	}
+
+	public Integer getTimeWithMoreLikes() {
+		return timeWithMoreLikes;
+	}
+
+	public void setTimeWithMoreLikes(Integer timeWithMoreLikes) {
+		this.timeWithMoreLikes = timeWithMoreLikes;
+	}
+
+	public Integer getTimeWithMoreLikesPerc() {
+		return timeWithMoreLikesPerc;
+	}
+
+	public void setTimeWithMoreLikesPerc(Integer timeWithMoreLikesPerc) {
+		this.timeWithMoreLikesPerc = timeWithMoreLikesPerc;
+	}
+
+	public Integer getTimeWithLessLikes() {
+		return timeWithLessLikes;
+	}
+
+	public void setTimeWithLessLikes(Integer timeWithLessLikes) {
+		this.timeWithLessLikes = timeWithLessLikes;
+	}
+
+	public Integer getTimeWithLessLikesPerc() {
+		return timeWithLessLikesPerc;
+	}
+
+	public void setTimeWithLessLikesPerc(Integer timeWithLessLikesPerc) {
+		this.timeWithLessLikesPerc = timeWithLessLikesPerc;
+	}
+
+	public Integer getTimeWithMoreComments() {
+		return timeWithMoreComments;
+	}
+
+	public void setTimeWithMoreComments(Integer timeWithMoreComments) {
+		this.timeWithMoreComments = timeWithMoreComments;
+	}
+
+	public Integer getTimeWithMoreCommentsPerc() {
+		return timeWithMoreCommentsPerc;
+	}
+
+	public void setTimeWithMoreCommentsPerc(Integer timeWithMoreCommentsPerc) {
+		this.timeWithMoreCommentsPerc = timeWithMoreCommentsPerc;
+	}
+
+	public Integer getTimeWithLessComments() {
+		return timeWithLessComments;
+	}
+
+	public void setTimeWithLessComments(Integer timeWithLessComments) {
+		this.timeWithLessComments = timeWithLessComments;
+	}
+
+	public Integer getTimeWithLessCommentsPerc() {
+		return timeWithLessCommentsPerc;
+	}
+
+	public void setTimeWithLessCommentsPerc(Integer timeWithLessCommentsPerc) {
+		this.timeWithLessCommentsPerc = timeWithLessCommentsPerc;
+	}
+
+	public Map<Integer, Long> getInteractionsPerHour() {
+		return interactionsPerHour;
+	}
+
+	public void setInteractionsPerHour(Map<Integer, Long> interactionsPerHour) {
+		this.interactionsPerHour = interactionsPerHour;
+	}
+
+	public List<InstagramInteractionRankingDTO> getInstagramInteractionsRanking() {
+		return instagramInteractionsRanking;
+	}
+
+	public void setInstagramInteractionsRanking(
+			List<InstagramInteractionRankingDTO> instagramInteractionsRanking) {
+		this.instagramInteractionsRanking = instagramInteractionsRanking;
+	}
+
+	public Long getInteractionsCount() {
+		return interactionsCount;
+	}
+
+	public void setInteractionsCount(Long interactionsCount) {
+		this.interactionsCount = interactionsCount;
+	}
+
+	public List<InstagramSimpleDataDTO> getLikesPerHourSimpleData() {
+		return likesPerHourSimpleData;
+	}
+
+	public List<InstagramSimpleDataDTO> getCommentsPerHourSimpleData() {
+		return commentsPerHourSimpleData;
+	}
+
+	public void setLikesPerHourSimpleData(List<InstagramSimpleDataDTO> likesPerHourSimpleData) {
+		this.likesPerHourSimpleData = likesPerHourSimpleData;
+	}
+
+	public void setCommentsPerHourSimpleData(List<InstagramSimpleDataDTO> commentsPerHourSimpleData) {
+		this.commentsPerHourSimpleData = commentsPerHourSimpleData;
+	}
+
+	public List<InstagramSimpleDataDTO> getPostsPerWeekDaySimpleData() {
+		return postsPerWeekDaySimpleData;
+	}
+
+	public List<InstagramSimpleDataDTO> getPostsPerHourSimpleData() {
+		return postsPerHourSimpleData;
+	}
+
+	public void setPostsPerWeekDaySimpleData(List<InstagramSimpleDataDTO> postsPerWeekDaySimpleData) {
+		this.postsPerWeekDaySimpleData = postsPerWeekDaySimpleData;
+	}
+
+	public void setPostsPerHourSimpleData(List<InstagramSimpleDataDTO> postsPerHourSimpleData) {
+		this.postsPerHourSimpleData = postsPerHourSimpleData;
+	}
+
+	public void setAudiencesDemograph(List<InstagramReport> audiencesDemograph) {
+		this.audiencesDemograph = audiencesDemograph;
+	}
+
+	public List<InstagramReport> getAudiencesDemograph() {
+		return this.audiencesDemograph;
+	}
+
+	public List<InstagramReportPost> getPostsWithMoreInteractions() {
+		return postsWithMoreInteractions;
+	}
+
+	public void setPostsWithMoreInteractions(List<InstagramReportPost> list) {
+		this.postsWithMoreInteractions = list;
+	}
+
+	public Integer getYearWithMorePosts() {
+		return yearWithMorePosts;
+	}
+
+	public void setYearWithMorePosts(Integer yearWithMorePosts) {
+		this.yearWithMorePosts = yearWithMorePosts;
+	}
+
+	public Long getYearWithMorePostsValue() {
+		return yearWithMorePostsValue;
+	}
+
+	public void setYearWithMorePostsValue(Long yearWithMorePostsValue) {
+		this.yearWithMorePostsValue = yearWithMorePostsValue;
+	}
+
+	public Integer getYearBetterPostFrequency() {
+		return yearBetterPostFrequency;
+	}
+
+	public void setYearBetterPostFrequency(Integer yearBetterPostFrequency) {
+		this.yearBetterPostFrequency = yearBetterPostFrequency;
+	}
+
+	public Integer getYearBetterPostFrequencyValue() {
+		return yearBetterPostFrequencyValue;
+	}
+
+	public void setYearBetterPostFrequencyValue(Integer yearBetterPostFrequencyValue) {
+		this.yearBetterPostFrequencyValue = yearBetterPostFrequencyValue;
+	}
+
+	public InstagramSimpleDataDTO getAudiencesAveragePublicAge() {
+		return audiencesAveragePublicAge;
+	}
+
+	public void setAudiencesAveragePublicAge(InstagramSimpleDataDTO audiencesAveragePublicAge) {
+		this.audiencesAveragePublicAge = audiencesAveragePublicAge;
+	}
+
+	public List<InstagramSimpleDataDTO> getAudiencesAveragePublicGender() {
+		return audiencesAveragePublicGender;
+	}
+
+	public void setAudiencesAveragePublicGender(List<InstagramSimpleDataDTO> audiencesAveragePublicGender) {
+		this.audiencesAveragePublicGender = audiencesAveragePublicGender;
+	}
+}

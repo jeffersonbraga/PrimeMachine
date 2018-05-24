@@ -1,0 +1,101 @@
+package br.com.opsocial.server.actions.config;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.SendMail;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import das.MaintenanceUserRemote;
+import entity.application.Account;
+import entity.application.User;
+import entity.generic.Persistent;
+
+@RestController
+@RequestMapping("opsocial")
+public class InsertUserAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/insert_user",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+	
+
+		User newUser = (User) getParameters().get("newuser");
+		
+		String message = verifyUsers(newUser.getEmail());
+		
+		if(message == null) {
+	
+			setParameters(new HashMap<String, Object>());
+			
+			newUser.setActive('T');
+			newUser.setCadastreDate(new Date());
+			newUser.setPassword(RandomStringUtils.random(10, true, true));
+			newUser.setShowInstagramAuthWindow('T');
+			newUser.setShowLettersToClientsWindow('F');
+			
+			newUser.setAccount(getUser().getAccount());
+			
+			MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+			
+			User user = remote.save(newUser);
+			
+			getParameters().put("newuser", user);
+			
+			sendMail(user);
+			
+		} else {
+			getParameters().put("message", new StringUtil(message));
+		}
+	}
+
+	private void sendMail(User user) throws IOException {
+
+		String subject = "Agora você faz parte de uma equipe de trabalho OpSocial";
+		
+		File fileEmail = new File(Persistent.EMAILS_PATH + "novo-membro.html");  
+		Document doc = Jsoup.parse(fileEmail, "UTF-8");
+		doc.getElementById("username").html("Oi " + user.getName().split(" ")[0] + ",");
+		doc.getElementById("useremail").html(user.getEmail());
+		doc.getElementById("userpassword").html(user.getPassword());
+		
+		new SendMail(subject, user.getEmail(), doc.html());
+	}
+
+	private String verifyUsers(String email) {
+
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		if(userRemote.getByEmail(email) == null) {
+		
+			List<User> users = userRemote.listUsersByAccount(getUser().getAccount().getIdAccount());
+			
+			if(getUser().getAccount().getPlanType().equals(Account.FREE)) {
+				return "Você possui a conta TESTE, que não permite a inserção de membros na equipe. Para inserir membros na equipe contrate um dos nossos planos.";
+		
+			} else if(users.size() == 10) {
+				return "Você só pode adicionar no máximo 10 membros na equipe";
+			}
+		} else {
+			return "Email do usuário já cadastrado no sistema";
+		}
+		
+		return null;
+	}
+}

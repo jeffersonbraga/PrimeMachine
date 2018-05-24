@@ -1,0 +1,137 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.BlogPostMonitoringDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.blogs.BlogPostMonitoring;
+
+@Stateless
+public class MaintenanceBlogPostMonitoringBean extends AbstractDASImpl<BlogPostMonitoring> implements MaintenanceBlogPostMonitoringRemote {
+	
+private static final long serialVersionUID = 1L;
+	
+	@EJB
+	BlogPostMonitoringDAO dao;
+	
+	@Override
+	public BlogPostMonitoring save(BlogPostMonitoring object) throws IllegalArgumentException, Exception {
+		return dao.save(object);
+	}
+	
+	@Override
+	public void setDao(AbstractDAO<BlogPostMonitoring> dao) {
+		this.dao = (BlogPostMonitoringDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<BlogPostMonitoring> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> listMostRecents(Long idMonitoring,
+			Integer maxResults) {
+		return dao.listMostRecents(idMonitoring, maxResults);
+	}
+
+	@Override
+	public List<BlogPostMonitoring> listMostRecents(Long createdTime,
+			Long idMonitoring) {
+		return dao.listMostRecents(createdTime, idMonitoring);
+	}
+
+	@Override
+	public List<BlogPostMonitoring> listElder(Long createdTime,
+			Long idMonitoring, Integer maxResults) {
+		return dao.listElder(createdTime, idMonitoring, maxResults);
+	}
+
+	@Override
+	public List<BlogPostMonitoring> getByInterval(Long idMonitoring,
+			Long startDate, Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		return dao.getByInterval(idMonitoring, startDate, endDate, qualification, monitoringTags, monitoringTerms, monitoringWords, offset, limit);
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate,
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+		return dao.getByIntervalCount(idMonitoring, startDate, endDate, qualification, monitoringTags, monitoringTerms, monitoringWords);
+	}
+
+	@Override
+	public BlogPostMonitoring getByComposedId(Long idMonitoring, Long idBlogPost, String term) {
+		return dao.getByComposedId(idMonitoring, idBlogPost, term);
+	}
+
+	@Override
+	public List<BlogPostMonitoring> listByTerm(String term,
+			Long idMonitoring) {
+		return dao.listByTerm(term, idMonitoring);
+	}
+
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfTermPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfPostsPerDay(idMonitoring, date);
+	}
+	
+	@Override
+	public Long getCountOfGarbagePostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfGarbagePostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public List<Object[]> getCountOfPostsPerHourDay(Long idMonitoring, Long date) {
+		return dao.getCountOfPostsPerHourDay(idMonitoring, date);
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountQualificPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountTagsPostsPerDay(idMonitoring, date);
+	}
+	
+	@Override
+	public BlogPostMonitoring getByComposedId(Long idMonitoring, Long idBlogPost) {
+		return dao.getByComposedId(idMonitoring, idBlogPost);
+	}
+
+	@Override
+	public List<BlogPostMonitoring> listSample(Long idMonitoring,
+			Long startDate, Long endDate, String qualification,
+			List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		return dao.listSample(idMonitoring, startDate, endDate, qualification, monitoringTags, sample, notIn);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

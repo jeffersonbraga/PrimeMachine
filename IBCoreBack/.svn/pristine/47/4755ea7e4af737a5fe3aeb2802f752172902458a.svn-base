@@ -1,0 +1,514 @@
+package br.com.opsocial.server.utils.reports.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookPostToPostDTO;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.comparators.FaceReportPostDTOComparator;
+import entity.application.Profile;
+
+public class ReportFacebookPostToPostXLS {
+	
+	private ReportFacebookPostToPostDTO reportFacebookPostToPost;
+	private Profile profile;
+	
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+	
+	private HSSFWorkbook wb;
+	private Sheet sheetPostsMostEngaged;
+	
+	private CreationHelper createHelper;
+	
+	private CellStyle cellStyleHeader;
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellStyleHeaderDataPositive;
+	private CellStyle cellStyleHeaderDataNegative;
+	private CellStyle cellSecondaryHeaderData;
+	private CellStyle cellSecondaryHeaderNumber;
+	private CellStyle cellSecondaryHeaderCenter;
+	private CellStyle cellDateStyle;
+	private CellStyle cellStylePreAnalysis;
+	private CellStyle cellStylePreAnalysisResult;
+	private CellStyle cellStyleHLink;
+	private CellStyle cellDataPercentage;
+	
+	private Font fontHeader;
+	private Font fontHeaderData;
+	
+	private Float headerDataRowHeight;
+	
+	private String startDate;
+	private String endDate;
+	
+	private int rowSheetPostsMostEngaged;
+	
+	public ReportFacebookPostToPostXLS(ReportFacebookPostToPostDTO reportFacebookPostToPost, Profile profile) {
+		this.reportFacebookPostToPost = reportFacebookPostToPost;
+		this.profile = profile;
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+		
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+		
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+	
+	public void createXLS() {
+		
+		wb = new HSSFWorkbook();
+		
+		initiateDefautStyles();
+		
+		this.reportsPath = ServicesImpl.context.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		SimpleDateFormat dateFormatToFileName = new SimpleDateFormat("dd-MM-yyyy");
+		
+		startDate = dateFormat.format(new Date(reportFacebookPostToPost.getDateFrom() * 1000L));
+		endDate = dateFormat.format(new Date(reportFacebookPostToPost.getDateUntil() * 1000L));
+		
+		addPostsStatsByPostType();
+		addPostsMostEngaged();
+		
+		sheetPostsMostEngaged.setDefaultColumnWidth(15);
+		sheetPostsMostEngaged.setColumnWidth(1, 5000);
+		
+		try {
+			
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+			
+			formattedFileName = profile.getScreenName() + "-facebook-post-a-post-" 
+					+ dateFormatToFileName.format(new Date(reportFacebookPostToPost.getDateFrom() * 1000L)) + "--" 
+					+ dateFormatToFileName.format(new Date(reportFacebookPostToPost.getDateUntil() * 1000L));
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void addPostsMostEngaged() {
+	
+		rowSheetPostsMostEngaged += 2;
+		Row rowPostsMostEngagedTitle = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		rowPostsMostEngagedTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsMostEngagedTitle = rowPostsMostEngagedTitle.createCell(0);
+		cellPostsMostEngagedTitle.setCellValue("POSTS DA PÁGINA");
+		cellPostsMostEngagedTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetPostsMostEngaged.addMergedRegion(new CellRangeAddress(rowSheetPostsMostEngaged, rowSheetPostsMostEngaged, 0, 16));
+		
+		rowSheetPostsMostEngaged++;
+		Row rowPostsMostEngagedHeader = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		rowPostsMostEngagedHeader.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellDateHeader = rowPostsMostEngagedHeader.createCell(0);
+		cellDateHeader.setCellValue("Data");
+		cellDateHeader.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellTimeHeader = rowPostsMostEngagedHeader.createCell(1);
+		cellTimeHeader.setCellValue("Hora");
+		cellTimeHeader.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellPostHeader = rowPostsMostEngagedHeader.createCell(2);
+		cellPostHeader.setCellValue("Post");
+		cellPostHeader.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellReachHeader = rowPostsMostEngagedHeader.createCell(3);
+		cellReachHeader.setCellValue("Alcance total");
+		cellReachHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellOrganicReachHeader = rowPostsMostEngagedHeader.createCell(4);
+		cellOrganicReachHeader.setCellValue("Orgânico");
+		cellOrganicReachHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellViralReachHeader = rowPostsMostEngagedHeader.createCell(5);
+		cellViralReachHeader.setCellValue("Viral");
+		cellViralReachHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellPaidReachHeader = rowPostsMostEngagedHeader.createCell(6);
+		cellPaidReachHeader.setCellValue("Pago");
+		cellPaidReachHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellInteractionsHeader = rowPostsMostEngagedHeader.createCell(7);
+		cellInteractionsHeader.setCellValue("Interação total");
+		cellInteractionsHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellLoveHeader = rowPostsMostEngagedHeader.createCell(8);
+		cellLoveHeader.setCellValue("Love");
+		cellLoveHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellHahaHeader = rowPostsMostEngagedHeader.createCell(9);
+		cellHahaHeader.setCellValue("Haha");
+		cellHahaHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellWowHeader = rowPostsMostEngagedHeader.createCell(10);
+		cellWowHeader.setCellValue("Wow");
+		cellWowHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellSadHeader = rowPostsMostEngagedHeader.createCell(11);
+		cellSadHeader.setCellValue("Sad");
+		cellSadHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellAngryHeader = rowPostsMostEngagedHeader.createCell(12);
+		cellAngryHeader.setCellValue("Angry");
+		cellAngryHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellLikesHeader = rowPostsMostEngagedHeader.createCell(13);
+		cellLikesHeader.setCellValue("Likes");
+		cellLikesHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentsHeader = rowPostsMostEngagedHeader.createCell(14);
+		cellCommentsHeader.setCellValue("Comments");
+		cellCommentsHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellSharesHeader = rowPostsMostEngagedHeader.createCell(15);
+		cellSharesHeader.setCellValue("Shares");
+		cellSharesHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellClicksHeader = rowPostsMostEngagedHeader.createCell(16);
+		cellClicksHeader.setCellValue("Clicks");
+		cellClicksHeader.setCellStyle(cellSecondaryHeaderNumber);
+		
+		if(reportFacebookPostToPost.getPostsMostEngagedOrder() != null) {
+			
+			Comparator<FaceReportPostDTO> faceReportPostDTOComparator = reportFacebookPostToPost.getPostsMostEngagedOrder().getAscending() 
+				? new FaceReportPostDTOComparator(reportFacebookPostToPost.getPostsMostEngagedOrder().getColumnNumber()) : 
+					Collections.reverseOrder(new FaceReportPostDTOComparator(reportFacebookPostToPost.getPostsMostEngagedOrder().getColumnNumber()));
+			
+				Collections.sort(reportFacebookPostToPost.getPostsMostEngaged(), faceReportPostDTOComparator);
+		}
+		
+		rowSheetPostsMostEngaged++;
+		for(FaceReportPostDTO faceReportPost : reportFacebookPostToPost.getPostsMostEngaged()) {
+			
+			Row rowPostMostEngaged = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+			
+			Cell cellDate = rowPostMostEngaged.createCell(0);
+			cellDate.setCellValue(new SimpleDateFormat("dd/MM/yyyy").format(faceReportPost.getCreatedTime()));
+			
+			Cell cellTime = rowPostMostEngaged.createCell(1);
+			cellTime.setCellValue(new SimpleDateFormat("HH:mm").format(faceReportPost.getCreatedTime()));
+			
+			Cell cellPost = rowPostMostEngaged.createCell(2);
+			cellPost.setCellValue(faceReportPost.getMessage());
+			
+			Long totalReach = faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_PAID_UNIQUE)
+					+ faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_ORGANIC_UNIQUE)
+					+ faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_VIRAL_UNIQUE);
+			
+			Cell cellReach = rowPostMostEngaged.createCell(3);
+			cellReach.setCellValue(totalReach);
+			
+			Cell cellOrganicReach = rowPostMostEngaged.createCell(4);
+			cellOrganicReach.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_ORGANIC_UNIQUE));
+			
+			Cell cellViralReach = rowPostMostEngaged.createCell(5);
+			cellViralReach.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_VIRAL_UNIQUE));
+			
+			Cell cellPaidReach = rowPostMostEngaged.createCell(6);
+			cellPaidReach.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_PAID_UNIQUE));
+			
+			Cell cellInteractions = rowPostMostEngaged.createCell(7);
+			cellInteractions.setCellValue(faceReportPost.getTotalInteractions());
+			
+			Cell cellLove = rowPostMostEngaged.createCell(8);
+			cellLove.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_LOVE_TOTAL));
+			
+			Cell cellHaha = rowPostMostEngaged.createCell(9);
+			cellHaha.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_HAHA_TOTAL));
+			
+			Cell cellWow = rowPostMostEngaged.createCell(10);
+			cellWow.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_WOW_TOTAL));
+			
+			Cell cellSad = rowPostMostEngaged.createCell(11);
+			cellSad.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_SORRY_TOTAL));
+			
+			Cell cellAngry = rowPostMostEngaged.createCell(12);
+			cellAngry.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_ANGER_TOTAL));
+			
+			Cell cellLikes = rowPostMostEngaged.createCell(13);
+			cellLikes.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_LIKE_TOTAL));
+			
+			Cell cellComments = rowPostMostEngaged.createCell(14);
+			cellComments.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_COMMENT));
+			
+			Cell cellShares = rowPostMostEngaged.createCell(15);
+			cellShares.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_SHARE));
+			
+			Cell cellClicks = rowPostMostEngaged.createCell(16);
+			cellClicks.setCellValue(faceReportPost.getPostInsights().get(FaceReportPostDTO.POST_CONSUMPTIONS));
+			
+			rowSheetPostsMostEngaged++;
+		}
+	}
+	
+	private void addPostsStatsByPostType() {
+		
+		sheetPostsMostEngaged = wb.createSheet("Facebook Post a Post");
+		
+		headerDataRowHeight = 1.2F * sheetPostsMostEngaged.getDefaultRowHeightInPoints();
+		
+		addMainHeader(sheetPostsMostEngaged, profile.getScreenName() + " - Relatório Facebook - Post a Post - Período de " + startDate + " a " + endDate, 16);
+		
+		rowSheetPostsMostEngaged = 2;
+		
+		Row rowPostsStatsByPostTypeTitle = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		rowPostsStatsByPostTypeTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsStatsByPostTypeTitle = rowPostsStatsByPostTypeTitle.createCell(0);
+		cellPostsStatsByPostTypeTitle.setCellValue("MÉDIA DE ALCANCE E ENVOLVIMENTO DOS POSTS POR TIPO");
+		cellPostsStatsByPostTypeTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetPostsMostEngaged.addMergedRegion(new CellRangeAddress(rowSheetPostsMostEngaged, rowSheetPostsMostEngaged, 0, 16));
+		
+		rowSheetPostsMostEngaged++;
+		Row rowPostsStatsInfoHeader = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		rowPostsStatsInfoHeader.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellHeaderPostType = rowPostsStatsInfoHeader.createCell(0);
+		cellHeaderPostType.setCellValue("Tipo de post");
+		cellHeaderPostType.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellHeaderPostsTotal = rowPostsStatsInfoHeader.createCell(1);
+		cellHeaderPostsTotal.setCellValue("Total de posts");
+		cellHeaderPostsTotal.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellHeaderAvgReach = rowPostsStatsInfoHeader.createCell(2);
+		cellHeaderAvgReach.setCellValue("Alcance médio");
+		cellHeaderAvgReach.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellHeaderAvgInteractions = rowPostsStatsInfoHeader.createCell(3);
+		cellHeaderAvgInteractions.setCellValue("Média de interações");
+		cellHeaderAvgInteractions.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellHeaderEngagement = rowPostsStatsInfoHeader.createCell(4);
+		cellHeaderEngagement.setCellValue("Engajamento");
+		cellHeaderEngagement.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetPostsMostEngaged++;
+		Row rowPostStatus = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		
+		Cell cellPostStatusType = rowPostStatus.createCell(0);
+		cellPostStatusType.setCellValue("Status");
+		
+		Cell cellPostStatusTotal = rowPostStatus.createCell(1);
+		cellPostStatusTotal.setCellValue(reportFacebookPostToPost.getNumberOfPostsPerType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookPostToPost.getNumberOfPostsPerType().get(FaceReportPostDTO.STATUS_UPDATE) : 0);
+		
+		Cell cellPostStatusAvgReach = rowPostStatus.createCell(2);
+		cellPostStatusAvgReach.setCellValue(reportFacebookPostToPost.getAveragePostReachByPostType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookPostToPost.getAveragePostReachByPostType().get(FaceReportPostDTO.STATUS_UPDATE) : 0);
+		
+		Cell cellPostStatusInteractions = rowPostStatus.createCell(3);
+		cellPostStatusInteractions.setCellValue(reportFacebookPostToPost.getAveragePostInteractionsByPostType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookPostToPost.getAveragePostInteractionsByPostType().get(FaceReportPostDTO.STATUS_UPDATE) : 0);
+		
+		Cell cellPostStatusEngagement = rowPostStatus.createCell(4);
+		cellPostStatusEngagement.setCellValue(reportFacebookPostToPost.getEngagementPercentageByPostType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookPostToPost.getEngagementPercentageByPostType().get(FaceReportPostDTO.STATUS_UPDATE).toString() + "%" : "0%");
+		cellPostStatusEngagement.setCellStyle(cellDataPercentage);
+		
+		rowSheetPostsMostEngaged++;
+		Row rowPostLink = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		
+		Cell cellPostLinkType = rowPostLink.createCell(0);
+		cellPostLinkType.setCellValue("Link");
+		
+		Cell cellPostLinkTotal = rowPostLink.createCell(1);
+		cellPostLinkTotal.setCellValue(reportFacebookPostToPost.getNumberOfPostsPerType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookPostToPost.getNumberOfPostsPerType().get(FaceReportPostDTO.LINK_POSTED) : 0);
+		
+		Cell cellPostLinkAvgReach = rowPostLink.createCell(2);
+		cellPostLinkAvgReach.setCellValue(reportFacebookPostToPost.getAveragePostReachByPostType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookPostToPost.getAveragePostReachByPostType().get(FaceReportPostDTO.LINK_POSTED) : 0);
+		
+		Cell cellPostLinkInteractions = rowPostLink.createCell(3);
+		cellPostLinkInteractions.setCellValue(reportFacebookPostToPost.getAveragePostInteractionsByPostType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookPostToPost.getAveragePostInteractionsByPostType().get(FaceReportPostDTO.LINK_POSTED) : 0);
+		
+		Cell cellPostLinkEngagement = rowPostLink.createCell(4);
+		cellPostLinkEngagement.setCellValue(reportFacebookPostToPost.getEngagementPercentageByPostType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookPostToPost.getEngagementPercentageByPostType().get(FaceReportPostDTO.LINK_POSTED).toString() + "%" : "0%");
+		cellPostLinkEngagement.setCellStyle(cellDataPercentage);
+		
+		rowSheetPostsMostEngaged++;
+		Row rowPostPhoto = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		
+		Cell cellPostPhotoType = rowPostPhoto.createCell(0);
+		cellPostPhotoType.setCellValue("Foto");
+		
+		Cell cellPostPhotoTotal = rowPostPhoto.createCell(1);
+		cellPostPhotoTotal.setCellValue(reportFacebookPostToPost.getNumberOfPostsPerType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookPostToPost.getNumberOfPostsPerType().get(FaceReportPostDTO.PHOTOS_POSTED) : 0);
+		
+		Cell cellPostPhotoAvgReach = rowPostPhoto.createCell(2);
+		cellPostPhotoAvgReach.setCellValue(reportFacebookPostToPost.getAveragePostReachByPostType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookPostToPost.getAveragePostReachByPostType().get(FaceReportPostDTO.PHOTOS_POSTED) : 0);
+		
+		Cell cellPostPhotoInteractions = rowPostPhoto.createCell(3);
+		cellPostPhotoInteractions.setCellValue(reportFacebookPostToPost.getAveragePostInteractionsByPostType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookPostToPost.getAveragePostInteractionsByPostType().get(FaceReportPostDTO.PHOTOS_POSTED) : 0);
+		
+		Cell cellPostPhotoEngagement = rowPostPhoto.createCell(4);
+		cellPostPhotoEngagement.setCellValue(reportFacebookPostToPost.getEngagementPercentageByPostType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookPostToPost.getEngagementPercentageByPostType().get(FaceReportPostDTO.PHOTOS_POSTED).toString() + "%" : "0%");
+		cellPostPhotoEngagement.setCellStyle(cellDataPercentage);
+		
+		rowSheetPostsMostEngaged++;
+		Row rowPostVideo = sheetPostsMostEngaged.createRow(rowSheetPostsMostEngaged);
+		
+		Cell cellPostVideoType = rowPostVideo.createCell(0);
+		cellPostVideoType.setCellValue("Vídeo");
+		
+		Cell cellPostVideoTotal = rowPostVideo.createCell(1);
+		cellPostVideoTotal.setCellValue(reportFacebookPostToPost.getNumberOfPostsPerType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookPostToPost.getNumberOfPostsPerType().get(FaceReportPostDTO.VIDEO_POSTED) : 0);
+		
+		Cell cellPostVideoAvgReach = rowPostVideo.createCell(2);
+		cellPostVideoAvgReach.setCellValue(reportFacebookPostToPost.getAveragePostReachByPostType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookPostToPost.getAveragePostReachByPostType().get(FaceReportPostDTO.VIDEO_POSTED) : 0);
+		
+		Cell cellPostVideoInteractions = rowPostVideo.createCell(3);
+		cellPostVideoInteractions.setCellValue(reportFacebookPostToPost.getAveragePostInteractionsByPostType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookPostToPost.getAveragePostInteractionsByPostType().get(FaceReportPostDTO.VIDEO_POSTED) : 0);
+		
+		Cell cellPostVideoEngagement = rowPostVideo.createCell(4);
+		cellPostVideoEngagement.setCellValue(reportFacebookPostToPost.getEngagementPercentageByPostType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookPostToPost.getEngagementPercentageByPostType().get(FaceReportPostDTO.VIDEO_POSTED).toString() + "%" : "0%");
+		cellPostVideoEngagement.setCellStyle(cellDataPercentage);
+	}
+	
+	private void initiateDefautStyles() {
+		
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+		
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte) 102, (byte) 153, (byte) 204);
+		palette.setColorAtIndex(IndexedColors.YELLOW.index, (byte) 255, (byte) 211, (byte) 32);
+		palette.setColorAtIndex(IndexedColors.GREEN.index, (byte) 174, (byte) 207, (byte) 0);
+		
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
+		fontHeaderData = wb.createFont();
+		fontHeaderData.setFontHeightInPoints((short) 11);
+		fontHeaderData.setBold(true);
+		
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.YELLOW.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataPositive = wb.createCellStyle();
+		cellStyleHeaderDataPositive.setFillForegroundColor(IndexedColors.GREEN.index);
+		cellStyleHeaderDataPositive.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataPositive.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataNegative = wb.createCellStyle();
+		cellStyleHeaderDataNegative.setFillForegroundColor(IndexedColors.RED.index);
+		cellStyleHeaderDataNegative.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataNegative.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderData = wb.createCellStyle();
+		cellSecondaryHeaderData.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderNumber = wb.createCellStyle();
+		cellSecondaryHeaderNumber.setFont(fontHeaderData);
+		cellSecondaryHeaderNumber.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		cellSecondaryHeaderCenter = wb.createCellStyle();
+		cellSecondaryHeaderCenter.setFont(fontHeaderData);
+		cellSecondaryHeaderCenter.setAlignment(CellStyle.ALIGN_CENTER);
+		
+		cellStylePreAnalysis = wb.createCellStyle();
+		cellStylePreAnalysis.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysis.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysis.setFont(fontHeaderData);
+		
+		cellStylePreAnalysisResult = wb.createCellStyle();
+		cellStylePreAnalysisResult.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysisResult.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysisResult.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		createHelper = wb.getCreationHelper();
+		
+		cellDateStyle = wb.createCellStyle();
+	    cellDateStyle.setDataFormat(
+	        createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+	        
+    	//by default hyperlinks are blue and underlined
+    	cellStyleHLink = wb.createCellStyle();
+    	
+    	Font fontHLink = wb.createFont();
+    	fontHLink.setUnderline(Font.U_SINGLE);
+    	fontHLink.setColor(IndexedColors.BLUE.getIndex());
+    	
+    	cellStyleHLink.setFont(fontHLink);
+    	
+    	cellDataPercentage = wb.createCellStyle();
+    	cellDataPercentage.setAlignment(CellStyle.ALIGN_RIGHT);
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+
+}

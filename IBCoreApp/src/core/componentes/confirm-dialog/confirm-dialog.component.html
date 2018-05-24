@@ -1,0 +1,22 @@
+<div id="confirm-dialog" class="modal fade slide-up disable-scroll in" bsModal #genericModal="bs-modal" [config]="{backdrop: 'static'}"
+	tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-md">
+		<div class="modal-content-wrapper">
+			<div class="modal-content">
+				<div class="modal-header modal-header-generic clearfix text-left">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+						<i class="pg-close fs-28"></i>
+					</button>
+					<img src="/assets/img/woop.svg" class="op-logo-modal m-r-15" />
+					<h5 class="p-l-20">{{ dialogService.titleBar }}</h5>
+				</div>
+				<div class="modal-body p-t-30 p-b-30 text-center">
+					<i class="fa {{ dialogService.icon }} confirm-icon" aria-hidden="true"></i>
+					<p class="confirm-message">{{ dialogService.message }}</p>
+					<button type="button" class="btn {{ dialogService.noClass }}" data-dismiss="modal" (click)="reject()" [innerHtml]="dialogService.noMessage"></button>
+					<button type="button" class="btn {{ dialogService.yesClass }}" data-dismiss="modal" (click)="confirm()" [innerHtml]="dialogService.yesMessage"></button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

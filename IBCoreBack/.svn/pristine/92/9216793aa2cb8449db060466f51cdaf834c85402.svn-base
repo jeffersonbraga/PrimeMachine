@@ -1,0 +1,14 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.server.services.ServerAction;
+
+public class DeleteExpiredProfilesAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		getContext().removeAttribute("expiredProfiles" + getUser().getAccount().getIdAccount());
+	}
+
+}

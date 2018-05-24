@@ -1,0 +1,85 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.GroupsProfilesId;
+import br.com.opsocial.ejb.entity.groups.GroupsProfiles;
+
+@Stateless
+public class GroupsProfilesDAOImpl extends AbstractDAOImpl<GroupsProfiles> implements GroupsProfilesDAO {
+
+	@Override
+	public List<Object> getByGroup(Long idGroup) {
+
+		sql = "SELECT gp FROM GroupsProfiles gp WHERE gp.groups.idGroup = :idGroup";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idGroup", idGroup);
+		
+		return query.getResultList();
+	}
+
+	@Override
+	public Integer deleteNotNecessaryProfiles(Long idGroup, List<Profile> listProfilesToAdd) {
+
+		String profilesToAdd = "(";
+		
+		if(!listProfilesToAdd.isEmpty()) {
+			profilesToAdd = profilesToAdd.concat(""+listProfilesToAdd.get(0).getIdProfile()+"");
+			for(int i = 1; i < listProfilesToAdd.size(); i++) {
+				profilesToAdd = profilesToAdd.concat(","+listProfilesToAdd.get(i).getIdProfile()+"");
+			}
+		}
+		
+		profilesToAdd = profilesToAdd.concat(")");
+		
+		sql = "DELETE FROM GroupsProfiles gp WHERE gp.groups.idGroup = :idGroup AND gp.profiles.idProfile NOT IN " + profilesToAdd + "";
+
+		query = em.createQuery(sql); 
+		query.setParameter("idGroup", idGroup);
+
+		return query.executeUpdate();
+	}
+
+	@Override
+	public GroupsProfiles save(GroupsProfiles groupsProfiles) throws Exception {
+		
+		try {
+			
+			GroupsProfilesId groupsProfilesId = new GroupsProfilesId();
+			groupsProfilesId.setGroups(groupsProfiles.getGroups().getIdGroup());
+			groupsProfilesId.setProfiles(groupsProfiles.getProfile().getIdProfile());
+			
+			GroupsProfiles groupsProfilesTemp = getById(groupsProfilesId);
+			
+			if(groupsProfilesTemp != null) {
+				
+				try {
+					validateVersion(groupsProfilesTemp, groupsProfiles);
+				} catch (IllegalStateException ex) {
+					throw new OptimisticLockException();
+				}
+			
+				em.merge(groupsProfiles);
+				
+				this.flush();
+				
+			} else {
+				
+				em.persist(groupsProfiles);
+				
+				this.flush();
+			}
+			
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+		
+		return groupsProfiles;
+	}
+}

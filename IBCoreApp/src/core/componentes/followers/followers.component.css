@@ -1,0 +1,58 @@
+.followers {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 255px);
+    overflow-y: auto;
+    margin-top: -6px;
+    overflow-x: hidden;
+}
+
+.item-list-follower *{
+    font-family: 'Montserrat';
+}
+
+.item-list-follower{
+    padding: 10px 15px;
+    width: 100%;
+    display: block;
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    white-space: nowrap;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+}
+
+.item-list-follower .thumbnail-wrapper{
+    position: relative;
+    top: 3px;  
+}
+
+.item-list-follower:hover{
+    background-color: #daeffd;
+}
+
+.item-list-follower p {
+    margin: 0;
+    line-height: 19px;
+}
+
+.container-messages{
+    width: 100%;
+    /* max-height: calc(100vh - 335px); */
+    overflow: hidden;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: #fff;
+    display: none;
+}
+
+.pseudo-link:hover{
+    color: #0d756b;
+}
+
+.active {
+    color: #10cfbd;
+}

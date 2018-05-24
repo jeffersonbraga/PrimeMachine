@@ -1,0 +1,159 @@
+package br.com.opsocial.server.services;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+@RestController
+@RequestMapping("woopsocial")
+public class UploadAvatar extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Path rootLocation;
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+		super.doGet(req, resp);
+	}
+
+	@CrossOrigin 
+	@RequestMapping(value = "/upload_avatar",
+	method = RequestMethod.POST,
+	produces = MediaType.APPLICATION_JSON_VALUE,
+    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	protected ResponseEntity<String> doPost(@RequestParam("file") MultipartFile file) throws Exception, ServletException, IOException {
+		
+		//TODO: Trocar dieretório
+		this.rootLocation = Paths.get(OpSocialBackApplication.UPLOAD_DIR_AVATAR);
+		
+		try {
+            
+			if (file.isEmpty()) {
+                throw new Exception("Failed to store empty file " + file.getOriginalFilename());
+            }
+            
+			String fileName = RandomStringUtils.randomAlphanumeric(12) + "." + UtilFunctions.getImageExtension(file.getContentType());
+			
+            Files.copy(file.getInputStream(), this.rootLocation.resolve(fileName));
+            
+            return new ResponseEntity<>("[\""+fileName+"\"]", HttpStatus.OK);
+        } catch (IOException e) {
+            throw new Exception("Failed to store file " + file.getOriginalFilename(), e);
+        }
+		
+		/*boolean isMultiPart = ServletFileUpload
+				.isMultipartContent(new ServletRequestContext(request));
+
+		//String tempPath = request.getSession().getServletContext().getInitParameter("uploadDirAvatar");
+		String tempPath = "C:\\OpSocial\\images\\avatar";
+		
+		if (isMultiPart) {
+
+			FileItemFactory factory = new DiskFileItemFactory();
+			ServletFileUpload upload = new ServletFileUpload(factory);
+
+			try {
+				List<FileItem> items = upload.parseRequest(request);
+				
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				
+				PrintWriter out = response.getWriter();
+
+				for (FileItem item : items) {
+
+					if (item.isFormField())
+						continue;
+					
+
+					if(!item.getName().isEmpty()) {
+
+						if(item.getContentType().equals("image/jpeg") || item.getContentType().equals("image/png") || item.getContentType().equals("image/gif")) {
+						
+							if (item.getSize() <= SIZE_LIMIT) {
+								
+								Date now = new Date();
+	
+								String fileName = String.valueOf(now.getTime()) + ".png";
+	
+								File uploadedFile = new File(tempPath, fileName);
+	
+								if (uploadedFile.createNewFile()) {
+									
+									try {
+										item.write(uploadedFile);
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+
+									JsonObject object = new JsonObject();
+
+									object.addProperty("avatar", Persistent.AVATAR_PATH + fileName);
+									
+									out.print(object);
+									out.flush();
+								
+								}
+							} else {
+								item.delete();
+								
+								response.setContentType("text/html");
+								response.setCharacterEncoding("UTF-8");
+								
+								out = response.getWriter();
+								
+								JsonObject object = new JsonObject();
+								object.addProperty("errorCode", 1);
+								
+								out.print(object);
+								out.flush();
+							}
+						} else {
+							item.delete();
+							
+							response.setContentType("text/html");
+							response.setCharacterEncoding("UTF-8");
+							
+							out = response.getWriter();
+							
+							JsonObject object = new JsonObject();
+							object.addProperty("errorCode", 1);
+							
+							out.print(object);
+							out.flush();
+						}
+					}
+				}
+
+			} catch (FileUploadException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}*/
+	}
+}

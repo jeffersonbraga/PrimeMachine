@@ -1,0 +1,86 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import br.com.opsocial.server.validation.ReportsValidation;
+
+public class InstagramInsightsController {
+
+	private Timer timer;
+	
+	public InstagramInsightsController() {
+		
+		timer = new Timer();
+		
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.set(Calendar.HOUR_OF_DAY, 14);
+		taskDate.set(Calendar.MINUTE, 9);
+		taskDate.set(Calendar.SECOND, 0);
+		
+		Date taskTime = taskDate.getTime();
+		
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+	
+	class Task extends TimerTask {
+		
+		public void run() {
+
+			LocalDateTime localDateTimeNow = LocalDateTime.now(ZoneId.of("UTC"));
+			
+			ZonedDateTime reportDate = UtilFunctions.getDateForInstagramReport(localDateTimeNow.minusDays(1));
+
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			MaintenanceReportGenerateRemote reportGenerateRemote = (MaintenanceReportGenerateRemote) 
+					RecoverMaintenance.recoverMaintenance("ReportGenerate");
+			
+			List<Profile> profiles = profileRemote.listActivesByType(Profile.INSTAGRAM);
+			Map<String, String> profileMap = new HashMap<String, String>();
+			
+			for(Profile profile : profiles) {
+				
+				try {
+					
+					if(!profileMap.containsKey(profile.getNetworkId()) && new ReportsValidation().canGenerateReport(profile)) {
+						
+						ReportGenerate reportGenerate = reportGenerateRemote.getEntity(profile.getNetworkId(), Profile.INSTAGRAM);
+						
+						if(reportGenerateRemote.hasEntity(profile.getNetworkId(), Profile.INSTAGRAM) && reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+							
+							ReportInstagram reportInstagram = new ReportInstagram(profile, false);
+							reportInstagram.retrieveAllInsightsForDay(reportDate);
+							reportInstagram.retrieveInsightsForLifetime(reportDate);
+							reportInstagram.retrieveFollowers(reportDate);
+						}
+					}
+					
+					profileMap.put(profile.getNetworkId(), "");
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
+	}
+	
+}

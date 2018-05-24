@@ -1,0 +1,29 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.Remote;
+
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.sets.Set;
+
+@Remote
+public interface MaintenanceSetRemote extends AbstractDAS<Set>{
+	
+	public List<Set> getByStartDate(Long startDate);
+	
+	public List<Set> getByEndDate(Long endDate);
+	
+	public List<Set> getByProfile(Long idProfile, Long idAccount);
+	
+	public List<Set> listSchedulings(Long idAccount);
+	
+	public Long getAmount(Long idUser);
+	
+	public List<Set> listActives();
+	
+	public List<Set> listByAccount(Long idAccount);
+	
+	public List<Set> listSchedulings(Long idProfile, Long idAccount, Character status, Integer offset, Integer limit);
+	
+}

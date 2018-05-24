@@ -1,0 +1,36 @@
+package br.com.opsocial.server.actions.reports.instagram;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramHistoricalDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportInstagramHistoricalAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/report_instagram_historical",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		ReportInstagramHistoricalDTO reportInstagramHistorical = UtilReports.mountReportInstagramHistoricalDTO(profile);
+		
+		getParameters().put("reportInstagramHistorical", reportInstagramHistorical);
+	}
+
+}

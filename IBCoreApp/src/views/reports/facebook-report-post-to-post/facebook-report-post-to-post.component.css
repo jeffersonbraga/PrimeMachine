@@ -1,0 +1,165 @@
+h5 {
+    line-height: 1.8
+}
+
+h4 {
+    line-height: 1.2
+}
+
+.dash {
+    border-bottom: 1px dotted rgba(230, 230, 230, 0.7);
+    border-collapse: collapse;
+} 
+
+.table {
+    table-layout: fixed !important;
+    word-wrap: break-word;
+}
+
+.table tbody tr td {
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.table.table-condensed thead tr th {
+    padding-left: 6px;
+}
+
+.dataTable .left{
+	text-align: left !important;
+}
+
+.progress {
+    height: 20px;
+}
+
+.dataTable .right{
+	text-align: right !important;
+}
+
+.table:not(.dataTable) thead tr th {
+    color: rgba(44,44,44,0.35);
+    border-bottom: 1px solid rgba(210, 209, 209, 0.7);
+}
+
+.table:not(.dataTable) thead tr th:first-child {
+    color: #2c2c2c;
+}
+
+.dataTable td, .dataTable th{
+    color: #626262 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+.dataTable .cyan{
+    color: #00d6f6;
+}
+
+.dataTable strong {
+    position: relative;
+    top: -2px;
+}
+
+/* table.dataTable{
+    table-layout: auto !important;
+} */
+
+table.dataTable .sorting_asc, table.dataTable .sorting_desc{
+    color: #2c2c2c !important;
+}
+
+table.dataTable .sorting{
+    color: rgba(44,44,44,0.35) !important;
+}
+
+.table tbody td{
+    height: 55px;
+}
+
+.img-adjust-table-chart {
+    max-height: 70px;
+    max-width: 130px;
+    margin-right: 10px;
+}
+
+.img-adjust-table-chart img {
+    height: 70px;
+    max-width: 130px;
+    object-fit: contain;
+}
+
+#content-pdf{
+    width: 650px;
+    max-height: 0px;
+    overflow: hidden; 
+}
+
+.page-break{
+    page-break-before: always;
+}
+
+h5 {
+    white-space: normal !important;
+}
+
+@media print{
+    .img-adjust-table-chart {
+        max-height: 75px;
+        max-width: 160px;
+        margin-bottom: 10px;
+    }
+
+    .img-adjust-table-chart img {
+        height: 75px;
+        width: 160px;
+    }
+
+    #content-pdf {
+        max-height: none;
+    }
+
+    .progress{
+        background-color: #00aed9 !important;
+    }
+
+    .progress-bar-complete {
+        display: block !important;
+        background-color: #00d6f6 !important;
+    }
+
+    .progress, .progress > .progress-bar {
+        display: block !important;
+        -webkit-print-color-adjust: exact !important;
+
+        box-shadow: inset 0 0 !important;
+        -webkit-box-shadow: inset 0 0 !important;
+    }
+
+}
+
+th, td {
+    padding: 12px 5px !important;
+}
+
+.fa-facebook-square {
+    color: #3467d4;
+    font-size: 24px
+}
+
+.media-content {
+    padding: 1%;
+    vertical-align: bottom;
+    position:relative;
+}
+  
+td a {
+    height: 100%;
+    display: block;
+    position: absolute;
+    top:0;
+    bottom:0;
+    right:0;
+    left:0;
+}

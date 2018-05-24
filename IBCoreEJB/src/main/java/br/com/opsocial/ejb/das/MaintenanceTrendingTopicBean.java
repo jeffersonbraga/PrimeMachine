@@ -1,0 +1,53 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.TrendingTopicDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.twitter.TrendingTopic;
+
+@Stateless
+public class MaintenanceTrendingTopicBean extends AbstractDASImpl<TrendingTopic> implements MaintenanceTrendingTopicRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	TrendingTopicDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<TrendingTopic> dao) {
+		this.dao = (TrendingTopicDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<TrendingTopic> getDao() {
+		return this.dao;
+	}
+
+	@Override
+	public AbstractDAO<TrendingTopic> getDAO() {
+		return this.dao;
+	}
+
+	@Override
+	public List<TrendingTopic> getMostRecentTrendingTopics(Integer offset, Integer limit) {
+		return dao.getMostRecentTrendingTopics(offset, limit);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

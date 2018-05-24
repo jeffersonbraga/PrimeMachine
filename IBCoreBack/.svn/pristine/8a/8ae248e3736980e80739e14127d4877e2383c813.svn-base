@@ -1,0 +1,225 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportDetailedRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportDetailed;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportFacebookPosts;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.server.validation.ReportsValidation;
+import facebook4j.FacebookException;
+
+public class FacebookInsightsController {
+
+	private Timer timer;
+
+	public FacebookInsightsController() {
+
+		timer = new Timer();
+
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.set(Calendar.HOUR_OF_DAY, 2);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+
+		Date taskTime = taskDate.getTime();
+
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+
+	class Task extends TimerTask {
+		
+		private MaintenanceReportGenerateRemote reportGenerateRemote;
+		private MaintenanceProfileRemote profileRemote;
+		
+		public void run() {
+
+			Calendar reportDate = Calendar.getInstance();
+			reportDate.set(Calendar.DAY_OF_MONTH, reportDate.get(Calendar.DAY_OF_MONTH) - 3);
+			reportDate.setTimeZone(TimeZone.getTimeZone("America/Phoenix"));
+			reportDate.set(Calendar.AM_PM, Calendar.AM);
+			reportDate.set(Calendar.HOUR_OF_DAY, 0);
+			reportDate.set(Calendar.MINUTE, 0);
+			reportDate.set(Calendar.SECOND, 0);
+
+			Long reportDateStamp = reportDate.getTimeInMillis() / 1000L;
+
+			reportGenerateRemote = (MaintenanceReportGenerateRemote) 
+					RecoverMaintenance.recoverMaintenance("ReportGenerate");
+
+			profileRemote = (MaintenanceProfileRemote)
+					RecoverMaintenance.recoverMaintenance("Profile");
+			
+			List<Profile> profilesAll = profileRemote.listActivesByType(Profile.FACEBOOK_PAGE);
+			HashSet<String> profilesAllMap = new HashSet<String>();
+			
+			// Verifica se páginas com menos de 30 likes ultrapassaram ou não os 30 likes para que possam ser recuperados seus insights.
+			verifyUnavailableReportPages();
+			
+			for (Profile profile : profilesAll) {
+				
+				try {
+					
+					if(!profilesAllMap.contains(profile.getNetworkId()) && new ReportsValidation().canGenerateReport(profile)) {
+						
+						generateReport(profile.getNetworkId(), profile.getToken(), reportDateStamp);
+						
+						profilesAllMap.add(profile.getNetworkId());
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			profilesAllMap.clear();
+			
+			for (Profile profile : profilesAll) {
+				
+				if(!profilesAllMap.contains(profile.getNetworkId()) && new ReportsValidation().canGenerateReport(profile)) {
+					
+					updatePostsLastDays(profile.getNetworkId(), profile.getToken());
+					
+					profilesAllMap.add(profile.getNetworkId());
+				}
+			}
+			
+			profilesAllMap.clear();
+		}
+		
+		private void verifyUnavailableReportPages() {
+			
+			try {
+			
+				List<ReportGenerate> reportGeneratesUnavailable = reportGenerateRemote.getEntities(ReportFacebook.UNAVAILABLE);
+	
+				for(ReportGenerate reportGenerate : reportGeneratesUnavailable) {
+	
+					try {
+	
+						if(ReportGenerateVerification.isReportActive(reportGenerate)) {
+							
+							reportGenerate.setState(ReportFacebook.GENERATING);
+							reportGenerate = reportGenerateRemote.save(reportGenerate);
+	
+							Profile profile = new Profile();
+							profile.setNetworkId(reportGenerate.getNetworkId());
+							profile.setType(reportGenerate.getNetworkType());
+							profile.setToken(reportGenerate.getTokenSecret());
+							
+							new ReportGenerateRunnable(profile, ReportGenerateRunnable.REPORT_DAYS).run();
+						}
+	
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (FacebookException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		private void generateReport(String networkid, String pageAccessToken, Long reportDateStamp) {
+
+			try {
+				
+				ReportGenerate reportGenerate = reportGenerateRemote.getEntity(networkid, Profile.FACEBOOK_PAGE);
+
+				if(reportGenerateRemote.hasEntity(networkid, Profile.FACEBOOK_PAGE) && reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+
+					// Resgata os insights do último dia.
+					ReportFacebook reportFacebook = new ReportFacebook(networkid, pageAccessToken);
+					reportFacebook.retrieveAllInsightsForDay(reportDateStamp);
+					reportFacebook.retrieveInsightsForLifetime(reportDateStamp);
+
+					// Verificação de dias em que os relatórios não foram gerados (Verifica diretamente a tabela ReportControl).
+					List<Long> reportDaysMain = ReportGenerateVerification.getListDaysForFacebookReport(networkid, Profile.FACEBOOK_PAGE, ReportFacebook.GROUP_MAIN);
+
+					for(Long reportDay : reportDaysMain) {
+						new ReportFacebook(networkid, pageAccessToken).retrieveAllInsightsForDay(reportDay);
+					}
+
+					MaintenanceReportDetailedRemote reportDetailedRemote = (MaintenanceReportDetailedRemote) 
+							RecoverMaintenance.recoverMaintenance("ReportDetailed");
+
+					// Verificação de possíveis insights que não tenham sido recuperados em algum dia por algum motivo, por exemplo, indisponibilidade do Facebook.
+					List<Long> datesReportInsights = reportDetailedRemote.getDatesWithoutValue(networkid);
+
+					for(Long date : datesReportInsights) {
+
+						Map<String, List<ReportDetailed>> reportDetaileds = reportDetailedRemote.getEntitiesWithoutValue(networkid, date);
+						if(!reportDetaileds.isEmpty()) {
+							reportFacebook.recalculateStatistics(reportDetaileds, date);
+						}
+					}
+
+					// Verificação exclusiva para Insights do grupo GROUP_IMP_CITY, que possivelmente não tenham sido recuperados do facebook, por exemplo, devido a indisponibilidade do Facebook.
+					List<Long> reportDaysImpCity = ReportGenerateVerification.getListDaysForFacebookReport(networkid, Profile.FACEBOOK_PAGE, ReportFacebook.GROUP_IMP_CITY);
+
+					if(!reportDaysImpCity.isEmpty()) {
+						ReportFacebook reportFacebookImpCity = new ReportFacebook(networkid, pageAccessToken);
+						reportFacebookImpCity.calcStatisticsImpCity(reportDaysImpCity);
+					}
+
+					// Verificação exclusiva para Insights do grupo GROUP_VIEWS_EXTERNAL, que possivelmente não tenham sido recuperados do facebook, por exemplo, devido a indisponibilidade do Facebook.
+					List<Long> reportDaysViewExternal = ReportGenerateVerification.getListDaysForFacebookReport(networkid, Profile.FACEBOOK_PAGE, ReportFacebook.GROUP_VIEWS_EXTERNAL);
+
+					if(!reportDaysViewExternal.isEmpty()) {
+						ReportFacebook reportFacebookViewExternal = new ReportFacebook(networkid, pageAccessToken);
+						reportFacebookViewExternal.calcStatisticsViewsExternal(reportDaysViewExternal);
+					}
+				}
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}	
+		}
+		
+		private void updatePostsLastDays(String networkid, String pageAccessToken) {
+			
+			ReportGenerate reportGenerate = reportGenerateRemote.getEntity(networkid, Profile.FACEBOOK_PAGE);
+
+			if(reportGenerateRemote.hasEntity(networkid, Profile.FACEBOOK_PAGE) && reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+
+				try {
+
+					// Atualizar insights dos posts.
+					ReportFacebookPosts reportFacebookPosts = new ReportFacebookPosts(pageAccessToken, reportGenerate.getNetworkId());
+					reportFacebookPosts.updatePostsInsights();
+
+					// Atualizar comentários dos posts.
+					ReportFacebookPosts reportFacebookPostsComments = new ReportFacebookPosts(pageAccessToken, reportGenerate.getNetworkId());
+					reportFacebookPostsComments.updatePostsComments();
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}	
+			}
+		}
+	}
+
+}

@@ -1,0 +1,16 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Remote;
+
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.sets.Post;
+
+@Remote
+public interface MaintenancePostRemote extends AbstractDAS<Post> {
+	
+	public List<Post> listSchedulings(ArrayList<Integer> idProfile, Long idAccount, Character status, Integer offset, Integer limit);
+
+}

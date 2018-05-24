@@ -1,0 +1,40 @@
+package br.com.opsocial.server.actions.config;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+
+@RestController
+@RequestMapping("opsocial")
+public class UpdateUserAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/update_user",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		User userDTO = (User) getParameters().get("user");
+		
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		User user = remote.getById(userDTO.getIdUser());
+		userDTO.setVersion(user.getVersion());
+		
+		remote.save(userDTO);
+		
+		getSession().setAttribute("user", remote.getById(userDTO.getIdUser()));
+		
+		setParameters(new HashMap<String, Object>());
+	}
+}

@@ -1,0 +1,173 @@
+package br.com.opsocial.server.services;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.lang3.RandomStringUtils;
+
+import com.google.gson.JsonObject;
+
+public class UploadFacebookVideo extends HttpServlet {
+
+	private static final long serialVersionUID = 5676663031738075046L;
+	
+	private static final long SIZE_LIMIT = 1073741824L; // 1GB per video at most.
+	private String contentType;
+
+	private final static String VIDEO_AVI = "video/avi";
+	private final static String VIDEO_ASF = "video/x-ms-asf";
+	private final static String VIDEO_DV = "video/x-dv";
+	private final static String VIDEO_MOD = "audio/mod";
+	private final static String VIDEO_MOV = "video/quicktime";
+	private final static String VIDEO_MP4 = "video/mp4";
+	private final static String VIDEO_MPEG = "video/mpeg";
+	private final static String VIDEO_XFLV = "video/x-flv";
+	private final static String VIDEO_3GP = "video/3gpp";
+	private final static String VIDEO_MKV = "video/x-matroska";
+	
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		super.doGet(req, resp);
+	}
+	
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		boolean isMultiPart = ServletFileUpload
+				.isMultipartContent(new ServletRequestContext(request));
+
+		String tempPath = request.getSession().getServletContext().getInitParameter("uploadDirVideoPosts");
+		String errors = "";
+		String videoName = "";
+		Long videoSize = 0L;
+		String videoExtension = "";
+		
+		if (isMultiPart) {
+
+			FileItemFactory factory = new DiskFileItemFactory();
+			ServletFileUpload upload = new ServletFileUpload(factory);
+
+			try {
+				
+				List<FileItem> items = upload.parseRequest(request);
+				
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				
+				PrintWriter out = response.getWriter();
+
+				for (FileItem item : items) {
+
+					if (item.isFormField())
+						continue;
+
+					if(!item.getName().isEmpty()) {
+						
+						contentType = item.getContentType(); 
+
+						if(isVideoExtensionAllowed(contentType)) {
+							
+							videoSize = item.getSize();
+							videoExtension = contentType;
+						
+							if (item.getSize() <= SIZE_LIMIT) {
+	
+								String fileName = RandomStringUtils.randomAlphanumeric(12) + "." + getVideoExtension(contentType);
+	
+								File uploadedFile = new File(tempPath, fileName);
+	
+								uploadedFile.createNewFile();
+								
+								item.write(uploadedFile);
+
+								videoName = fileName;
+								
+							} else {
+								errors += "O vídeo não pode ser carregado. O vídeo deve ter o tamanho inferior a 1GB" + "§";
+								item.delete();
+							}
+						} else {
+							errors += "O vídeo não pode ser carregado. O vídeo deve estar em um dos seguintes formatos: " + getVideoExtensions() + "§";
+							item.delete();
+						}
+					}
+				}
+				
+				JsonObject object = new JsonObject();
+				
+				object.addProperty("video_name", videoName);
+				object.addProperty("video_size", videoSize.toString());
+				object.addProperty("video_extension", videoExtension);
+				object.addProperty("errors", errors);
+				
+				out.print(object);
+				out.flush();
+
+			} catch (FileUploadException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private String getVideoExtension(String contentType) {
+		
+		String videoExtension = "";
+		
+		if(contentType.equals(VIDEO_AVI)) {
+			videoExtension = "avi";
+		} else if(contentType.equals(VIDEO_ASF)) {
+			videoExtension = "asf";
+		} else if(contentType.equals(VIDEO_DV)) {
+			videoExtension = "dv";
+		} else if(contentType.equals(VIDEO_MOD)) {
+			videoExtension = "mod";
+		} else if(contentType.equals(VIDEO_MOV)) {
+			videoExtension = "mov";
+		} else if(contentType.equals(VIDEO_MP4)) {
+			videoExtension = "mp4";
+		} else if(contentType.equals(VIDEO_MPEG)) {
+			videoExtension = "mpeg";
+		} else if(contentType.equals(VIDEO_XFLV)) {
+			videoExtension = "flv";
+		} else if(contentType.equals(VIDEO_3GP)) {
+			videoExtension = "3gp";
+		} else if(contentType.equals(VIDEO_MKV)) {
+			videoExtension = "mkv";
+		}
+		
+		return videoExtension;
+	}
+	
+	private Boolean isVideoExtensionAllowed(String contentType) {
+		return Arrays.asList(VIDEO_AVI,VIDEO_ASF,VIDEO_DV,VIDEO_MOD,VIDEO_MOV,VIDEO_MP4,VIDEO_MPEG,VIDEO_XFLV,VIDEO_3GP,VIDEO_MKV).contains(contentType);
+	}
+	
+	private String getVideoExtensions() {
+		
+		StringBuilder builder = new StringBuilder();
+		
+		for(String extension : Arrays.asList(VIDEO_AVI,VIDEO_ASF,VIDEO_DV,VIDEO_MOD,VIDEO_MOV,VIDEO_MP4,VIDEO_MPEG,VIDEO_XFLV,VIDEO_3GP,VIDEO_MKV)) {
+			builder.append(getVideoExtension(extension) + ", ");
+		}
+		
+		builder.replace(builder.lastIndexOf(", "), builder.length(), ".");
+		
+		return builder.toString();
+	}
+}

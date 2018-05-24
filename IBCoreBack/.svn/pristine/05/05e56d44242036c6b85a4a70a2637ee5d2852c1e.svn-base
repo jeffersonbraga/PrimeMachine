@@ -1,0 +1,30 @@
+package br.com.opsocial.server.actions.config;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class UpdateUserAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		User userDTO = (User) getParameters().get("user");
+		
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		User user = remote.getById(userDTO.getIdUser());
+		userDTO.setVersion(user.getVersion());
+		
+		remote.save(userDTO);
+		
+		getSession().setAttribute("user", remote.getById(userDTO.getIdUser()));
+		
+		setParameters(new HashMap<String, Object>());
+	}
+}

@@ -1,0 +1,406 @@
+<h6 class="fs-14">
+  <i class="fa fa-facebook-square m-r-5 v-align-middle"></i>
+  <span class="v-align-middle"><strong>{{ profile.screenName }} • Content • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+  <!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Conteúdo • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+</h6>
+<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+  <button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+  <button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+</nav>
+<div class="hidden-print sm-gutter">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">posts durante o período</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-8">
+              <column-chart [data]="numberOfPostsData" heigth="280" [reduceXTicks]="true"></column-chart>
+            </div>
+            <div class="col-xs-4 p-l-0">
+              <aside-text-icon [data]="averagePostsPerDayAside"></aside-text-icon>
+              <aside-text-icon [data]="averagePostsReachAside"></aside-text-icon>
+              <aside-text-icon [data]="averagePostsInteractionsAside"></aside-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="panel panel-default m-b-10">
+          <div class="panel-heading">
+            <div class="panel-title">envolvimento do público por tipo de interação</div>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-md-12 col-lg-4 report-full">
+                <h6 class="panel-sub-title font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">reactions</h6>
+                <stacked-area-chart [data]="reactionsPerDayData" heigth="280" format="%m/%d" [reduceXTicks]="true" [legends]="legendsReactionsPerDay" [color]="colorsReactionsPerDay"></stacked-area-chart>
+                <div class="row">
+                  <div class="col-md-6 col-lg-4 col-xs-6">
+                    <footer-text-icon [data]="likesFooter"></footer-text-icon>
+                  </div>
+                  <div class="col-md-6 col-lg-4 col-xs-6">
+                    <footer-text-icon [data]="loveFooter"></footer-text-icon>
+                  </div>
+                  <div class="col-md-6 col-lg-4 col-xs-6">
+                    <footer-text-icon [data]="hahaFooter"></footer-text-icon>
+                  </div>
+                  <div class="col-md-6 col-lg-4 col-xs-6">
+                    <footer-text-icon [data]="wowFooter"></footer-text-icon>
+                  </div>
+                  <div class="col-md-6 col-lg-4 col-xs-6">
+                    <footer-text-icon [data]="sorryFooter"></footer-text-icon>
+                  </div>
+                  <div class="col-md-6 col-lg-4 col-xs-6">
+                    <footer-text-icon [data]="angerFooter"></footer-text-icon>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12 col-lg-4 report-full">
+                <h6 class="panel-sub-title font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">comentários</h6>
+                <stacked-area-chart [data]="commentsPerDayData" heigth="280" format="%m/%d" [reduceXTicks]="true" [legends]="legendsType1"></stacked-area-chart>
+                <footer-text-icon [data]="commentsFooter"></footer-text-icon>
+              </div>
+              <div class="col-md-12 col-lg-4 report-full">
+                <h6 class="panel-sub-title font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">shares</h6>
+                <stacked-area-chart [data]="sharesPerDayData" heigth="280" format="%m/%d" [reduceXTicks]="true" [legends]="legendsType1"></stacked-area-chart>
+                <footer-text-icon [data]="sharesFooter"></footer-text-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-6 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">alcance das publicações</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="postsReachData" height="280" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-6">
+              <aside-pie-chart-double [data]="totalReachPieDouble"></aside-pie-chart-double>
+            </div>
+            <div class="col-md-12 col-lg-6">
+              <footer-text-icon [data]="averageReachFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-6 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">impressões das publicações</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="postsImpressionsData" height="280" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-6">
+              <aside-pie-chart-double [data]="totalImpressionsPieDouble"></aside-pie-chart-double>
+            </div>
+            <div class="col-md-12 col-lg-6">
+              <footer-text-icon [data]="averageImpressionsFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-7 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">interações com o conteúdo que não geraram histórias</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-8">
+              <column-chart [data]="postsConsumptionsTypeData" heigth="280" [reduceXTicks]="false"></column-chart>
+            </div>
+            <div class="col-xs-4 p-l-0">
+              <aside-text-icon [data]="postsConsumptionsTotalAside"></aside-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-5 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">interações com feedback negativo</div>
+        </div>
+        <div class="panel-body">
+          <column-chart [data]="pageNegativeFeedbacksTypeData" heigth="280" [reduceXTicks]="false"></column-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-default m-b-10">
+    <div class="panel-body no-padding">
+      <div class="row">
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-progress-bar [data]="videoTotalViewsProgressBar"></aside-progress-bar>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-progress-bar [data]="videoCompleteViewsProgressBar"></aside-progress-bar>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <aside-progress-bar [data]="videoPartialViewsProgressBar"></aside-progress-bar>
+        </div>
+        <div class="col-sm-12 col-md-6 col-lg-3">
+          <div class="p-t-20">
+            <aside-text-growth [data]="videoViewTimeGrowth"></aside-text-growth>
+          </div>
+          <aside-text-growth [data]="videoRepeatViewsGrowth"></aside-text-growth>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-8 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">visualizações</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="videoViewsData" height="280" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-6">
+              <aside-pie-chart-double [data]="videoViewsByTypePieDouble"></aside-pie-chart-double>
+            </div>
+            <div class="col-md-12 col-lg-6">
+              <footer-text-icon [data]="majorTotalViewsDayFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-4 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">tempo em minutos por faixa etária e gênero</div>
+        </div>
+        <div class="panel-body">
+          <stacked-column-chart [data]="videoViewTimeByAgeGenderData" height="280" [reduceXTicks]="false" [legends]="legendsAboutYourFans"></stacked-column-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-6">
+              <footer-text-icon [data]="majorAgeGroupVideoViewTimeFooter"></footer-text-icon>
+            </div>
+            <div class="col-md-12 col-lg-6">
+              <aside-pie-chart [data]="womenMenVideoViewsTimePie"></aside-pie-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="content-pdf">
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">posts durante o período</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-8">
+              <column-chart [data]="numberOfPostsData" heigth="280" [reduceXTicks]="true"></column-chart>
+            </div>
+            <div class="col-xs-4 p-l-0">
+              <aside-text-icon [data]="averagePostsPerDayAside"></aside-text-icon>
+              <aside-text-icon [data]="averagePostsReachAside"></aside-text-icon>
+              <aside-text-icon [data]="averagePostsInteractionsAside"></aside-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <div class="panel-title">envolvimento do público por tipo de interação</div>
+      </div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-xs-12">
+            <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">curtir e reações</h6>
+            <stacked-area-chart [data]="reactionsPerDayData" heigth="280" format="%m/%d" [reduceXTicks]="true" [legends]="legendsReactionsPerDay" [color]="colorsReactionsPerDay"></stacked-area-chart>
+            <div class="row">
+              <div class="col-xs-4">
+                <footer-text-icon [data]="likesFooter"></footer-text-icon>
+              </div>
+              <div class="col-xs-4">
+                <footer-text-icon [data]="loveFooter"></footer-text-icon>
+              </div>
+              <div class="col-xs-4">
+                <footer-text-icon [data]="hahaFooter"></footer-text-icon>
+              </div>
+              <div class="col-xs-4">
+                <footer-text-icon [data]="wowFooter"></footer-text-icon>
+              </div>
+              <div class="col-xs-4">
+                <footer-text-icon [data]="sorryFooter"></footer-text-icon>
+              </div>
+              <div class="col-xs-4">
+                <footer-text-icon [data]="angerFooter"></footer-text-icon>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row page-break">
+          <div class="col-xs-12">
+            <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">comments</h6>
+            <stacked-area-chart [data]="commentsPerDayData" heigth="280" format="%m/%d" [reduceXTicks]="true" [legends]="legendsType1"></stacked-area-chart>
+            <footer-text-icon [data]="commentsFooter"></footer-text-icon>
+          </div>
+          <div class="col-xs-12">
+            <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">shares</h6>
+            <stacked-area-chart [data]="sharesPerDayData" heigth="280" format="%m/%d" [reduceXTicks]="true" [legends]="legendsType1"></stacked-area-chart>
+            <footer-text-icon [data]="sharesFooter"></footer-text-icon>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row page-break">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">alcance das publicações</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="postsReachData" height="280" [legends]="legendsType2"></stacked-area-chart>
+          <div class="row">
+            <div class="col-xs-6">
+              <aside-pie-chart-double [data]="totalReachPieDouble"></aside-pie-chart-double>
+            </div>
+            <div class="col-xs-6">
+              <footer-text-icon [data]="averageReachFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">impressões das publicações</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="postsImpressionsData" height="280" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+          <div class="row">
+            <div class="col-xs-6">
+              <aside-pie-chart-double [data]="totalImpressionsPieDouble"></aside-pie-chart-double>
+            </div>
+            <div class="col-xs-6">
+              <footer-text-icon [data]="averageImpressionsFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row page-break">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">interações com o conteúdo que não geraram histórias</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-8">
+              <column-chart [data]="postsConsumptionsTypeData" heigth="280" [reduceXTicks]="false"></column-chart>
+            </div>
+            <div class="col-xs-4 p-l-0">
+              <aside-text-icon [data]="postsConsumptionsTotalAside"></aside-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">interações com feedback negativo</div>
+        </div>
+        <div class="panel-body">
+          <column-chart [data]="pageNegativeFeedbacksTypeData" heigth="280" [reduceXTicks]="false"></column-chart>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-default page-break">
+    <div class="panel-body no-padding">
+      <div class="row">
+        <div class="col-xs-6">
+          <aside-progress-bar [data]="videoTotalViewsProgressBar"></aside-progress-bar>
+        </div>
+        <div class="col-xs-6">
+          <aside-progress-bar [data]="videoCompleteViewsProgressBar"></aside-progress-bar>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-6">
+          <aside-progress-bar [data]="videoPartialViewsProgressBar"></aside-progress-bar>
+        </div>
+        <div class="col-xs-6">
+          <div class="p-t-20">
+            <aside-text-growth [data]="videoViewTimeGrowth"></aside-text-growth>
+          </div>
+          <aside-text-growth [data]="videoRepeatViewsGrowth"></aside-text-growth>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">visualizações</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="videoViewsData" height="280" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+          <div class="row">
+            <div class="col-xs-6">
+              <aside-pie-chart-double [data]="videoViewsByTypePieDouble"></aside-pie-chart-double>
+            </div>
+            <div class="col-xs-6">
+              <footer-text-icon [data]="majorTotalViewsDayFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row page-break">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">tempo de consumo por faixa etária e gênero</div>
+        </div>
+        <div class="panel-body">
+          <stacked-column-chart [data]="videoViewTimeByAgeGenderData" height="280" [reduceXTicks]="false" [legends]="legendsAboutYourFans"></stacked-column-chart>
+          <div class="row">
+            <div class="col-xs-6">
+              <footer-text-icon [data]="majorAgeGroupVideoViewTimeFooter"></footer-text-icon>
+            </div>
+            <div class="col-xs-6">
+              <aside-pie-chart [data]="womenMenVideoViewsTimePie"></aside-pie-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

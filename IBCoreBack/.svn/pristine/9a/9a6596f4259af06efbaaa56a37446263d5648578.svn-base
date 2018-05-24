@@ -1,0 +1,94 @@
+package br.com.opsocial.server.actions.reports.twitter;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterOverviewDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.server.utils.reports.xls.ReportTwitterOverviewXLS;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Notification;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportTwitterOverviewXLSAction extends ServerAction {
+	
+	private User user; 
+
+	@CrossOrigin(origins = "*")
+	@RequestMapping(value = "/report_twitter_overview_xls",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Object>> doActionNew(HttpSession session, HttpServletRequest request, Long idProfile, Long dateFrom, Long dateUntil) throws Exception, OptimisticLockException {
+		
+		//Profile profile = (Profile) getParameters().get("profile");
+		//Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		//Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		
+		//TODO: pegar usuário da sessão
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		session.setAttribute("user", userRemote.getById(1L));
+		user = (User) request.getSession().getAttribute("user");
+		
+		List<Object> l = new ArrayList<Object>();
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		Profile profile = remote.getById(idProfile);
+		
+		setParameters(new HashMap<String, Object>());
+		
+		Calendar fromDate = Calendar.getInstance();
+		fromDate.setTimeInMillis(dateFrom);
+		
+		Calendar untilDate = Calendar.getInstance();
+		untilDate.setTimeInMillis(dateUntil);
+		
+		ReportTwitterOverviewDTO reportTwitterOverview = UtilReports.mountReportTwitterOverviewDTO(profile, new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate)), null);
+
+		ReportTwitterOverviewXLS reportTwitterOverviewXLS = new ReportTwitterOverviewXLS(reportTwitterOverview, profile); 
+		reportTwitterOverviewXLS.createXLS();
+
+		//getParameters().put("xlsToDownload", new StringUtil(reportTwitterOverviewXLS.getFileName()));
+		//getParameters().put("xlsNameToDownload", new StringUtil(reportTwitterOverviewXLS.getFormattedFileName()));
+		//getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(profile.getAccount().getIdAccount()));
+		
+		l.add(new StringUtil(reportTwitterOverviewXLS.getFileName()));
+		l.add(new StringUtil(reportTwitterOverviewXLS.getFormattedFileName()));
+		l.add(new br.com.opsocial.client.entity.primitive.Long(profile.getAccount().getIdAccount()));
+		
+		String message = user.getName() + " gerou um relatório em XLS do canal " + profile.getScreenName() + ".";
+		UtilFunctions.addNotification(message, user.getAccount().getIdAccount(), Notification.COLOR_SUCCESS, "");
+		
+		return new ResponseEntity<>(l, HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

@@ -1,0 +1,70 @@
+package br.com.opsocial.server.actions.mailbox;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import das.MaintenanceProfileRemote;
+import entity.application.Profile;
+import entity.application.User;
+
+import entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class ShowMailboxAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/show_mailbox",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		User user = (User) getSession().getAttribute("user");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		// Facebook profiles
+		
+		List<Character> profileTypes = new ArrayList<Character>();
+		profileTypes.add(Profile.FACEBOOK_PAGE);
+		
+		List<Profile> facebookProfiles = remote.getEntityByNetworkType(profileTypes, user.getAccount().getIdAccount());
+		
+		List<Profile> facebookProfilesDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : facebookProfiles) {
+			facebookProfilesDTOs.add(MountDTO.mountProfile(profile));
+		}
+		
+		getParameters().put("facebookprofiles", facebookProfilesDTOs);
+		
+		// Twitter profiles
+		
+		profileTypes = new ArrayList<Character>();
+		profileTypes.add(Profile.TWITTER);
+		
+		List<Profile> twitterProfiles = remote.getEntityByNetworkType(profileTypes, user.getAccount().getIdAccount());
+		
+		List<Profile> twitterProfilesDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : twitterProfiles) {
+			twitterProfilesDTOs.add(MountDTO.mountProfile(profile));
+		}
+		
+		getParameters().put("twitterprofiles", twitterProfilesDTOs);
+		
+	}
+}

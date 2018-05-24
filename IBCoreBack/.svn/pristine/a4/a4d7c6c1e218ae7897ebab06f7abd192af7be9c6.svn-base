@@ -1,0 +1,70 @@
+package br.com.opsocial.server.services;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import br.com.opsocial.server.utils.networksintegrations.GoogleIntegration;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+
+public class AuthGooglePlusCallbackServlet extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+	
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+		
+		String code = req.getParameter("code");
+		
+		if(code != null) {
+			
+			StringBuffer callbackURL = req.getRequestURL();
+			int index = callbackURL.lastIndexOf("/");
+			callbackURL.replace(index, callbackURL.length(), "").append("/authGooglePlusCallbackServlet"); 
+			
+			GoogleAuthorizationCodeTokenRequest request = new GoogleAuthorizationCodeTokenRequest(
+					new NetHttpTransport(), new JacksonFactory(), GoogleIntegration.CLIENT_ID, GoogleIntegration.CLIENT_SECRET, code, callbackURL.toString());
+			
+			GoogleTokenResponse response = request.execute();
+			Calendar tokenDate = new GregorianCalendar();
+			tokenDate.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+			
+			System.out.println("Access Token: " + response.getAccessToken());
+			System.out.println("Refresh Token: " + response.getRefreshToken());
+			System.out.println("Scope: " + response.getScope());
+			
+			resp.setContentType("text/html");
+			
+			PrintWriter	out = resp.getWriter(); 
+		    out.println("<script>"); 
+		    out.println("window.close();"); 
+		    out.println("</script>");
+		    out.flush();
+			
+			new GoogleIntegration().getGooglePlus(response.getAccessToken(), response.getRefreshToken()).people().get("me").execute();
+			
+			
+			
+		}
+	}
+	
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+		doPost(req, resp);
+	}
+	
+}

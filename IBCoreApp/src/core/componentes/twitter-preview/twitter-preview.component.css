@@ -1,0 +1,385 @@
+@font-face {
+    font-family: "edgeicons";
+    src: url("/assets/img/preview/twitter/edge-icons-Regular.eot");
+    src: url("/assets/img/preview/twitter/edge-icons-Regular.eot?#iefix") format("embedded-opentype"),url("/assets/img/preview/twitter/edge-icons-Regular.woff") format("woff"),url("/assets/img/preview/twitter/edge-icons-Regular.ttf") format("truetype")
+}
+
+* {
+	font-family: "Segoe UI",Arial,sans-serif !important;
+}
+
+.account, .tweet, .app, .RtbAd-container {
+    position: relative;
+    min-height: 51px;
+    padding: 9px 12px;
+	border-bottom: 1px solid #e6ecf0;
+	background-color: white;
+}
+
+.tweet {
+    border-bottom: 1px solid #e6ecf0;
+    margin-bottom: 10px !important;
+}
+
+.tweet>.context {
+    margin-left: 58px;
+}
+
+.clearfix:before, .clearfix:after, .control-group:before, .control-group:after, .stream-item>div:before, .stream-item>div:after, .module:after, .module:before, .follow-card header:after, .follow-card header:before, .follow-bar:after, .follow-bar:before, .tweet-form:after, .tweet-form:before, .modal-footer:after, .modal-footer:before, .local-trends-breadcrumb:after, .local-trends-breadcrumb:before, .input-prepend .add-on, .input-append .add-on, .wrapper:after, .wrapper:before, .expanded-content:before, .expanded-content:after, .stream-item:before, .stream-item:after {
+    content: " ";
+    display: table;
+}
+
+.tweet .contentTwitter {
+    margin-left: 58px;
+}
+
+.stream-item-header .account-group {
+    color: #14171a;
+    display: -moz-inline-box;
+    display: -ms-inline-flexbox;
+    display: inline-flex;
+    -ms-flex-negative: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.stream-item-header .avatar, .permalink-header .avatar {
+    float: left;
+    margin-top: 3px;
+    margin-left: -58px;
+    position: absolute;
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    -moz-force-broken-image-icon: 1;
+}
+
+.u-textTruncate {
+    max-width: 100%;
+    overflow: hidden!important;
+    text-overflow: ellipsis!important;
+    white-space: nowrap!important;
+    word-wrap: normal!important;
+}
+
+.fullname {
+    word-break: break-all;
+    color: #14171a;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.account-group .UserBadges {
+    font-size: .9em;
+}
+
+.account-group .username, .time, .time a, .created-via {
+    font-size: 14px;
+    color: #657786;
+}
+
+.account-group .username, .time, .time a, .created-via {
+    font-size: 14px;
+    color: #657786;
+}
+
+.stream-item-header .account-group, .stream-item-header .created-via, .stream-item-header .time {
+    margin-right: 5px;
+}
+
+.stream-item-header .time {
+    white-space: nowrap;
+}
+
+.tweet .time {
+    color: #657786;
+}
+
+.tweet .time:before {
+    content: "\00b7";
+}
+
+.account-group .username, .time, .time a, .created-via {
+    font-size: 14px;
+    color: #657786;
+}
+
+.ProfileTweet-action--more {
+    margin: -2px -9px 0 auto;
+    min-width: inherit;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.ProfileTweet-action--more .ProfileTweet-actionButton {
+    padding: 2px 9px;
+}
+
+.AdaptiveMediaOuterContainer {
+    margin-top: 10px;
+}
+
+.AdaptiveMedia {
+    border-radius: 5px;
+    display: inline-block;
+    overflow: hidden;
+    position: relative;
+    vertical-align: top;
+    width: 100%;
+}
+
+.AdaptiveMedia {
+    max-height: 379.5px;
+    max-width: 506px;
+}
+
+.AdaptiveMedia.is-square, .AdaptiveMedia.is-square .AdaptiveMedia-videoPreview {
+    max-height: 506px;
+}
+
+.AdaptiveMedia-photoContainer {
+    height: 100%;
+    width: 100%;
+}
+
+.AdaptiveMedia-photoContainer img, .AdaptiveMedia-photoContainer video {
+	position: relative;
+	display: block;
+	background-color: #fff;
+    height: 100%;
+    width: 100%;
+	object-fit: cover;
+}
+
+.AdaptiveMedia-doublePhoto {
+    font-size: 0;
+    height: 253px;
+}
+
+.AdaptiveMedia-halfWidthPhoto:first-child {
+    margin-right: 1px;
+}
+
+.AdaptiveMedia-halfWidthPhoto {
+    display: inline-block;
+    height: calc(100% - .5px);
+    overflow: hidden;
+    position: relative;
+    width: calc(50% - .6px);
+}
+
+.AdaptiveMedia-halfWidthPhoto img, .AdaptiveMedia-halfWidthPhoto video {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
+
+.AdaptiveMedia-triplePhoto {
+    font-size: 0;
+    height: 337.3333333333333px;
+}
+
+.AdaptiveMedia-twoThirdsWidthPhoto {
+    display: inline-block;
+    height: 100%;
+    margin-right: 1px;
+    overflow: hidden;
+    position: relative;
+    width: 66%;
+}
+
+.AdaptiveMedia-halfHeightPhotoContainer {
+    display: inline-block;
+    height: 100%;
+    vertical-align: top;
+    width: calc(100% / 3 - 1px);
+}
+
+.AdaptiveMedia-halfHeightPhoto {
+	height: calc(100% / 2 - 1px);
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    margin-bottom: 1px;
+}
+
+.AdaptiveMedia-quadPhoto {
+    font-size: 0;
+    height: 379.5px;
+}
+
+.AdaptiveMedia-threeQuartersWidthPhoto {
+    display: inline-block;
+    height: 100%;
+    margin-right: 1px;
+    overflow: hidden;
+    position: relative;
+    width: calc(75% - 1px);
+}
+
+.AdaptiveMedia-thirdHeightPhotoContainer {
+    display: inline-block;
+    height: 100%;
+    vertical-align: top;
+    width: calc(100% / 4 - 1px);
+}
+
+.AdaptiveMedia-thirdHeightPhoto {
+    height: calc(100% / 3);
+    margin-bottom: 1px;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+.AdaptiveMedia.is-square:not(.is-generic-video) {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.tweet .stream-item-footer {
+    font-size: 12px;
+    padding-top: 1px;
+}
+
+.stream .stream-item-footer {
+    display: table;
+    width: 100%;
+}
+
+.ProfileTweet-actionList {
+    font-size: 0;
+    height: 18px;
+    line-height: 1;
+    margin-bottom: 2px;
+    margin-top: 10px;
+}
+
+.ProfileTweet-action {
+    display: inline-block;
+    width: 80px;
+    max-width: 24%;
+}
+
+.caretTwitter {
+    position: absolute;
+    right: 0;
+    top: 0;
+    min-width: auto;
+    text-align: right;
+}
+
+button, input, optgroup, select, textarea {
+    color: inherit;
+    font: inherit;
+    margin: 0;
+}
+
+button {
+    overflow: visible;
+}
+
+button, select {
+    text-transform: none;
+}
+
+button, html input[type="button"], input[type="reset"], input[type="submit"] {
+    -webkit-appearance: button;
+}
+
+button {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    transition: box-shadow .15s ease-in-out;
+}
+
+button {
+    border: 0;
+}
+
+.ProfileTweet-actionButton, .ProfileTweet-actionButtonUndo {
+    color: #657786;
+    display: inline-block;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    position: relative;
+}
+
+.IconContainer {
+    display: inline-block;
+    line-height: 0;
+    position: relative;
+    vertical-align: middle;
+}
+
+.Icon {
+    background: transparent;
+    display: inline-block;
+    font-style: normal;
+    vertical-align: baseline;
+    position: relative;
+}
+
+.Icon--medium {
+    font-size: 18px;
+    line-height: 18px;
+}
+
+.Icon:after, .Icon:before {
+    display: block;
+    font-family: "edgeicons";
+    font-weight: normal;
+    font-style: normal;
+    text-align: center;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.Icon--caretDownLight:before {
+    content: "\f196";
+}
+
+.Icon--reply:before {
+    content: "\f151";
+}
+
+.Icon--retweet:before {
+    content: "\f152";
+}
+
+.Icon--heart:before {
+    content: "\f148";
+}
+
+.Icon--analytics:before {
+    content: "\f200";
+}
+
+.HeartAnimation {
+    position: absolute;
+    background-image: url(/assets/img/preview/twitter/web_heart_animation_edge.png);
+    background-position: left;
+    background-repeat: no-repeat;
+    background-size: 2900%;
+    height: 50px;
+    width: 50px;
+    left: 50%;
+    top: 50%;
+    -ms-transform: translate(-50%,-47.5%);
+    transform: translate(-50%,-47.5%);
+}
+
+button {
+	cursor: default !important;
+}
+
+.cursor {
+    cursor: pointer !important;
+}

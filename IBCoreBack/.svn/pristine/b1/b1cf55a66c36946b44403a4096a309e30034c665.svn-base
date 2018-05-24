@@ -1,0 +1,172 @@
+package br.com.opsocial.server.utils.linkedin;
+
+import org.json.JSONObject;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.github.scribejava.apis.LinkedInApi20;
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.exceptions.OAuthException;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuth2AccessTokenErrorResponse;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
+import com.google.code.linkedinapi.client.LinkedInApiClient;
+import com.google.code.linkedinapi.client.LinkedInApiClientException;
+import com.google.code.linkedinapi.client.LinkedInApiClientFactory;
+import com.google.code.linkedinapi.schema.VisibilityType;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.actions.profiles.linkedin.InsertByLinkedInAction;
+
+@RestController
+@RequestMapping("opsocial")
+public class LinkedInApi {
+
+	@CrossOrigin
+	@RequestMapping(value = "/post_linkedin",
+	method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public Boolean post(Post post, Profile profile) {
+		
+		Boolean wasSent = true;
+//		String tempPath = ServicesImpl.context.getInitParameter("uploadDirTemp") + "/";
+//		String videoPostsPath = ServicesImpl.context.getInitParameter("uploadDirVideoPosts") + "/"; 
+		
+		try {
+			
+			if(profile.getType() == 'H') {	
+
+				try {
+					
+					JSONObject obj = new JSONObject();
+					JSONObject obj1 = new JSONObject();
+					JSONObject obj2 = new JSONObject();
+					
+					if(post.getAppendType().equals(Post.APPEND_PICTURE)) { //post.gettitle //post.getdescription
+	
+						//tempPath
+						//videoPostsPath
+						obj1.put("code", "anyone");
+						obj2.put("title", post.getTitle());
+						obj2.put("description", post.getDescription());
+						obj2.put("submitted-url", "");
+						obj2.put("submitted-image-url", "");
+						obj.put("visibility", obj1);
+						obj.put("comment", "");
+						obj.put("content", obj2);
+						
+					} else if(post.getAppendType().equals(Post.APPEND_RESUME)) {
+	
+						//tempPath
+						//videoPostsPath
+						obj1.put("code", "anyone");
+						obj2.put("title", post.getTitle());
+						obj2.put("description", post.getDescription());
+						obj2.put("submitted-url", post.getPostsAttachments());
+						obj2.put("submitted-image-url", "");
+						obj.put("visibility", obj1);
+						obj.put("comment", "");
+						obj.put("content", obj2);
+						
+					} else if(post.getAppendType().equals(Post.APPEND_VIDEO)) {
+	
+						//tempPath
+						//videoPostsPath
+						obj1.put("code", "anyone");
+						obj2.put("title", post.getTitle());
+						obj2.put("description", post.getDescription());
+						obj2.put("submitted-url", "");
+						obj2.put("submitted-image-url", post.getPicture());
+						obj.put("visibility", obj1);
+						obj.put("comment", "");
+						obj.put("content", obj2);
+						
+					} else {
+						
+						obj1.put("code", "anyone");
+						obj2.put("title", post.getTitle());
+						obj2.put("description", post.getDescription());
+						obj2.put("submitted-url", "");
+						obj2.put("submitted-image-url", "");
+						obj.put("visibility", obj1);
+						obj.put("comment", "");
+						obj.put("content", obj2);
+					}
+				
+					final OAuth20Service service = new ServiceBuilder()
+							.apiKey(InsertByLinkedInAction.CLIENT_ID)
+			                .apiSecret(InsertByLinkedInAction.CLIENT_SECRET)
+			                .scope(InsertByLinkedInAction.APP_PERMISSIONS)
+			                .state("sAoRm1e_p7")
+			                .build(LinkedInApi20.instance());
+					
+					OAuth2AccessToken accessToken = new OAuth2AccessToken(profile.getToken());
+					
+					OAuthRequest request = new OAuthRequest(Verb.POST, "https://api.linkedin.com/v1/companies/" + profile.getIdProfile() + "/shares?format=json");
+					
+					request.addHeader("Content-Type", "application/json");
+					request.addHeader("x-li-format", "json");  
+					request.addHeader("Content-Length", Integer.toString(obj.toString().length()));
+					request.setPayload(obj.toString());
+					service.signRequest(accessToken, request);
+	
+					Response response = service.execute(request);
+					
+					System.out.println(response.getCode());
+					System.out.println(response.getMessage());
+					
+				} catch (OAuth2AccessTokenErrorResponse e) {
+					wasSent = false;
+					e.printStackTrace();
+				} catch (OAuthException e) {
+					wasSent = false;
+					e.printStackTrace();
+				} catch (Exception e) {
+					wasSent = false;
+					e.printStackTrace();
+				}
+				
+				return wasSent;
+				
+			} else {
+
+				try {
+					
+					LinkedInApiClientFactory factory = LinkedInApiClientFactory.
+							newInstance(InsertByLinkedInAction.CLIENT_ID, InsertByLinkedInAction.CLIENT_SECRET); 
+					
+					LinkedInApiClient client = factory.createLinkedInApiClient(profile.getToken(), profile.getTokenSecret());
+					
+					if(post.getAppendType().equals(Post.APPEND_PICTURE)) { //post.gettitle //post.getdescription
+						client.postShare(post.getTitle(), post.getDescription(), null, post.getPicture(), VisibilityType.ANYONE);
+					} else if(post.getAppendType().equals(Post.APPEND_RESUME)) {
+						client.postShare(post.getTitle(), post.getDescription(), "https://www.linkedin.com/in/felipe-sabedot-22615069/", null, VisibilityType.ANYONE);
+					} else if(post.getAppendType().equals(Post.APPEND_VIDEO)) {
+						client.postShare(post.getTitle(), post.getDescription(), null, post.getPicture(), VisibilityType.ANYONE);
+					} else {
+						client.postShare(post.getTitle(), post.getDescription(), null, null, VisibilityType.ANYONE);
+					}
+					
+				} catch (LinkedInApiClientException e) {
+					wasSent = false;
+					e.printStackTrace();
+				} catch (Exception e) {
+					wasSent = false;
+					e.printStackTrace();
+				}
+			}
+			
+		} catch(Exception e) {
+			System.err.println(e);
+		}
+		
+		return wasSent;
+	}
+}

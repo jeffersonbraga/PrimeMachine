@@ -1,0 +1,197 @@
+package br.com.opsocial.server.utils.instagram;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.httpclient.NoHttpResponseException;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.protocol.HttpContext;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import br.com.opsocial.ejb.entity.application.ProxyRegion;
+
+public class InstagramProxyClient {
+    
+    public CloseableHttpClient client;
+    public HttpClientContext context;
+    
+    private static final Gson GSON = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+    
+    public InstagramProxyClient(String cookies, ProxyRegion proxyRegion, Integer port) {
+    	
+        // Proxy GeoSurf
+        HttpHost superProxy = new HttpHost(proxyRegion.getServerAddress(), port);
+        context = HttpClientContext.create();
+    	addCookies(cookies);
+        client = HttpClients.custom()
+            .setProxy(superProxy)
+            .setRetryHandler(new HttpRequestRetryHandler() {
+				
+				@Override
+				public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
+					
+					if (executionCount > 3) {
+						return false;
+					}
+					
+					if (exception instanceof NoHttpResponseException) {
+						return true;
+					}
+					return false;
+				}
+			})
+            .build();
+        /*
+//      ********************* Teste com Proxy local *********************************
+    	HttpHost superProxy = new HttpHost("127.0.0.1", 8888);
+    	context = HttpClientContext.create();
+        client = HttpClients.custom()
+            .setConnectionManager(new BasicHttpClientConnectionManager())
+            .setProxy(superProxy)
+            .build();*/
+    }
+
+    public CloseableHttpResponse requestGET(String url, String userAgent) throws IOException {
+        
+    	HttpGet request = new HttpGet(url);
+        request.setHeader("User-Agent", userAgent);
+        
+        return client.execute(request, context);
+    }
+    
+    public CloseableHttpResponse requestGET(URI uri, Header[] headers) throws IOException {
+    	
+    	HttpGet request = new HttpGet(uri);
+        request.setHeaders(headers);
+        
+        return client.execute(request, context);
+    }
+    
+    public CloseableHttpResponse requestPOST(String url, String postData, String userAgent) throws IOException {
+    	
+    	HttpPost request = new HttpPost(url);
+		request.setEntity(new StringEntity(postData, Charset.forName("UTF-8")));
+		request.setHeader("User-Agent", userAgent);
+    	
+		return client.execute(request, context);
+    }
+    
+    public CloseableHttpResponse requestPOST(String url, String postData, Header[] headers) throws IOException {
+    	
+    	HttpPost request = new HttpPost(url);
+		request.setEntity(new StringEntity(postData, Charset.forName("UTF-8")));
+		request.setHeaders(headers);
+    	
+		return client.execute(request, context);
+    }
+    
+    public CloseableHttpResponse requestPOST(String url, HttpEntity httpEntity, String userAgent) throws IOException {
+    	
+    	HttpPost request = new HttpPost(url);
+		request.setEntity(httpEntity);
+		request.setHeader("User-Agent", userAgent);
+    	
+		return client.execute(request, context);
+    }
+    
+    public CloseableHttpResponse requestPOST(String url, HttpEntity httpEntity, Header[] headers) throws IOException {
+    	
+    	HttpPost request = new HttpPost(url);
+		request.setEntity(httpEntity);
+		request.setHeaders(headers);
+		
+		return client.execute(request, context);
+    }
+    
+    public void addCookie(Cookie cookie) {
+    	context.getCookieStore().addCookie(cookie);
+    }
+    
+    public void addCookies(String cookies) {
+    	
+    	if(cookies != null) {
+        	
+    		BasicClientCookie [] cookiesArray = GSON.fromJson(cookies, BasicClientCookie [].class);
+        	
+        	List<BasicClientCookie > cookiesList = Arrays.asList(cookiesArray);
+        	
+        	BasicCookieStore cookieStore = new BasicCookieStore();
+        	
+        	for(BasicClientCookie cookie : cookiesList) {
+				cookieStore.addCookie(cookie);
+			}
+        	
+        	context.setCookieStore(cookieStore);
+    	}
+    }
+
+    public List<Cookie> getCookies() {
+		return context.getCookieStore().getCookies();
+	}
+    
+    public String getCookiesAsJson() {
+    	return GSON.toJson(context.getCookieStore().getCookies().toArray(), Cookie[].class);
+    }
+    
+    public Boolean hasCookies() {
+    	return context.getCookieStore() != null ? true : false;
+    }
+    
+    public String getCSRFToken() {
+    	
+    	BasicClientCookie basicClientCookie = new BasicClientCookie("csrftoken", "");
+    	
+    	for(Cookie cookie : context.getCookieStore().getCookies()) {
+    		if(cookie.getName().equals("csrftoken")) {
+    			basicClientCookie.setValue(cookie.getValue());
+    			break;
+    		}
+		}
+    	
+    	return basicClientCookie.getValue();
+    }
+    
+    public String getUserId() {
+    	
+    	BasicClientCookie basicClientCookie = new BasicClientCookie("ds_user_id", "");
+    	
+    	for(Cookie cookie : context.getCookieStore().getCookies()) {
+    		if(cookie.getName().equals("ds_user_id")) {
+    			basicClientCookie.setValue(cookie.getValue());
+    			break;
+    		}
+		}
+    	
+    	return basicClientCookie.getValue();
+    }
+
+	public CloseableHttpClient getClient() {
+		return client;
+	}
+
+	public void setClient(CloseableHttpClient client) {
+		this.client = client;
+	}
+
+	public void close() throws IOException { client.close(); }
+	
+}

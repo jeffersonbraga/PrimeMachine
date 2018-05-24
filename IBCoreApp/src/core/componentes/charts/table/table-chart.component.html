@@ -1,0 +1,12 @@
+<table class="table table-condensed no-footer table-chart" [class.dataTable]="isDataTable" *ngIf="data">
+    <thead>
+        <tr>
+            <th *ngFor="let col of data.cols" [class]="col.class" [width]="col.width ? col.width : 'auto'">{{ col.value }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let row of data.rows">
+            <td *ngFor="let data of row" title="" [class]="data.class" [innerHtml]="data.value"></td>
+        </tr>
+    </tbody>
+</table>

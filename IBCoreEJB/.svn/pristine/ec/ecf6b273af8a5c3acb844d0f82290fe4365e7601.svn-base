@@ -1,0 +1,16 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.Collection;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.persistence.EntityTransaction;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.cardtransaction.CardTransaction;
+
+@Stateless
+public class CardTransactionDAOImpl extends AbstractDAOImpl<CardTransaction> implements CardTransactionDAO {
+
+}

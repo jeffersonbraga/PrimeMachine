@@ -1,0 +1,27 @@
+#content-pdf {
+    width: 650px;
+    max-height: 0px;
+    overflow: hidden; 
+}
+
+.page-break {
+    page-break-before: always;
+}
+
+@media print {
+    #content-pdf {
+        max-height: none;
+    }
+}
+
+@media (max-width: 1400px) {
+    
+    .panel-sub-title {
+        margin-top: 10px !important;
+    }
+}
+
+.fa-facebook-square {
+    color: #3467d4;
+    font-size: 24px
+}

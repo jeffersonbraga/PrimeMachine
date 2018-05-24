@@ -1,0 +1,29 @@
+<input #checkedButton type="checkbox" name="checked-button" class="checked-button" [(ngModel)]="isClassVisible" *ngIf="!singleSelect">
+<input #checkedButton type="radio" name="checked-button" class="checked-button" *ngIf="singleSelect">
+<button (click)="checkUncheckButton()" class="channel-clicked btn btn-block btn-default channel-button" type="button" #btnDefault>
+    <div [ngClass]="networkBgColor" class="social-icon pull-left">
+        <i [ngClass]="network" class="fa p-t-12"></i>
+    </div>
+    <div class="pull-left">
+        <img class="channel-avatar" [src]="profile.avatar">
+    </div>
+    <div class="p-t-6 pull-left width80minus90">
+        <span title="{{profile.screenName}}" class="p-l-10 channel-text">
+            <!-- {{ profile.screenName?.length > 16 ? profile.screenName.substring(0, 13) + '...' : profile.screenName}} -->
+            {{ profile.screenName }}
+        </span>
+    </div>
+    <div [hidden]="!isSelectable" class="p-t-6 pull-right check-icon">
+        <i class="fa fa-check"></i>
+    </div>
+    <div [hidden]="!isExcludable" class="p-t-6 p-r-2 pull-right">
+        <a href="javascript:void(0)" (click)="deleteProfile()">
+            <i class="pg-trash p-r-2"></i>
+        </a>
+    </div>
+    <div [hidden]="!isEditable" class="p-t-6 p-r-4 pull-right">
+        <a href="javascript:void(0)" (click)="editProfile()">
+            <i class="fa fa-pencil p-r-2"></i>
+        </a>
+    </div>
+</button>

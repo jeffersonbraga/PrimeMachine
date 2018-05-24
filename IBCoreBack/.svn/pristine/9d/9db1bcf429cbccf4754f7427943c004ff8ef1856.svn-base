@@ -1,0 +1,116 @@
+package br.com.opsocial.server.actions.feeds.instagram;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.entity.comments.CommentData;
+import org.jinstagram.entity.users.basicinfo.Counts;
+import org.jinstagram.entity.users.feed.MediaFeedData;
+import org.jinstagram.exceptions.InstagramBadRequestException;
+import org.jinstagram.exceptions.InstagramException;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.client.entity.instagram.InstagramCommentDTO;
+import br.com.opsocial.client.entity.instagram.InstagramPostDTO;
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.instagram.InstagramPost;
+
+@RestController
+@RequestMapping("opsocial")
+public class InstagramProfileFeedsAction extends ServerAction {
+
+	private Instagram instagram;
+	
+	@Override
+	@RequestMapping(value = "/instagram_profile_feeds",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profileDTO = (Profile) getParameters().get("profile");
+		Profile profile = MountDTO.mountProfile(profileDTO);
+		
+		InstagramIntegration instagramIntegration = new InstagramIntegration();
+		
+		instagram = instagramIntegration.getInstagram(profile);
+		
+		List<InstagramPostDTO> instagramPostDTOs = new ArrayList<InstagramPostDTO>();
+		
+		try {
+			
+			List<MediaFeedData> feeds = instagram.getRecentMediaFeed(instagram.getCurrentUserInfo().getData().getId()).getData();
+			
+			if(feeds != null) {
+				for(MediaFeedData feed : feeds) {
+					
+					InstagramPostDTO instagramPost = MountDTO.mountInstagramPost(updateFeed(feed, profile));				
+					instagramPost.setComments(recoverComments(feed));
+
+					instagramPostDTOs.add(instagramPost);
+				}
+			}
+			
+		} catch (InstagramBadRequestException e) {
+			ValidateTokensController.validatingTokens(profile.getAccount(), ServicesImpl.context);
+			e.printStackTrace();
+		}	
+		
+		setParameters(new HashMap<String, Object>());
+		
+		getParameters().put("instagramposts", new PersistentList<InstagramPostDTO>(instagramPostDTOs));
+	}
+
+	private InstagramPost updateFeed(MediaFeedData feed, Profile profile) throws InstagramException {
+		
+		InstagramPost instagramPost = new InstagramPost();
+		
+		instagramPost.setIdInstagramUser(Long.valueOf(feed.getUser().getId()));
+		instagramPost.setAvatar(feed.getUser().getProfilePictureUrl());
+		instagramPost.setUserName(feed.getUser().getUserName());
+		instagramPost.setPictureUrl(feed.getImages().getLowResolution().getImageUrl());
+		instagramPost.setPictureWidth(feed.getImages().getLowResolution().getImageWidth());
+		instagramPost.setPictureHeight(feed.getImages().getLowResolution().getImageHeight());
+		instagramPost.setPictureCaption(feed.getCaption() != null ? feed.getCaption().getText() : null);
+		
+		instagramPost.setCreateTime(feed.getCreatedTime());
+		instagramPost.setIdMedia(new java.lang.Long(feed.getId().substring(0,feed.getId().indexOf("_"))));
+		instagramPost.setCountLikes(feed.getLikes().getCount());
+		
+		return instagramPost;
+	}
+	
+	private List<InstagramCommentDTO> recoverComments(MediaFeedData feed) {
+
+		List<InstagramCommentDTO> comments = new ArrayList<InstagramCommentDTO>();
+		
+		if(feed.getComments().getComments() != null) {
+			for(CommentData commentData : feed.getComments().getComments()) {
+				
+				InstagramCommentDTO comment = new InstagramCommentDTO();
+				
+				comment.setComment(commentData.getText());
+				comment.setUserName(commentData.getCommentFrom().getUsername());
+				comment.setProfilePicture(commentData.getCommentFrom().getProfilePicture());
+				comment.setExternalId(Long.valueOf(commentData.getId()));
+			
+				comments.add(comment);
+			}
+		}
+		
+		return comments;
+	}
+}

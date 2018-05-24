@@ -1,0 +1,619 @@
+package br.com.opsocial.server.actions.reports.linkedin;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import br.com.opsocial.client.entity.report.linkedin.ReportLinkedinOverviewDTO;
+import br.com.opsocial.ejb.das.MaintenanceLinkedinPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.linkedin.LinkedinPost;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.linkedin.OAuth2Details;
+import br.com.opsocial.server.utils.linkedin.OAuthConstants;
+import br.com.opsocial.server.utils.linkedin.OAuthUtils;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinCompanyImpressionsByDay;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinFollowStatistics;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinFollowers;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinObject;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinStatusUpdate;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinUpdates;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportLinkedinOverviewAction {
+
+	public Gson gson = new GsonBuilder().serializeNulls().setFieldNamingPolicy(FieldNamingPolicy.IDENTITY).create();
+	public Profile profile;
+	
+	Properties config = OAuthUtils.getClientConfigProps(OAuthConstants.CONFIG_FILE_PATH);
+	OAuth2Details oauthDetails = OAuthUtils.createOAuthDetails(config);
+
+	Map<String,String> map = new HashMap<String, String>();
+	
+	@CrossOrigin
+	@RequestMapping(value = "/report_linkedin_overview",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ReportLinkedinOverviewDTO> getLinkedinReport(Long idProfile, Long dateFrom, Long dateUntil) {
+		
+		MaintenanceProfileRemote remoteProfile = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		profile = remoteProfile.getById(idProfile);
+		
+		//Não traz resultados para nenhum local
+//		oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/" 
+//										  + profile.getNetworkId() + "/num-followers?format=json&geos=la.br.sp.6368");
+
+		//total followers atual: tem que fazer o tratamento no OAuthUtils porque vem um LONG (talvez não tenha necessidade para esta chamada)
+//		oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/" + profile.getNetworkId() + "/num-followers?format=json");
+		
+		//(GRAPH 1, 5, 6 e 7)
+		oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/" + profile.getNetworkId() 
+										  + "/historical-status-update-statistics:(time,like-count,impression-count,click-count,comment-count,share-count)?" 
+										  + "&start-timestamp=" + dateFrom + "&end-timestamp=" + dateUntil + "&time-granularity=day&format=json");
+		
+		oauthDetails.setAccessToken(profile.getToken());
+		
+		map = OAuthUtils.getProtectedResource(oauthDetails);
+		
+		String jsonResponse = String.valueOf(map.get("values"));
+
+		jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+    	
+    	JsonParser parser = new JsonParser();
+		
+		JsonArray jsonResponseData = parser.parse(jsonResponse).getAsJsonArray();
+		
+		Iterator<JsonElement> elements = jsonResponseData.iterator();
+		
+		List<LinkedinStatusUpdate> linkedinStatusUpdateList = new ArrayList<LinkedinStatusUpdate>();
+		
+		while (elements.hasNext() ) {
+			
+			JsonObject jsonObject = (JsonObject) elements.next();
+
+			LinkedinStatusUpdate linkedinStatusUpdate = gson.fromJson(jsonObject, LinkedinStatusUpdate.class);
+			
+			linkedinStatusUpdateList.add(linkedinStatusUpdate);
+		}
+
+		ReportLinkedinOverviewDTO reportLinkedinOverviewDTO = new ReportLinkedinOverviewDTO();
+		reportLinkedinOverviewDTO.setLinkedinStatusUpdate(linkedinStatusUpdateList);
+		
+//		Crescimento de fãs na página (GRAPH 2)
+		oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/" 
+										  + profile.getNetworkId() + "/historical-follow-statistics?format=json&start-timestamp=" 
+										  + dateFrom + "&end-timestamp=" 
+										  + dateUntil + "&time-granularity=day");
+		
+		oauthDetails.setAccessToken(profile.getToken());
+		
+		map = OAuthUtils.getProtectedResource(oauthDetails);
+		
+		jsonResponse = String.valueOf(map.get("values"));
+
+		jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+    	
+    	parser = new JsonParser();
+		
+		jsonResponseData = parser.parse(jsonResponse).getAsJsonArray();
+		
+		elements = jsonResponseData.iterator();
+		
+		List<LinkedinFollowers> linkedinFollowersList = new ArrayList<LinkedinFollowers>();
+		
+		while (elements.hasNext() ) {
+			
+			JsonObject jsonObject = (JsonObject) elements.next();
+
+			LinkedinFollowers linkedinFollowers = gson.fromJson(jsonObject, LinkedinFollowers.class);
+			
+			linkedinFollowersList.add(linkedinFollowers);
+		}
+		
+//		Complemento Graph 2
+		
+		LinkedinFollowers maxGrowthObj = Collections.max(linkedinFollowersList, Comparator.comparing(c -> c.getTotalFollowerCount()));
+		
+		reportLinkedinOverviewDTO.setLinkedinMaxGrowthPeriod(maxGrowthObj);
+		
+		reportLinkedinOverviewDTO.setLinkedinFollowers(linkedinFollowersList);
+		
+//		Get a company's updates (GRAPH 13+)
+		MaintenanceLinkedinPostRemote remoteLinkedinPosts = (MaintenanceLinkedinPostRemote) RecoverMaintenance.recoverMaintenance("LinkedinPost");
+		
+		List<LinkedinPost> linkedinPostsOnPeriod = remoteLinkedinPosts.getLinkedinPostsOnPeriod(profile.getIdProfile(), dateFrom/1000, dateUntil/1000);
+		
+		if(linkedinPostsOnPeriod.isEmpty()) {
+			reportLinkedinOverviewDTO.setLinkedinPosts(getLinkedinFirstPosts()); //!= null ? getLinkedinFirstPosts() : ...
+		} else {
+			reportLinkedinOverviewDTO.setLinkedinPosts(linkedinPostsOnPeriod);
+//			new LinkedinInsightsController();
+		}
+		
+		//Shares by day (GRAPH 3)
+		reportLinkedinOverviewDTO.setLinkedinSharesByDay(
+				remoteLinkedinPosts.getLinkedinPostsCountByDay(profile.getIdProfile(), dateFrom/1000, dateUntil/1000));
+		
+		//Graph 3 footer
+		reportLinkedinOverviewDTO.setLinkedinPostAverageByDay(
+			reportLinkedinOverviewDTO
+				.getLinkedinSharesByDay()
+				.stream()
+				.mapToDouble(a -> a.getSum())
+				.average()
+				.getAsDouble()
+		);
+		
+		//IMPRESSÕES DAS PUBLICAÇÕES (GRAPH 4)
+		oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/" + profile.getNetworkId() 
+										  + "/historical-status-update-statistics?format=json&start-timestamp=" 
+										  + dateFrom + "&end-timestamp=" 
+										  + dateUntil + "&time-granularity=day");
+		
+		oauthDetails.setAccessToken(profile.getToken());
+		
+		map = OAuthUtils.getProtectedResource(oauthDetails);
+		
+		jsonResponse = String.valueOf(map.get("values"));
+
+		jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+    	
+    	parser = new JsonParser();
+		
+		jsonResponseData = parser.parse(jsonResponse).getAsJsonArray();
+		
+		elements = jsonResponseData.iterator();
+		
+		List<LinkedinCompanyImpressionsByDay> impressionsByDay = new ArrayList<LinkedinCompanyImpressionsByDay>();
+		
+		while (elements.hasNext() ) {
+			
+			JsonObject jsonObject = (JsonObject) elements.next();
+
+			LinkedinCompanyImpressionsByDay impressionByDay = gson.fromJson(jsonObject, LinkedinCompanyImpressionsByDay.class);
+			
+			impressionsByDay.add(impressionByDay);
+		}
+		
+		reportLinkedinOverviewDTO.setImpressionsByDay(impressionsByDay);
+
+		//Get statistics for a company page (Graph 8, 9, 10, 11 e 12)
+		//General insights on both company share and follower metrics.
+		//Não é possível passar start-date, end-date e time-granularity
+		
+		oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/" + profile.getNetworkId() 
+										  + "/company-statistics?format=json");
+		
+		oauthDetails.setAccessToken(profile.getToken());
+		
+		map = OAuthUtils.getProtectedResource(oauthDetails);
+		
+		jsonResponse = String.valueOf(map.get("followStatistics"));
+
+		jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+    	
+    	parser = new JsonParser();
+		
+    	JsonObject jsonObject = parser.parse(jsonResponse).getAsJsonObject();
+		
+		LinkedinFollowStatistics followStatistics = gson.fromJson(jsonObject, LinkedinFollowStatistics.class);
+		
+		reportLinkedinOverviewDTO.setLinkedinFollowersByCountry(processRegionsObject(followStatistics));
+		processIndustriesObject(followStatistics);
+		processSenioritiesObject(followStatistics);
+		processFunctionsObject(followStatistics);
+		followStatistics.getCompanySizes().getValues().stream().unordered();
+			
+		reportLinkedinOverviewDTO.setFollowStatistics(followStatistics);
+
+		return new ResponseEntity<>(reportLinkedinOverviewDTO, HttpStatus.OK);		
+	}
+
+	private void processFunctionsObject(LinkedinFollowStatistics followStatistics) {
+		
+		List<LinkedinObject> values = followStatistics.getFunctions().getValues();
+		int total = values.stream().
+				filter(o -> Integer.parseInt(o.getEntryValue()) > 0).mapToInt(o -> Integer.parseInt(o.getEntryValue())).sum();
+		
+		for(LinkedinObject item: values) {
+			item.setEntryValue(String.format("%.0f", (float) Integer.parseInt(item.getEntryValue()) / total * 100) + "%");
+		}
+	}
+
+	private void processSenioritiesObject(LinkedinFollowStatistics followStatistics) {
+		
+		List<LinkedinObject> values = followStatistics.getSeniorities().getValues();
+		int total = values.stream().
+				filter(o -> Integer.parseInt(o.getEntryValue()) > 0).mapToInt(o -> Integer.parseInt(o.getEntryValue())).sum();
+		
+		for(LinkedinObject item: values) {
+			item.setEntryValue(String.format("%.0f", (float) Integer.parseInt(item.getEntryValue()) / total * 100) + "%");
+		}
+	}
+
+	private List<LinkedinPost> getLinkedinFirstPosts() {
+		
+		MaintenanceLinkedinPostRemote remoteLinkedinPosts = (MaintenanceLinkedinPostRemote) RecoverMaintenance.recoverMaintenance("LinkedinPost");
+		
+		List<LinkedinPost> linkedinUpdatesList = new ArrayList<LinkedinPost>();
+
+		try {
+			
+			oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/"
+					  + profile.getNetworkId() + "/updates?format=json" + "&count=100");
+	
+			oauthDetails.setAccessToken(profile.getToken());
+			
+			map = OAuthUtils.getProtectedResource(oauthDetails);
+			
+			String jsonResponse = String.valueOf(map.get("values"));
+			
+			jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+			
+			JsonParser parser = new JsonParser();
+			
+			JsonArray jsonResponseData = parser.parse(jsonResponse).getAsJsonArray();
+			
+			Iterator<JsonElement> elements = jsonResponseData.iterator();
+			
+			while (elements.hasNext() ) {
+			
+				JsonObject jsonObject = (JsonObject) elements.next();
+				
+				LinkedinUpdates linkedinUpdates = gson.fromJson(jsonObject, LinkedinUpdates.class);
+				
+				LinkedinPost linkedinPost = new LinkedinPost();
+				linkedinPost.setIsCommentable(linkedinUpdates.isCommentable());
+				linkedinPost.setIsLikable(linkedinUpdates.isLikable());
+				linkedinPost.setIsLiked(linkedinUpdates.isLiked());
+				linkedinPost.setNumLikes(linkedinUpdates.getNumLikes());
+				linkedinPost.setPostComment(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getComment()
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getComment() : "");
+				linkedinPost.setPostDescription(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getDescription() 
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getDescription() : "");
+				linkedinPost.setPostEyebrowUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getEyebrowUrl()
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getEyebrowUrl() : "");
+				linkedinPost.setPostId(linkedinUpdates.getUpdateKey());
+				linkedinPost.setPostSubmittedImageUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedImageUrl()
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedImageUrl() : "");
+				linkedinPost.setPostTitle(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getTitle()
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getTitle() : "");
+				linkedinPost.setProfileId(this.profile.getIdProfile());
+				linkedinPost.setPostTime(linkedinUpdates.getTimestamp());
+				linkedinPost.setPostSubmittedUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedUrl()
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedUrl() : "");
+				linkedinPost.setPostThumbnailUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getThumbnailUrl()
+						!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getThumbnailUrl() : "");
+				linkedinPost.setTotalComments(linkedinUpdates.getUpdateComments().get_total());
+				linkedinPost.setUpdateType(linkedinUpdates.getUpdateType());
+				
+				linkedinUpdatesList.add(linkedinPost);
+				
+				remoteLinkedinPosts.save(linkedinPost);
+			}
+				
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return linkedinUpdatesList;
+	}
+
+	private void processIndustriesObject(LinkedinFollowStatistics followStatistics) {
+		
+		Map<String, String> industriesMap = new HashMap<String, String>();	
+
+		industriesMap.put("47","Accounting");
+		industriesMap.put("94","Airlines/Aviation");
+		industriesMap.put("120","Alternative Dispute Resolution");
+		industriesMap.put("125","Alternative Medicine");
+		industriesMap.put("127","Animation");
+		industriesMap.put("19","Apparel & Fashion");
+		industriesMap.put("50","Architecture & Planning");
+		industriesMap.put("111","Arts and Crafts");
+		industriesMap.put("53","Automotive");
+		industriesMap.put("52","Aviation & Aerospace");
+		industriesMap.put("41","Banking");
+		industriesMap.put("12","Biotechnology");
+		industriesMap.put("36","Broadcast Media");
+		industriesMap.put("49","Building Materials");
+		industriesMap.put("138","Business Supplies and Equipment");
+		industriesMap.put("129","Capital Markets");
+		industriesMap.put("54","Chemicals");
+		industriesMap.put("90","Civic & Social Organization");
+		industriesMap.put("51","Civil Engineering");
+		industriesMap.put("128","Commercial Real Estate");
+		industriesMap.put("118","Computer & Network Security");
+		industriesMap.put("109","Computer Games");
+		industriesMap.put("3","Computer Hardware");
+		industriesMap.put("5","Computer Networking");
+		industriesMap.put("4","Computer Software");
+		industriesMap.put("48","Construction");
+		industriesMap.put("24","Consumer Electronics");
+		industriesMap.put("25","Consumer Goods");
+		industriesMap.put("91","Consumer Services");
+		industriesMap.put("18","Cosmetics");
+		industriesMap.put("65","Dairy");
+		industriesMap.put("1","Defense & Space");
+		industriesMap.put("99","Design");
+		industriesMap.put("69","Education Management");
+		industriesMap.put("132","E-Learning");
+		industriesMap.put("112","Electrical/Electronic Manufacturing");
+		industriesMap.put("28","Entertainment");
+		industriesMap.put("86","Environmental Services");
+		industriesMap.put("110","Events Services");
+		industriesMap.put("76","Executive Office");
+		industriesMap.put("122","Facilities Services");
+		industriesMap.put("63","Farming");
+		industriesMap.put("43","Financial Services");
+		industriesMap.put("38","Fine Art");
+		industriesMap.put("66","Fishery");
+		industriesMap.put("34","Food & Beverages");
+		industriesMap.put("23","Food Production");
+		industriesMap.put("101","Fund-Raising");
+		industriesMap.put("26","Furniture");
+		industriesMap.put("29","Gambling & Casinos");
+		industriesMap.put("145","Glass, Ceramics & Concrete");
+		industriesMap.put("75","Government Administration");
+		industriesMap.put("148","Government Relations");
+		industriesMap.put("140","Graphic Design");
+		industriesMap.put("124","Health, Wellness and Fitness");
+		industriesMap.put("68","Higher Education");
+		industriesMap.put("14","Hospital & Health Care");
+		industriesMap.put("31","Hospitality");
+		industriesMap.put("137","Human Resources");
+		industriesMap.put("134","Import and Export");
+		industriesMap.put("88","Individual & Family Services");
+		industriesMap.put("147","Industrial Automation");
+		industriesMap.put("84","Information Services");
+		industriesMap.put("96","Information Technology and Services");
+		industriesMap.put("42","Insurance");
+		industriesMap.put("74","International Affairs");
+		industriesMap.put("141","International Trade and Development");
+		industriesMap.put("6","Internet");
+		industriesMap.put("45","Investment Banking");
+		industriesMap.put("46","Investment Management");
+		industriesMap.put("73","Judiciary");
+		industriesMap.put("77","Law Enforcement");
+		industriesMap.put("9","Law Practice");
+		industriesMap.put("10","Legal Services");
+		industriesMap.put("72","Legislative Office");
+		industriesMap.put("30","Leisure, Travel & Tourism");
+		industriesMap.put("85","Libraries");
+		industriesMap.put("116","Logistics and Supply Chain");
+		industriesMap.put("143","Luxury Goods & Jewelry");
+		industriesMap.put("55","Machinery");
+		industriesMap.put("11","Management Consulting");
+		industriesMap.put("95","Maritime");
+		industriesMap.put("97","Market Research");
+		industriesMap.put("80","Marketing and Advertising");
+		industriesMap.put("135","Mechanical or Industrial Engineering");
+		industriesMap.put("126","Media Production");
+		industriesMap.put("17","Medical Devices");
+		industriesMap.put("13","Medical Practice");
+		industriesMap.put("139","Mental Health Care");
+		industriesMap.put("71","Military");
+		industriesMap.put("56","Mining & Metals");
+		industriesMap.put("35","Motion Pictures and Film");
+		industriesMap.put("37","Museums and Institutions");
+		industriesMap.put("115","Music");
+		industriesMap.put("114","Nanotechnology");
+		industriesMap.put("81","Newspapers");
+		industriesMap.put("100","Non-Profit Organization Management");
+		industriesMap.put("57","Oil & Energy");
+		industriesMap.put("113","Online Media");
+		industriesMap.put("123","Outsourcing/Offshoring");
+		industriesMap.put("87","Package/Freight Delivery");
+		industriesMap.put("146","Packaging and Containers");
+		industriesMap.put("61","Paper & Forest Products");
+		industriesMap.put("39","Performing Arts");
+		industriesMap.put("15","Pharmaceuticals");
+		industriesMap.put("131","Philanthropy");
+		industriesMap.put("136","Photography");
+		industriesMap.put("117","Plastics");
+		industriesMap.put("107","Political Organization");
+		industriesMap.put("67","Primary/Secondary Education");
+		industriesMap.put("83","Printing");
+		industriesMap.put("105","Professional Training & Coaching");
+		industriesMap.put("102","Program Development");
+		industriesMap.put("79","Public Policy");
+		industriesMap.put("98","Public Relations and Communications");
+		industriesMap.put("78","Public Safety");
+		industriesMap.put("82","Publishing");
+		industriesMap.put("62","Railroad Manufacture");
+		industriesMap.put("64","Ranching");
+		industriesMap.put("44","Real Estate");
+		industriesMap.put("40","Recreational Facilities and Services");
+		industriesMap.put("89","Religious Institutions");
+		industriesMap.put("144","Renewables & Environment");
+		industriesMap.put("70","Research");
+		industriesMap.put("32","Restaurants");
+		industriesMap.put("27","Retail");
+		industriesMap.put("121","Security and Investigations");
+		industriesMap.put("7","Semiconductors");
+		industriesMap.put("58","Shipbuilding");
+		industriesMap.put("20","Sporting Goods");
+		industriesMap.put("33","Sports");
+		industriesMap.put("104","Staffing and Recruiting");
+		industriesMap.put("22","Supermarkets");
+		industriesMap.put("8","Telecommunications");
+		industriesMap.put("60","Textiles");
+		industriesMap.put("130","Think Tanks");
+		industriesMap.put("21","Tobacco");
+		industriesMap.put("108","Translation and Localization");
+		industriesMap.put("92","Transportation/Trucking/Railroad");
+		industriesMap.put("59","Utilities");
+		industriesMap.put("106","Venture Capital & Private Equity");
+		industriesMap.put("16","Veterinary");
+		industriesMap.put("93","Warehousing");
+		industriesMap.put("133","Wholesale");
+		industriesMap.put("142","Wine and Spirits");
+		industriesMap.put("119","Wireless");
+		industriesMap.put("103","Writing and Editing");
+		
+		Set<Map.Entry<String, String>> industriesSet = industriesMap.entrySet();
+		
+		followStatistics.getIndustries().getValues().subList(10, followStatistics.getIndustries().getValues().size()).clear();
+		List<LinkedinObject> industries = followStatistics.getIndustries().getValues();
+		
+		for(LinkedinObject item: industries) {
+				
+			for (Map.Entry<String, String> entry : industriesSet) {
+				
+				if(item.getEntryKey().equals(entry.getKey())) {
+					item.setEntryKey(entry.getValue());
+					break;
+				}
+			}
+		}
+	}
+
+	private Map<String, Integer> processRegionsObject(LinkedinFollowStatistics followStatistics) {
+		
+		Map<String, String> countriesMap = new HashMap<String, String>();	
+		
+		countriesMap.put("af","Africa");
+		countriesMap.put("dz","Algeria");
+		countriesMap.put("cm","Cameroon");
+		countriesMap.put("eg","Egypt");
+		countriesMap.put("gh","Ghana");
+		countriesMap.put("ke","Kenya");
+		countriesMap.put("ma","Morocco");
+		countriesMap.put("ng","Nigeria");
+		countriesMap.put("za","South Africa");
+		countriesMap.put("tz","Tanzania");
+		countriesMap.put("tn","Tunisia");
+		countriesMap.put("ug","Uganda");
+		countriesMap.put("zw","Zimbabwe");
+		countriesMap.put("aq","Antarctica");
+		countriesMap.put("as","Asia");
+		countriesMap.put("bd","Bangladesh");
+		countriesMap.put("cn","China");
+		countriesMap.put("hk","Hong Kong");
+		countriesMap.put("in","India");
+		countriesMap.put("id","Indonesia");
+		countriesMap.put("jp","Japan");
+		countriesMap.put("kr","Korea");
+		countriesMap.put("my","Malaysia");
+		countriesMap.put("np","Nepal");
+		countriesMap.put("ph","Philippines");
+		countriesMap.put("sg","Singapore");
+		countriesMap.put("lk","Sri Lanka");
+		countriesMap.put("tw","Taiwan");
+		countriesMap.put("th","Thailand");
+		countriesMap.put("vn","Vietnam");
+		countriesMap.put("eu","Europe");
+		countriesMap.put("at","Austria");
+		countriesMap.put("be","Belgium");
+		countriesMap.put("bg","Bulgaria");
+		countriesMap.put("hr","Croatia");
+		countriesMap.put("cz","Czech Republic");
+		countriesMap.put("dk","Denmark");
+		countriesMap.put("fi","Finland");
+		countriesMap.put("fr","France");
+		countriesMap.put("de","Germany");
+		countriesMap.put("gr","Greece");
+		countriesMap.put("hu","Hungary");
+		countriesMap.put("ie","Ireland");
+		countriesMap.put("it","Italy");
+		countriesMap.put("lt","Lithuania");
+		countriesMap.put("nl","Netherlands");
+		countriesMap.put("no","Norway");
+		countriesMap.put("pl","Poland");
+		countriesMap.put("pt","Portugal");
+		countriesMap.put("ro","Romania");
+		countriesMap.put("ru","Russian Federation");
+		countriesMap.put("rs","Serbia");
+		countriesMap.put("sk","Slovak Republic");
+		countriesMap.put("es","Spain");
+		countriesMap.put("se","Sweden");
+		countriesMap.put("ch","Switzerland");
+		countriesMap.put("tr","Turkey");
+		countriesMap.put("ua","Ukraine");
+		countriesMap.put("gb","United Kingdom");
+		countriesMap.put("la","Latin America");
+		countriesMap.put("ar","Argentina");
+		countriesMap.put("bo","Bolivia");
+		countriesMap.put("br","Brazil");
+		countriesMap.put("cl","Chile");
+		countriesMap.put("co","Colombia");
+		countriesMap.put("cr","Costa Rica");
+		countriesMap.put("do","Dominican Republic");
+		countriesMap.put("ec","Ecuador");
+		countriesMap.put("gt","Guatemala");
+		countriesMap.put("mx","Mexico");
+		countriesMap.put("pa","Panama");
+		countriesMap.put("pe","Peru");
+		countriesMap.put("pr","Puerto Rico");
+		countriesMap.put("tt","Trinidad and Tobago");
+		countriesMap.put("uy","Uruguay");
+		countriesMap.put("ve","Venezuela");
+		countriesMap.put("me","Middle East");
+		countriesMap.put("bh","Bahrain");
+		countriesMap.put("il","Israel");
+		countriesMap.put("jo","Jordan");
+		countriesMap.put("kw","Kuwait");
+		countriesMap.put("pk","Pakistan");
+		countriesMap.put("qa","Qatar");
+		countriesMap.put("sa","Saudi Arabia");
+		countriesMap.put("ae","United Arab Emirates");
+		countriesMap.put("na","North America");
+		countriesMap.put("ca","Canada");
+		countriesMap.put("us","United States");
+		countriesMap.put("nz","New Zealand");
+		countriesMap.put("oc","Oceania");
+		countriesMap.put("au","Australia");
+		
+		Set<Map.Entry<String, String>> countriesSet = countriesMap.entrySet();
+		List<LinkedinObject> result = new ArrayList<>();
+		List<LinkedinObject> regions = followStatistics.getRegions().getValues();
+		
+		for (LinkedinObject country : regions) {
+			
+			String helper = country.getEntryKey().substring(0, 2);
+			for (Map.Entry<String, String> entry : countriesSet) {
+				
+				if(entry.getKey().equals(helper)) {
+					
+					LinkedinObject linkedinObject = new LinkedinObject();
+					linkedinObject.setEntryKey(entry.getValue());
+					linkedinObject.setEntryValue(country.getEntryValue());
+					
+					result.add(linkedinObject);
+					break;
+				}
+			}
+		}
+		
+		Map<String, Integer> map = result.stream()
+                .collect(Collectors.groupingBy(r -> r.getEntryKey(), Collectors.summingInt(r -> Integer.parseInt(r.getEntryValue()))));
+		
+		return map;
+	}
+}

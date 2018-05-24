@@ -1,0 +1,127 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import twitter4j.TwitterException;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.instagram.InstagramAPI;
+import br.com.opsocial.server.utils.linkedin.LinkedInApi;
+import br.com.opsocial.server.utils.twitter.TwitterAPI;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.facebook.FacebookPost;
+import br.com.opsocial.ejb.entity.sets.Post;
+
+@RestController
+@RequestMapping("opsocial")
+public class PostAction extends ServerAction {
+	
+	/*@RequestMapping(value = "/post_action",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)*/
+	public HashMap<Boolean, String> generatePost(List<Profile> profilesToPost, Post postDTO) throws TwitterException {
+
+		//Character imageType = (Character) getParameters().get("imageType");
+		setParameters(new HashMap<String, Object>());
+/*
+		if(imageType != null) {
+			if(imageType.equals(FacebookPost.FILTERED_PICTURE)) {
+				postDTO.setPicture(UtilFunctions.createFilteredPicture(postDTO.getPicture()));
+			}
+		}
+*/
+		HashMap<Boolean, String> mapPostsSent = new HashMap<Boolean, String>();
+
+		for(Profile profileDTO : profilesToPost) {
+			this.makeSingleProfilePost(profileDTO, postDTO, mapPostsSent);
+		}
+
+		return mapPostsSent;
+	}
+
+	public void makeSingleProfilePost(Profile profileToPost, Post postDTO, HashMap<Boolean, String> mapPostsSent) {
+
+		try {
+
+			if(profileToPost.getType() == Profile.TWITTER) {
+
+				Boolean wasSent;
+
+				wasSent = new TwitterAPI().post(postDTO, profileToPost);
+
+				if(wasSent) {
+					mapPostsSent.put(true, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " foi enviada com sucesso.");
+				} else {
+					mapPostsSent.put(false, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " não pode ser enviada.");
+				}
+
+			} else if(profileToPost.getType().equals(Profile.INSTAGRAM)) {
+
+				Boolean wasSent;
+				MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+				Profile profile = profileRemote.getById(profileToPost.getIdProfile());
+
+				InstagramAPI instagramAPI = new InstagramAPI();
+
+				wasSent = instagramAPI.post(postDTO, profile);
+
+				if(wasSent) {
+					mapPostsSent.put(true, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " foi enviada com sucesso.");
+				} else {
+					mapPostsSent.put(false, instagramAPI.extractSendImageErrorMessage());
+				}
+
+			} else if(profileToPost.getType().equals(Profile.FACEBOOK) ||
+					profileToPost.getType().equals(Profile.FACEBOOK_PAGE)) {
+				
+				Boolean wasSent;
+				
+				wasSent = new FacebookAPI().post(postDTO, profileToPost);
+				
+				if(wasSent) {
+					mapPostsSent.put(true, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " foi enviada com sucesso.");
+				} else {
+					mapPostsSent.put(false, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " não pode ser enviada.");
+				}
+			} else if(profileToPost.getType().equals(Profile.LINKEDIN) ||
+					profileToPost.getType().equals(Profile.LINKEDIN_PAGE)) {
+				
+				Boolean wasSent;
+				
+				wasSent = new LinkedInApi().post(postDTO, profileToPost);
+				
+				if(wasSent) {
+					mapPostsSent.put(true, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " foi enviada com sucesso.");
+				} else {
+					mapPostsSent.put(false, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " não pode ser enviada.");
+				}
+			}
+			
+		} catch (Exception e) {
+			mapPostsSent.put(false, "A postagem feita com o perfil " + profileToPost.getScreenName() + 
+					" para o " + UtilFunctions.getNetworkName(profileToPost.getType()) + " não pode ser enviada.");
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public void doAction() throws TwitterException {
+		
+	}
+}

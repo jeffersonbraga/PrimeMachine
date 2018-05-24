@@ -1,0 +1,15 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.sets.Post;
+
+@Local
+public interface PostDAO extends AbstractDAO<Post> {
+
+	List<Post> listSchedulings(Long idProfile, Long idAccount, Character status, Integer offset, Integer limit);
+
+}

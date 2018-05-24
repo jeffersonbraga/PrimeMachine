@@ -1,0 +1,10 @@
+/* Modal Content */
+.modal-timepicker {
+    display: inline-block; 
+    vertical-align: top;
+    position: absolute;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 3px;
+    top: -100px;
+}

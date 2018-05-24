@@ -1,0 +1,32 @@
+<div class="full-width scroll-op" [class.overflow]="streams.length" #autoScroll>
+    <div class='wrapper'>
+        <div class="container">
+            <button class="btn btn-xs btn-success m-l-10 m-b-10" (click)="openStreamsModal()"><i class="fa fa-plus" aria-hidden="true"></i> Add new stream</button>
+        </div>
+
+        <div *ngIf="!streams.length && loaded">
+            <div class="row m-l-0 m-r-0">
+                <div class="col-lg-3 col-md-3 col-sm-4 col-xs-6 p-l-50 p-r-50">
+                    <img src="/assets/img/streams/seta.png" class="arrow">
+                    <h2 class="bold all-caps">Add streams to access content and interact in real time</h2>
+                    <p class="m-t-20">In streams you can view your content, interact in real time and chat in inbox</p>
+                </div>
+                <div class="col-lg-3 col-md-3 col-sm-4 col-xs-6">
+                    <img src="/assets/img/streams/coluna1.png" class="img-no-stream">
+                </div>
+                <div class="col-lg-3 col-md-3 col-sm-4 col-xs-6">
+                    <img src="/assets/img/streams/coluna2.png" class="img-no-stream col-2">
+                </div>
+                <div class="col-lg-3 col-md-3 col-sm-4 col-xs-6">
+                    <img src="/assets/img/streams/coluna3.png" class="img-no-stream col-3">
+                </div>
+            </div>
+        </div>
+
+        <div class='container p-l-9' [dragula]='"bag-stream"' [dragulaModel]='streams'>
+            <div *ngFor="let stream of streams" streamWidthAdjust [totalStreams]="streams.length">
+                <stream [profile]="stream.profile" [stream]="stream"></stream>
+            </div>
+        </div>
+    </div>
+</div>

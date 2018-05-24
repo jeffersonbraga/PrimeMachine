@@ -1,0 +1,65 @@
+ <div class="col-md-2 no-padding m-l-0 p-l-15 m-r-15 m-t-20">
+    <my_channels #mychannels [showCheckAllBtn]="showCheckAllBtn" (sendProfiles)="checkSocialMedia($event)" [groupType]="groupType"></my_channels>
+</div>
+<div class="col-md-9">
+    <div class="row">
+        <div class="col-md-12" *ngIf="!loading && !waiting">
+                <div *ngFor="let itemRssFeed of rssFeeds; let i = index">
+                    <h5 *ngIf="!checkAllBtnSelected" class="small font-montserrat l-h-12 m-b-0 m-t-3 bold color-group-name">{{group.name}}</h5>
+                    <h5 *ngIf="checkAllBtnSelected" class="small font-montserrat l-h-12 m-b-0 m-t-3 bold color-group-name">{{itemRssFeed.rssFeedMessage[0].groupName}}</h5>
+                    <div class="block">
+                        <div *ngIf="i == 0" class="rssfeed-icon m-r-5 m-t-10"></div>
+                        <h2 *ngIf="!checkAllBtnSelected" class="text-uppercase font-montserrat m-b-0 m-t-0 bold color-master pull-left">{{itemRssFeed.title}}</h2>
+                        <h2 *ngIf="checkAllBtnSelected && i == 0" class="text-uppercase font-montserrat m-b-0 m-t-0 bold color-master pull-left">Todos</h2>
+                        <p class="small bold pull-left m-t-15 m-l-10">Atividade recente</p>
+                        <div *ngIf="!checkAllBtnSelected" (click)="updateRssFeedMsgs()" class="btn btn-default pull-right">
+                            <a target="_blank" class="cursor"><i class="fa fa-refresh"></i></a>
+                        </div>
+                        <div *ngIf="checkAllBtnSelected && i == 0" (click)="updateRssFeedMsgsAll()" class="btn btn-default pull-right">
+                            <a target="_blank" class="cursor"><i class="fa fa-refresh"></i></a>
+                        </div> 
+                    </div>
+                <div class="clearfix"></div>
+                <div>
+                    <div class="col-md-3 p-r-30 p-l-0 m-t-30 height-rssfeed" *ngFor="let item of itemRssFeed.rssFeedMessage">
+                        <div class="container-rss">
+                            <img class="img-fit" src="{{item.messageImgURL}}" alt="Imagem Rss Msg" />
+                            <div class="overlay-rss"></div>
+                            <div (click)="sendLinkToCompose(item.messageLink)" class="button-rss-1"><a><i class="fa fa-edit"></i> Criar post </a></div>
+                            <div (click)="copyLink(item.messageLink, item.idRssfeedMsg)" class="button-rss-2">
+                                <a id="tooltip-rss_{{item.idRssfeedMsg}}"><i class="fa fa-link"></i> Copiar link </a>
+                            </div> 
+                            <div class="button-rss-3"><a (click)="rssFeedPreview(item, itemRssFeed)" class="cursor"><i class="fa fa-newspaper-o m-r-5"></i>Ler notícia</a></div>
+                        </div>
+                        <div (click)="rssFeedPreview(item, itemRssFeed)" class="m-t-15 font-montserrat fs-12 cursor">
+                            <span class="fa fa-calendar"></span>
+                            <span class="date"><strong>{{item.messagePubDate | date:"dd"}} {{item.messagePubDate | date:"MM" | monthName}}</strong></span>
+                            <span class="year">{{item.messagePubDate | date:"yyyy"}} at</span>
+                            <span class="fa fa-clock-o"></span>
+                            <span class="hour"><strong>{{item.messagePubDate | date:"HH"}}H{{item.messagePubDate | date:"mm"}}</strong></span>
+                        </div>
+                        <h5 (click)="rssFeedPreview(item, itemRssFeed)" title="{{item.messageTitle}}" class="m-t-5 m-b-5 l-h-20 font-montserrat fs-16 cursor">
+                            {{item.messageTitle.length > 40 ? item.messageTitle.substring(0, 37) + '...' : item.messageTitle}}
+                        </h5>
+                        <p (click)="rssFeedPreview(item, itemRssFeed)" *ngIf="item.messageDescription.trim()" title="{{item.messageDescription}}" class="l-h-15 p-r-20 light cursor">
+                            {{item.messageDescription?.length > 80 ? item.messageDescription.substring(0, 77) + '...' : item.messageDescription}}
+                        </p>
+                        <p (click)="rssFeedPreview(item, itemRssFeed)" *ngIf="!item.messageDescription.trim()" title="{{item.messageLink}}" class="l-h-15 p-r-20 light cursor">
+                            {{item.messageLink?.length > 40 ? item.messageLink.substring(0, 37) + '...' : item.messageLink}}
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-12 text-center p-t-30" *ngIf="itemRssFeed.rssFeedMessage.length == 0">
+                    <p class="small hint-text">Não encontramos mensagens atualizadas para este Rss Feed</p>
+                </div>
+            </div> 
+        </div>
+        <div class="col-md-12 text-center p-t-80" *ngIf="waiting">
+            <img src="/assets/img/blanks/rss.png" style="max-width: 100%;" alt="">
+            <p class="hint-text all-caps font-montserrat fs-12">Select a rss feed to manage</p>
+        </div>
+        <div class="col-sm-12 text-center" *ngIf="loading && !waiting">
+            <div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+        </div>
+    </div>
+</div>

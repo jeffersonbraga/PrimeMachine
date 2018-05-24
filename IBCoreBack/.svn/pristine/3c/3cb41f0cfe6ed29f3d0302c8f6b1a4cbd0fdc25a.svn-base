@@ -1,0 +1,91 @@
+package br.com.opsocial.server.actions.profiles;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceRateLimitStatusRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Notification;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.ejb.entity.twitter.RateLimitStatus;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.emails.EmailSender;
+import br.com.opsocial.server.utils.monitorings.MonitoringTwitter;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateThread;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import br.com.opsocial.server.validation.InsertProfilesValidation;
+import twitter4j.Twitter;
+
+@RestController
+@RequestMapping("opsocial")
+public class GetProfilesAction {
+
+    //@Secured(OpSocialBackApplication.CREDENTIAL_ADMINSTRATOR)
+	@CrossOrigin(origins = "*")
+	@RequestMapping(value = "/get_profiles",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Profile>> getProfiles() throws Exception {
+
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		List<Profile> profileDTOs = new ArrayList<Profile>();
+
+		User user = SecurityUtils.getCurrentUser();
+		if (user != null) {
+			List<Character> types = new ArrayList<Character>();
+			types.add(Profile.FACEBOOK);
+			types.add(Profile.FACEBOOK_PAGE);
+			types.add(Profile.TWITTER);
+			types.add(Profile.INSTAGRAM);
+			types.add(Profile.LINKEDIN);
+			types.add(Profile.LINKEDIN_PAGE);
+
+			List<Profile> profiles = remote.getEntityByNetworkType(types, new Long(user.getAccount().getIdAccount()));
+
+			// Carregar primeiro Páginas/Perfis Facebook.
+			for(Profile profile : profiles) {
+				if(profile.getType().equals(Profile.FACEBOOK_PAGE) || profile.getType().equals(Profile.FACEBOOK)) {
+					profileDTOs.add(profile);
+				}
+			}
+
+			// Carregar restante das redes.
+			for(Profile profile : profiles) {
+				if(!profile.getType().equals(Profile.FACEBOOK_PAGE) && !profile.getType().equals(Profile.FACEBOOK)) {
+	//				if(profile.getType().equals(Profile.INSTAGRAM)) {
+	//					if(profile.getIsSchedulingAuthenticated() == Profile.ACTIVE) {
+	//						profileDTOs.add(profile);
+	//					}
+	//				} else {
+						profileDTOs.add(profile);
+	//				}
+				}			
+			}
+		}
+		return new ResponseEntity<>(profileDTOs, HttpStatus.OK);
+	}
+}

@@ -1,0 +1,50 @@
+.nv-x {
+    .tick {
+        line {
+            opacity: 0 !important;
+            display: none !important;
+        }
+    }
+}
+
+.nvd3{
+    g.nv-groups{
+       path.nv-line {
+            stroke-width: 3px !important;
+        } 
+    }
+
+    text {
+        font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+        font-size: 10px !important;
+        fill: #9a9a9a !important;
+    }
+
+    .nv-axis {
+        .nv-axisMaxMin {
+            text {
+                font-weight: 400 !important;
+            }
+
+            path {
+                stroke: transparent !important;
+            }
+        } 
+
+        path{
+            &.domain{
+                opacity: 0 !important;
+            }
+        }
+    }
+
+    .nv-background{
+        fill: transparent !important;
+    }
+}
+
+@media print{
+    .nvd3-svg{
+        width: calc(~'100% + 120px') !important;
+    }
+}

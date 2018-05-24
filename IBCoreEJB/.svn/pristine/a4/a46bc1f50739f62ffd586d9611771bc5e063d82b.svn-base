@@ -1,0 +1,114 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.Notification;
+
+@Stateless
+public class NotificationDAOImpl extends AbstractDAOImpl<Notification> implements NotificationDAO {
+	
+	@Override
+	public Notification getByProfile(Long idProfile) {
+		
+		sql = "SELECT n FROM Notification n WHERE n.profile.idProfile = :idProfile";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idProfile", idProfile);
+		
+		try {
+			return (Notification) query.getSingleResult();	
+		} catch (Exception e) {
+			return null;
+		}	
+	}
+	
+	@Override
+	public List<Notification> listByAccount(Long idAccount) {
+		
+		sql = "SELECT n FROM Notification n WHERE n.account.idAccount = :idAccount AND n.date >= :dateFrom order by n.date desc";
+		
+		Date date = new Date();
+		Date dateFrom = new Date(date.getTime() - 10 * 24 * 3600 * 1000L );
+		
+		query = em.createQuery(sql);
+		query.setParameter("idAccount", idAccount);
+		query.setParameter("dateFrom", dateFrom);
+		
+		try {
+			return (List<Notification>) query.getResultList();
+		} catch (Exception e) {
+			return null;
+		}	
+	}
+	
+	@Override
+	public List<Notification> listUnreadNotifications(Long idAccount) {
+		
+		sql = "SELECT n FROM Notification n WHERE n.account.idAccount = :idAccount AND n.unread = true ORDER BY n.date DESC";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return (List<Notification>) query.getResultList();	
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	@Override
+	public Long countUnreadNotifications(Long idAccount) {
+		
+		sql = "SELECT count(n) FROM Notification n WHERE n.account.idAccount = :idAccount and n.unread = true";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idAccount", idAccount);
+		
+		try {
+			return (Long) query.getSingleResult();	
+		} catch (Exception e) {
+			return 0L;
+		}	
+	}
+
+	@Override
+	public List<Notification> listLastNotifications(Long idAccount, Date dateFrom, Integer limit) {
+		
+		sql = "SELECT n FROM Notification n WHERE n.account.idAccount = :idAccount AND n.date >= :dateFrom ORDER BY n.date DESC";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idAccount", idAccount);
+		query.setParameter("dateFrom", dateFrom);
+		query.setFirstResult(0);
+		query.setMaxResults(limit);
+		
+		try {
+			return (List<Notification>) query.getResultList();	
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<Notification> listNextNotifications(Long idAccount, Date dateFrom, Integer limit) {
+		
+		sql = "SELECT n FROM Notification n WHERE n.account.idAccount = :idAccount AND n.date <= :dateFrom ORDER BY n.date DESC";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idAccount", idAccount);
+		query.setParameter("dateFrom", dateFrom);
+		query.setFirstResult(0);
+		query.setMaxResults(limit);
+		
+		try {
+			return (List<Notification>) query.getResultList();	
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+}

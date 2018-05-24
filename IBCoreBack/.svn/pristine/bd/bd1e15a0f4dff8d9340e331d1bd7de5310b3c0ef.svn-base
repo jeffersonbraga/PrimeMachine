@@ -1,0 +1,62 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.monitoring.MonitoringTagDTO;
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringTag;
+
+@RestController
+@RequestMapping("opsocial")
+public class DeleteTagsAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/delete_tags",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		List<MonitoringTagDTO> monitoringTagsDTO = ((PersistentList<MonitoringTagDTO>) getParameters().get("monitoringTags")).getPersistences();
+
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceMonitoringTagRemote monitoringTagRemote = (MaintenanceMonitoringTagRemote) 
+				RecoverMaintenance.recoverMaintenance("MonitoringTag");
+		
+		List<MonitoringTag> monitoringTagsExcluded = new ArrayList<>();
+		List<MonitoringTag> monitoringTagsNotExcluded = new ArrayList<>();
+		for(MonitoringTagDTO monitoringTagDTO : monitoringTagsDTO) {
+			
+			MonitoringTag monitoringTag = MountDTO.mountMonitoringTag(monitoringTagDTO);
+			
+			try {
+				
+				monitoringTagRemote.delete(monitoringTag);
+				
+				monitoringTagsExcluded.add(monitoringTag);
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				monitoringTagsNotExcluded.add(monitoringTag);
+			}
+			
+		}
+		
+		getParameters().put("monitoringTagsExcluded", MountDTO.mountMonitoringTag(monitoringTagsExcluded));
+		getParameters().put("monitoringTagsNotExcluded", MountDTO.mountMonitoringTag(monitoringTagsNotExcluded));
+	}
+
+}

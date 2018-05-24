@@ -1,0 +1,118 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.MonitoringInfluentialUserDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringInfluentialUser;
+
+@Stateless
+public class MaintenanceMonitoringInfluentialUserBean extends AbstractDASImpl<MonitoringInfluentialUser> implements MaintenanceMonitoringInfluentialUserRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	MonitoringInfluentialUserDAO dao;
+
+	@Override
+	public void setDao(AbstractDAO<MonitoringInfluentialUser> dao) {
+		this.dao = (MonitoringInfluentialUserDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringInfluentialUser> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO getDAO() {
+		return dao;
+	}
+
+	@Override
+	public boolean hasEntity(String idUser, Long idMonitoring, Character networkType, Long date) {
+		return dao.hasEntity(idUser, idMonitoring, networkType, date);
+	}
+
+	@Override
+	public MonitoringInfluentialUser getEntity(String idUser, Long idMonitoring, Character networkType, Long date) {
+		return dao.getEntity(idUser, idMonitoring, networkType, date);
+	}
+	
+	@Override
+	public List<MonitoringInfluentialUser> getUsersWithMoreFollowers(Long idMonitoring, Character networkType, Long reportDate, Integer limit) {
+		return dao.getUsersWithMoreFollowers(idMonitoring, networkType, reportDate, limit);
+	}
+	
+	@Override
+	public Map<String, Long> getMostInfluentialFans(Long idMonitoring, Character networkType, Long dateFrom, Long dateUntil, Integer offset, Integer limit) {
+		return dao.getMostInfluentialFans(idMonitoring, networkType, dateFrom, dateUntil, offset, limit);
+	}
+
+	@Override
+	public MonitoringInfluentialUser getMostInfluentialFan(String idUser, Long idMonitoring, Character networkType, Long dateFrom, Long dateUntil) {
+		return dao.getMostInfluentialFan(idUser, idMonitoring, networkType, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getMostInfluentialFanPostsCount(String idUser, Long idMonitoring, Character networkType, Long dateFrom, Long dateUntil) {
+		return dao.getMostInfluentialFanPostsCount(idUser, idMonitoring, networkType, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<String, Long> getMostPositiveFans(Long idMonitoring, Character networkType, Long dateFrom, Long dateUntil,
+			Integer offset, Integer limit) {
+		return dao.getMostPositiveFans(idMonitoring, networkType, dateFrom, dateUntil, offset, limit);
+	}
+
+	@Override
+	public Map<String, Long> getMostNegativeFans(Long idMonitoring, Character networkType, Long dateFrom, Long dateUntil,
+			Integer offset, Integer limit) {
+		return dao.getMostNegativeFans(idMonitoring, networkType, dateFrom, dateUntil, offset, limit);
+	}
+
+	@Override
+	public Map<Date, Long> getPostsUsersPerDayCount(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsUsersPerDayCount(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getPostsUsersRecurrent(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsUsersRecurrent(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<String, Long> getPostsUsersGenderCount(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsUsersGenderCount(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getPostsUsersPerDayCount(Long idMonitoring, Long date) {
+		return dao.getPostsUsersPerDayCount(idMonitoring, date);
+	}
+
+	@Override
+	public Long getPostsUsersPerGenderCount(Long idMonitoring, Long date, String gender) {
+		return dao.getPostsUsersPerGenderCount(idMonitoring, date, gender);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+}

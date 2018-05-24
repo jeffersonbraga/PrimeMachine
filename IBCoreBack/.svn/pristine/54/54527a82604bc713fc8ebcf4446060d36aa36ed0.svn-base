@@ -1,0 +1,19 @@
+package br.com.opsocial.client.entity.socialnetworks.facebook;
+
+import java.io.Serializable;
+
+public class MediaDTO implements Serializable {
+	
+	private ImageDTO image;
+	
+	public MediaDTO() {
+	}
+
+	public ImageDTO getImage() {
+		return image;
+	}
+
+	public void setImage(ImageDTO image) {
+		this.image = image;
+	}
+}

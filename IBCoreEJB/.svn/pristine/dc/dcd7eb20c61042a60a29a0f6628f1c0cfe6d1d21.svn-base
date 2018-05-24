@@ -1,0 +1,363 @@
+package br.com.opsocial.ejb.entity.sets;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@Entity
+@Table(name="posts", schema="opsocial")
+public class Post extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	//posted
+	public static final Character POSTED = 'T';
+	public static final Character NOT_POSTED = 'F';
+	public static final Character ERROR_POSTING = 'E';
+	public static final Character POSTING = 'P';
+	
+	//appendtype
+	public static final Character APPEND_VIDEO = 'V';
+	public static final Character APPEND_PICTURE = 'P';
+	public static final Character APPEND_ALBUM = 'A';
+	public static final Character APPEND_RESUME = 'R';
+	public static final Character APPEND_STORY = 'S';
+	
+	//targetFeed
+	public static final Character TIMELINE_FEED = 'T';
+	public static final Character STORY_FEED = 'S';
+
+	//status
+	public static final Character SCHEDULED = 'O';
+	public static final Character STARTED = 'S';
+	public static final Character INTERRUPTED = 'I';
+	public static final Character FINALIZED = 'F';
+	
+	@Id
+	@Column(name = "idpost")
+	@GeneratedValue(strategy = GenerationType.IDENTITY, generator = "post_idpost_seq")
+	private Long idPost;
+	
+	@Column(name="text")
+	private String text;
+	
+	@Transient
+	private String formattedPost;
+
+	@Column(name="appendtype")
+	private Character appendType;
+
+	@Column(name="posted")
+	private Character posted = 'F';
+
+	@Column(name="postDate")
+    @Temporal(TemporalType.TIMESTAMP)
+	private Date postDate;
+
+	@Column(name="scheduledate")
+	private String scheduleDate;
+
+	@Column(name="startdate")
+	private Long startDate;
+
+	@Column(name="picture")
+	private String picture;
+
+	@Column(name="pictureheight")
+	private String pictureHeight;
+
+	@Column(name="picturewidth")
+	private String pictureWidth;
+
+	@Column(name="title")
+	private String title;
+
+	@Column(name="link")
+	private String link;
+
+	@Column(name="description")
+	private String description;
+	
+	@Column(name = "videoname")
+	private String videoName;
+	
+	@Column(name = "videosize")
+	private Long videoSize;
+	
+	@Column(name = "videoextension")
+	private String videoExtension;
+	
+	@Column(name = "videoduration")
+	private Double videoDuration;
+	
+	@Column(name = "countpostingattempts")
+	private Integer countPostingAttempts;
+	
+	@Column(name = "targetfeed")
+	private Character targetFeed;
+	
+	@Transient
+	private String originalLink;
+	
+	@JoinColumn(name = "idprofile", referencedColumnName = "idprofile")
+	private Profile profile;
+	
+	@OneToMany(cascade = CascadeType.ALL, mappedBy = "post", fetch=FetchType.EAGER)
+	@OrderBy("index desc")
+	private List<PostAttachment> postsAttachments;
+	
+	@Column(name="status")
+	private Character status;
+	
+	@Column(name="hashtags")
+	private String hashtags;
+	
+	@Transient
+	private User userLog;
+	
+	public Post() {
+	}
+
+	public Long getIdPost() {
+		return idPost;
+	}
+
+	public void setIdPost(Long idPost) {
+		this.idPost = idPost;
+	}
+
+	public String getText() {
+		return text;
+	}
+
+	public void setText(String text) {
+		this.text = text;
+	}
+
+	public String getFormattedPost() {
+		return formattedPost;
+	}
+
+	public void setFormattedPost(String formattedPost) {
+		this.formattedPost = formattedPost;
+	}
+
+	public Character getAppendType() {
+		return appendType;
+	}
+
+	public void setAppendType(Character appendType) {
+		this.appendType = appendType;
+	}
+
+	public Character getPosted() {
+		return posted;
+	}
+
+	public void setPosted(Character posted) {
+		this.posted = posted;
+	}
+
+	public Date getPostDate() {
+		return postDate;
+	}
+
+	public void setPostDate(Date postDate) {
+		this.postDate = postDate;
+	}
+
+	public String getPicture() {
+		return picture;
+	}
+
+	public void setPicture(String picture) {
+		this.picture = picture;
+	}
+
+	public String getPictureHeight() {
+		return pictureHeight;
+	}
+
+	public void setPictureHeight(String pictureHeight) {
+		this.pictureHeight = pictureHeight;
+	}
+
+	public String getPictureWidth() {
+		return pictureWidth;
+	}
+
+	public void setPictureWidth(String pictureWidth) {
+		this.pictureWidth = pictureWidth;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getOriginalLink() {
+		return originalLink;
+	}
+
+	public void setOriginalLink(String originalLink) {
+		this.originalLink = originalLink;
+	}
+
+	public String getVideoName() {
+		return videoName;
+	}
+
+	public void setVideoName(String videoName) {
+		this.videoName = videoName;
+	}
+
+	public Long getVideoSize() {
+		return videoSize;
+	}
+
+	public void setVideoSize(Long videoSize) {
+		this.videoSize = videoSize;
+	}
+
+	public String getVideoExtension() {
+		return videoExtension;
+	}
+
+	public void setVideoExtension(String videoExtension) {
+		this.videoExtension = videoExtension;
+	}
+
+	public Double getVideoDuration() {
+		return videoDuration;
+	}
+
+	public void setVideoDuration(Double videoDuration) {
+		this.videoDuration = videoDuration;
+	}
+
+	public Integer getCountPostingAttempts() {
+		return countPostingAttempts;
+	}
+
+	public void setCountPostingAttempts(Integer countPostingAttempts) {
+		this.countPostingAttempts = countPostingAttempts;
+	}
+
+	public List<PostAttachment> getPostsAttachments() {
+		return postsAttachments;
+	}
+
+	public void setPostsAttachments(List<PostAttachment> postsAttachments) {
+		this.postsAttachments = postsAttachments;
+	}
+
+	public Character getTargetFeed() {
+		return targetFeed;
+	}
+
+	public void setTargetFeed(Character targetFeed) {
+		this.targetFeed = targetFeed;
+	}
+	
+	public Profile getProfile() {
+		return profile;
+	}
+	
+	public Profile setProfile(Profile p) {
+		return profile = p;
+	}
+
+	public void setSet(Profile profile) {
+		this.profile = profile;
+	}
+
+	public User getUserLog() {
+		return userLog;
+	}
+
+	public void setUserLog(User userLog) {
+		this.userLog = userLog;
+	}
+
+	@Override
+	public Long getId() {
+		return idPost;
+	}
+	
+	@Override
+	public void setId(Long id) {
+		idPost = id;
+	}
+
+	public String getScheduleDate() {
+		return scheduleDate;
+	}
+
+	public void setScheduleDate(String scheduleDate) {
+		this.scheduleDate = scheduleDate;
+	}
+
+	public Character getStatus() {
+		return status;
+	}
+
+	public void setStatus(Character status) {
+		this.status = status;
+	}
+
+	public Long getStartDate() {
+		return startDate;
+	}
+
+	public void setStartDate(Long startDate) {
+		this.startDate = startDate;
+	}
+
+	public String getHashtags() {
+		return hashtags;
+	}
+
+	public void setHashtags(String hashtags) {
+		this.hashtags = hashtags;
+	}
+}

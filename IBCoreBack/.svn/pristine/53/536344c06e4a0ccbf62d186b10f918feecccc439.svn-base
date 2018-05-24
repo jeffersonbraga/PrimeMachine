@@ -1,0 +1,25 @@
+package br.com.opsocial.server.actions.sets;
+
+import java.util.HashMap;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.ejb.das.MaintenancePostRemote;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class DeleteSetPostAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception {
+	
+		Post postDTO = (Post) getParameters().get("post");
+		
+		setParameters(new HashMap<String, Object>());
+
+		MaintenancePostRemote remote = (MaintenancePostRemote) RecoverMaintenance.recoverMaintenance("Post");
+
+		Post post = MountDTO.mountPost(postDTO, postDTO.getSet());
+		remote.delete(post);	
+	}
+}

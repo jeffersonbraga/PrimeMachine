@@ -1,0 +1,164 @@
+package br.com.opsocial.client.entity.report.instagram;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class InstagramReportPostDTO extends Persistent implements Comparable<InstagramReportPostDTO> {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Long idMedia;
+	private Long idInstagramUser;
+	private String userName;
+	private String fullName;
+	private String avatar;
+	private String pictureUrl;
+	private Integer pictureWidth;
+	private Integer pictureHeight;
+	private String pictureCaption;
+	private String createTime;
+	private Integer likes;
+	private Integer comments;
+	private String filter;
+	private String type;
+	private String link;
+	
+	public InstagramReportPostDTO() {
+		
+	}
+
+	public Long getIdMedia() {
+		return idMedia;
+	}
+
+	public void setIdMedia(Long idMedia) {
+		this.idMedia = idMedia;
+	}
+
+	public Long getIdInstagramUser() {
+		return idInstagramUser;
+	}
+
+	public void setIdInstagramUser(Long idInstagramUser) {
+		this.idInstagramUser = idInstagramUser;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getFullName() {
+		return fullName;
+	}
+
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+
+	public String getPictureUrl() {
+		return pictureUrl;
+	}
+
+	public void setPictureUrl(String pictureUrl) {
+		this.pictureUrl = pictureUrl;
+	}
+
+	public Integer getPictureWidth() {
+		return pictureWidth;
+	}
+
+	public void setPictureWidth(Integer pictureWidth) {
+		this.pictureWidth = pictureWidth;
+	}
+
+	public Integer getPictureHeight() {
+		return pictureHeight;
+	}
+
+	public void setPictureHeight(Integer pictureHeight) {
+		this.pictureHeight = pictureHeight;
+	}
+
+	public String getPictureCaption() {
+		return pictureCaption;
+	}
+
+	public void setPictureCaption(String pictureCaption) {
+		this.pictureCaption = pictureCaption;
+	}
+
+	public String getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+
+	public Integer getLikes() {
+		return likes;
+	}
+
+	public void setLikes(Integer likes) {
+		this.likes = likes;
+	}
+
+	public Integer getComments() {
+		return comments;
+	}
+
+	public void setComments(Integer comments) {
+		this.comments = comments;
+	}
+
+	public String getFilter() {
+		return filter;
+	}
+
+	public void setFilter(String filter) {
+		this.filter = filter;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getLink() {
+		return link;
+	}
+
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	@Override
+	public int compareTo(InstagramReportPostDTO o) {
+		
+		if((this.likes + this.comments) > (o.likes + o.comments)) {  
+            return -1;  
+        }  
+		
+        if((this.likes + this.comments) < (o.likes + o.comments)) {  
+            return 1;  
+        }
+        
+        return 0;  
+	}
+	
+	
+}

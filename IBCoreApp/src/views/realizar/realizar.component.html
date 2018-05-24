@@ -1,0 +1,41 @@
+<div class="col-md-9">
+	<div class="panel panel-opsocial panel-transparent">
+		<ul class="nav nav-tabs nav-tabs-opsocial hidden-sm hidden-xs">
+			<li class="active">
+				<a data-toggle="tab" href="#not_posted" aria-expanded="true" (click)="changeStatus('O')"><span><span class="fa fa-clock-o"></span>Todos</span></a>
+			</li>
+			<li class="">
+				<a data-toggle="tab" href="#posted" aria-expanded="false" (click)="changeStatus('T')"><span class="fa fa-check"></span> <span>Urgentes</span></a>
+			</li>
+			<li class="">
+				<a data-toggle="tab" href="#posted" aria-expanded="false" (click)="changeStatus('T')"><span class="fa fa-check"></span> <span>Novo (EMERGENCIA)</span></a>
+			</li>
+		</ul>
+		<div class="tab-content">
+			<div class="tab-pane active" id="not_posted">
+
+				<div class="col-sm-12 text-center p-t-30" *ngIf="profilesCheckeds.length == 0">
+					<img src="/assets/img/blanks/schedule.png" style="max-width: 100%;" alt="" class="m-l-20">
+					<p class="hint-text all-caps font-montserrat fs-12">Select a social profile to see your schedules</p>
+				</div>
+
+				<div class="col-sm-12 text-center" *ngIf="!schedules.not_posted && profilesCheckeds.length > 0" >
+					<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+					<br>
+					<p class="small hint-text">Carregando agendamentos a enviar</p>
+				</div>
+				<div class="col-sm-12 text-center p-t-30" *ngIf="emptyNotPosted && profilesCheckeds.length > 0">
+					<p class="small hint-text">No records were found in this section</p>
+				</div>
+				<schedule-item 
+					[schedules]="schedules.not_posted" 
+					(show)="showMedia($event)" 
+					[modalMedia]="showed" 
+					(media)="changeMedia($event)" 
+					(type)="changeTypeModal($event)"
+					*ngIf="profilesCheckeds.length > 0">
+				</schedule-item>
+			</div>
+		</div>
+	</div>
+</div>

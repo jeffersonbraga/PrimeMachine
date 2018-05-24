@@ -1,0 +1,515 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.ReclameAquiPostMonitoringId;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.reclameaqui.ReclameAquiPost;
+import br.com.opsocial.ejb.entity.reclameaqui.ReclameAquiPostMonitoring;
+
+@Stateless
+public class ReclameAquiPostMonitoringDAOImpl extends AbstractDAOImpl<ReclameAquiPostMonitoring> implements ReclameAquiPostMonitoringDAO {
+	
+	@Override
+	public void delete(ReclameAquiPostMonitoring object) throws Exception {
+		try {
+			object = em.merge(object);
+			em.remove(object);
+			this.flush();
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+	}
+	
+	@Override
+	public List<ReclameAquiPostMonitoring> listMostRecents(Long idMonitoring, Integer maxResults) {
+	
+		sql = "Select r From ReclameAquiPostMonitoring r where r.monitoring.idMonitoring = :idMonitoring and r.garbage='F' order by r.reclameAquiPost.createdTime desc";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setMaxResults(maxResults);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<ReclameAquiPostMonitoring> listMostRecents(Long createdTime, Long idMonitoring) {
+	
+		sql = "Select r From ReclameAquiPostMonitoring r where r.reclameAquiPost.createdTime > :createdTime and " +
+				"r.monitoring.idMonitoring = :idMonitoring and r.garbage='F'  order by r.reclameAquiPost.createdTime";
+		query = em.createQuery(sql);
+		query.setParameter("createdTime", createdTime);
+		query.setParameter("idMonitoring", idMonitoring);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<ReclameAquiPostMonitoring> listElder(Long createdTime, Long idMonitoring, Integer maxResults) {
+	
+		sql = "Select r From ReclameAquiPostMonitoring r where r.reclameAquiPost.createdTime < :createdTime and " +
+				"r.monitoring.idMonitoring = :idMonitoring  and r.garbage='F'  order by r.reclameAquiPost.createdTime desc";
+		query = em.createQuery(sql);
+		query.setParameter("createdTime", createdTime);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setMaxResults(maxResults);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<ReclameAquiPostMonitoring> getByInterval(Long idMonitoring, Long startDate, Long endDate, 
+			String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		
+		if(monitoringWords != null) {
+
+			sql = "Select rpm.idmonitoring, rpm.cacheid, rpm.term, rpm.qualification, rpm.retrieveddate, " +
+					"rpm.garbage, rp.createdtime From opsocial.reclameaquipostsmonitorings rpm " +
+					"JOIN opsocial.reclameaquiposts rp on (rpm.cacheid = rp.cacheid) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+					"rpm.idmonitoring = mpt.idmonitoring AND rpm.garbage = 'F' and rpm.term = mpt.term AND rpm.cacheid = mpt.postid " +
+					"AND mpt.network = '" + Profile.RECLAMEAQUI + "' " +
+					"WHERE rpm.idmonitoring = " + idMonitoring + " and rpm.garbage='F' and " +
+					"rp.createdtime >= " + startDate + " and " +
+					"rp.createdtime <= " + endDate + "";
+
+			sql += " and rp.cacheid in ( "
+				+ "Select rp2.cacheid From opsocial.reclameaquiposts rp2 where ";
+			
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(rp2.title) LIKE LOWER('%" + w + "%') or LOWER(rp2.link) LIKE LOWER('%" + w + "%') or LOWER(rp2.snippet) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+			sql += ")";
+			
+		} else {
+
+			sql = "Select rpm.idmonitoring, rpm.cacheid, rpm.term, rpm.qualification, rpm.retrieveddate, " +
+					"rpm.garbage, rp.createdtime From opsocial.reclameaquipostsmonitorings rpm " +
+					"JOIN opsocial.reclameaquiposts rp on (rpm.cacheid = rp.cacheid) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+					"rpm.idmonitoring = mpt.idmonitoring AND rpm.garbage = 'F' and rpm.term = mpt.term AND rpm.cacheid = mpt.postid " +
+					"AND mpt.network = '" + Profile.RECLAMEAQUI + "' " +
+					"WHERE rpm.idmonitoring = " + idMonitoring + " and rpm.garbage='F' and " +
+					"rp.createdtime >= " + startDate + " and " +
+					"rp.createdtime <= " + endDate + "";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " rpm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " rpm.qualification is null or";
+				} else {
+					sql += " rpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		sql +=  " GROUP BY rpm.idmonitoring, rpm.cacheid, rpm.term, rpm.qualification, rpm.retrieveddate, rpm.garbage, rp.createdtime";
+		
+		sql += " ORDER BY rp.createdtime desc";
+		
+		query = em.createNativeQuery(sql);
+		query.setFirstResult(offset * 50);
+		query.setMaxResults(limit);
+		
+		List<ReclameAquiPostMonitoring> reclameAquiPostsMonitorings = new ArrayList<ReclameAquiPostMonitoring>();
+		
+		List<Object[]> result = query.getResultList();
+
+		Monitoring monitoring = new Monitoring();
+		sql = "SELECT mn FROM Monitoring mn WHERE mn.idMonitoring=" + idMonitoring;
+		query = em.createQuery(sql);
+		monitoring = (Monitoring) query.getSingleResult();
+		
+		for (Object[] object : result) {
+			
+			ReclameAquiPostMonitoring reclameAquiPostsMonitoring = new ReclameAquiPostMonitoring();
+			
+			ReclameAquiPost reclameAquiPost = new ReclameAquiPost();
+			String cacheId = (String) object[1];
+			sql = "SELECT rp FROM ReclameAquiPost rp WHERE rp.cacheId = :cacheId"; 
+			query = em.createQuery(sql);
+			query.setParameter("cacheId", cacheId);
+			reclameAquiPost = (ReclameAquiPost) query.getSingleResult();
+			
+			reclameAquiPostsMonitoring.setMonitoring(monitoring);
+			reclameAquiPostsMonitoring.setReclameAquiPost(reclameAquiPost); //TODO ver os que podem ser null
+			reclameAquiPostsMonitoring.setTerm((String) object[2]);
+			reclameAquiPostsMonitoring.setQualification(object[3] != null ? ((String) object[3]).charAt(0) : null);
+			reclameAquiPostsMonitoring.setRetrievedDate(object[4] != null ? ((Long) object[4]) : null);
+			reclameAquiPostsMonitoring.setGarbage(object[5] != null ? ((String) object[5]).charAt(0) : null);
+			
+			reclameAquiPostsMonitorings.add(reclameAquiPostsMonitoring);
+		}
+		
+		return reclameAquiPostsMonitorings;
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate,
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+		
+		Long postsCount = 0L;
+		
+		if(monitoringWords != null) {
+
+			sql = "SELECT count(distinct(rpm)) FROM opsocial.reclameaquipostsmonitorings AS rpm " + 
+							"INNER JOIN opsocial.reclameaquiposts AS rp ON " + 
+							"(rp.cacheid = rpm.cacheid) " +
+							"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+							"rpm.idmonitoring = mpt.idmonitoring AND rpm.garbage = 'F' and rpm.term = mpt.term AND rpm.cacheid = mpt.postid " +
+							"AND mpt.network = '" + Profile.RECLAMEAQUI + "' " +
+						"WHERE rpm.idmonitoring = " + idMonitoring + " AND rp.createdtime >= " + startDate + " AND " +
+						"rp.createdtime <= " + endDate + " ";
+
+			sql += " and rp.cacheid in ( "
+				+ "Select rp2.cacheid From opsocial.reclameaquiposts rp2 where ";
+			
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(rp2.title) LIKE LOWER('%" + w + "%') or LOWER(rp2.link) LIKE LOWER('%" + w + "%') or LOWER(rp2.snippet) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+			sql += ")";
+			
+		} else {
+
+			sql = "SELECT count(distinct(rpm)) FROM opsocial.reclameaquipostsmonitorings AS rpm " + 
+					"JOIN opsocial.reclameaquiposts rp on (rpm.cacheid = rp.cacheid) " +
+							"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+							"rpm.idmonitoring = mpt.idmonitoring AND rpm.garbage = 'F' and rpm.term = mpt.term AND rpm.cacheid = mpt.postid " +
+							"AND mpt.network = '" + Profile.RECLAMEAQUI + "' " +
+						"WHERE rpm.idmonitoring = " + idMonitoring + " AND rp.createdtime >= " + startDate + " AND " +
+						"rp.createdtime <= " + endDate + " ";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " rpm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " rpm.qualification is null or";
+				} else {
+					sql += " rpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = "AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		query = em.createNativeQuery(sql);
+		
+		postsCount = (Long) query.getSingleResult(); 
+		
+		return postsCount;
+	}
+
+	@Override
+	public ReclameAquiPostMonitoring getByComposedId(Long idMonitoring,
+			String cacheId, String term) {
+		
+		sql = "Select r From ReclameAquiPostMonitoring r where r.monitoring.idMonitoring = :idMonitoring and r.term = :term and r.reclameAquiPost.cacheId = :cacheId";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+		query.setParameter("cacheId", cacheId);
+		
+		return (ReclameAquiPostMonitoring) query.getSingleResult();
+	}
+	
+	@Override
+	public ReclameAquiPostMonitoring merge(ReclameAquiPostMonitoring reclameAquiPostMonitoring) throws Exception {
+
+		ReclameAquiPostMonitoringId reclameAquiPostMonitoringId = new ReclameAquiPostMonitoringId();
+		reclameAquiPostMonitoringId.setReclameAquiPost(reclameAquiPostMonitoring.getReclameAquiPost().getCacheId());
+		reclameAquiPostMonitoringId.setMonitoring(reclameAquiPostMonitoring.getMonitoring().getIdMonitoring());
+		reclameAquiPostMonitoringId.setTerm(reclameAquiPostMonitoring.getTerm());
+
+		ReclameAquiPostMonitoring objTmp = getById(reclameAquiPostMonitoringId);
+
+		try {
+			validateVersion(objTmp, reclameAquiPostMonitoring);
+		} catch (IllegalStateException ex) {
+			throw new OptimisticLockException();
+		}
+		
+		em.merge(reclameAquiPostMonitoring);
+		reclameAquiPostMonitoring = getById(reclameAquiPostMonitoringId);
+		
+		this.flush();
+
+		return reclameAquiPostMonitoring;
+	}
+	
+	@Override
+	public List<ReclameAquiPostMonitoring> listByTerm(String term,
+			Long idMonitoring) {
+
+		sql = "Select r From ReclameAquiPostMonitoring r where r.monitoring.idMonitoring = :idMonitoring and r.term = :term";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT r.term, COUNT(r) FROM ReclameAquiPostMonitoring r " +
+				"WHERE r.monitoring.idMonitoring = :idMonitoring and r.garbage = 'F' AND (r.retrievedDate >= :date AND r.retrievedDate < (:date + 86400)) " +
+				"GROUP BY r.term";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(r) FROM ReclameAquiPostMonitoring r WHERE r.monitoring.idMonitoring = :idMonitoring and r.garbage = 'F' " + 
+				"AND (r.retrievedDate >= :date AND r.retrievedDate < (:date + 86400))";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+
+	@Override
+	public List<Object[]> getCountOfPostsPerHourDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT series.hour, count(r) FROM (SELECT generate_series(0,23)*1 AS hour) AS series " +
+				"LEFT JOIN (SELECT r.* FROM opsocial.reclameaquipostsmonitorings as r INNER JOIN opsocial.monitorings AS m ON r.idmonitoring = m.idmonitoring " +
+					"WHERE r.idmonitoring = " + idMonitoring + " and r.garbage = 'F' AND (r.retrieveddate >= " + date + " AND r.retrieveddate < (" + date + " + 86400))) AS r ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(r.retrieveddate)::timestamp with time zone) " +
+			  "GROUP BY series.hour " +  
+			  "ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT rpm.qualification, rpm.term, COUNT(*) FROM opsocial.reclameaquipostsmonitorings rpm WHERE rpm.idmonitoring = " + idMonitoring + " " + 
+				"AND (rpm.retrieveddate >= " + date + " AND rpm.garbage = 'F' and rpm.retrieveddate < (" + date + " + 86400)) AND rpm.qualification <> '' " + 
+				"GROUP BY rpm.qualification, rpm.term";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT mpt.idtag, COUNT(*) FROM opsocial.reclameaquipostsmonitorings AS rapm " +
+				"INNER JOIN opsocial.monitoringspoststags AS mpt ON " +
+				"mpt.postid = rapm.cacheid AND mpt.term = rapm.term AND mpt.idmonitoring = rapm.idmonitoring " + 
+				"WHERE mpt.idmonitoring = " + idMonitoring + " and rapm.garbage = 'F' AND (rapm.retrieveddate >= " + date + " AND rapm.retrieveddate < (" + date + " + 86400)) " + 
+				"GROUP BY mpt.idtag";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public ReclameAquiPostMonitoring getByComposedId(Long idMonitoring, String cacheId) {
+		
+		sql = "Select r From ReclameAquiPostMonitoring r where r.monitoring.idMonitoring = :idMonitoring and r.reclameAquiPost.cacheId = :cacheId";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("cacheId", cacheId);
+		
+		if(!query.getResultList().isEmpty()) {
+			return (ReclameAquiPostMonitoring) query.getSingleResult();
+		} else {
+			return null;
+		}
+	}
+	
+	@Override
+	public List<ReclameAquiPostMonitoring> listSample(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		
+		sql = "Select * From opsocial.reclameaquipostsmonitorings rpm inner join opsocial.reclameaquiposts rp on rpm.cacheid = rp.cacheid where " +
+				"rpm.idMonitoring = " + idMonitoring + " and rpm.garbage = 'F' and " +
+				"rp.createdTime >= " + startDate +" and " +
+				"rp.createdTime <= " + endDate;
+		
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("null") || q.equals("Q")) {
+					sql += " rpm.qualification is null or";
+				} else {
+					sql += " rpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(!notIn.isEmpty()) {
+			
+			sql += " and rp.cacheid not in (";
+			
+			for(String postId : notIn) {
+				sql += "'" + postId + "',";
+			}
+			
+			sql = sql.substring(0,sql.lastIndexOf(","));
+			
+			sql += ")";
+		}
+		
+		sql += " order by random(), createdtime desc limit " + sample;
+		
+		query = em.createNativeQuery(sql, ReclameAquiPostMonitoring.class);
+		
+		List<ReclameAquiPostMonitoring> reclameAquiPostMonitorings = (List<ReclameAquiPostMonitoring>) query.getResultList(); 
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			List<ReclameAquiPostMonitoring> reclameAquiPostsMonitoringToExclude = new ArrayList<ReclameAquiPostMonitoring>();
+			
+			for(ReclameAquiPostMonitoring reclameAquiPostMonitoring : reclameAquiPostMonitorings) {
+				
+				try {
+					
+					MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote) 
+							new InitialContext().lookup("global/OpSocialBack/MaintenanceMonitoringPostTagBean!br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote");
+					
+					if(!monitoringPostTagRemote.thereIsMonitoringTag(reclameAquiPostMonitoring.getReclameAquiPost().getCacheId(), 
+							reclameAquiPostMonitoring.getMonitoring().getIdMonitoring(), reclameAquiPostMonitoring.getTerm(), 
+							Profile.RECLAMEAQUI, monitoringTags)) {
+						reclameAquiPostsMonitoringToExclude.add(reclameAquiPostMonitoring);
+					}
+					
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			reclameAquiPostMonitorings.removeAll(reclameAquiPostsMonitoringToExclude);
+		}
+		
+		return reclameAquiPostMonitorings;
+	}
+
+}

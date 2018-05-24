@@ -1,0 +1,970 @@
+package br.com.opsocial.server.utils.reports.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.poi.common.usermodel.Hyperlink;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import br.com.opsocial.client.entity.report.instagram.InstagramEngagedFollowerDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramFollowerTrendDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramInteractionRankingDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramReportPostDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramTopPostTagDTO;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramOverviewDTO;
+import br.com.opsocial.server.services.ServicesImpl;
+import entity.application.Profile;
+import entity.instagram.InstagramFollowerTrend;
+
+public class ReportInstagramOverviewXLS {
+
+	private ReportInstagramOverviewDTO reportInstagramOverview;
+	private Profile profile;
+
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+
+	private HSSFWorkbook wb;
+	private Sheet sheetOverview;
+	private Sheet sheetMetricsPerHour;
+
+	private CreationHelper createHelper;
+
+	private CellStyle cellStyleHeader;
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellStyleHeaderDataPositive;
+	private CellStyle cellStyleHeaderDataNegative;
+	private CellStyle cellSecondaryHeaderData;
+	private CellStyle cellSecondaryHeaderNumber;
+	private CellStyle cellSecondaryHeaderCenter;
+	private CellStyle cellDateStyle;
+	private CellStyle cellStylePreAnalysis;
+	private CellStyle cellStylePreAnalysisResult;
+	private CellStyle cellStyleHLink;
+	private CellStyle cellDataPercentage;
+
+	private Font fontHeader;
+	private Font fontHeaderData;
+
+	private Float headerDataRowHeight;
+
+	private String startDate;
+	private String endDate;
+
+	private int rowSheetOverviewCount;
+	private int rowSheetMetricsPerHourCount;
+	
+	public ReportInstagramOverviewXLS(ReportInstagramOverviewDTO reportInstagramOverview, Profile profile) {
+		this.reportInstagramOverview = reportInstagramOverview;
+		this.profile = profile;
+	}
+	
+	public void createXLS() {
+
+		wb = new HSSFWorkbook();
+
+		initiateDefautStyles();
+
+		this.reportsPath = ServicesImpl.context.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		SimpleDateFormat dateFormatToFileName = new SimpleDateFormat("dd-MM-yyyy");
+
+		startDate = dateFormat.format(new Date(reportInstagramOverview.getDateFrom() * 1000L));
+		endDate = dateFormat.format(new Date(reportInstagramOverview.getDateUntil() * 1000L));
+
+		sheetOverview = wb.createSheet("Instagram Visão Geral");
+		sheetMetricsPerHour = wb.createSheet("Horários");
+
+		headerDataRowHeight = 1.2F * sheetOverview.getDefaultRowHeightInPoints();
+
+		addMainHeader(sheetOverview, profile.getScreenName() + " - Relatório Instagram - Visão Geral - Período de " + startDate + " a " + endDate, 4);
+
+		rowSheetOverviewCount = 2;
+		
+		addFollowersStats();
+		addLikesStats();
+		addPostsWithMoreLikes();
+		addCommentsStats();
+		addPostsWithMoreComments();
+		addEngagedFollowers();
+		addTopPostTags();
+
+		sheetOverview.setDefaultColumnWidth(25);
+		sheetOverview.setColumnWidth(0, 10000);
+		
+		addMainHeader(sheetMetricsPerHour, profile.getScreenName() + " - Relatório Instagram - Visão Geral - Período de " + startDate + " a " + endDate, 4);
+		
+		rowSheetMetricsPerHourCount = 2;
+		
+		addLikesPerHour();
+		addCommentsPerHour();
+		addInteractionsPerHour();
+		
+		sheetMetricsPerHour.setDefaultColumnWidth(25);
+		sheetMetricsPerHour.setColumnWidth(0, 10000);
+
+		try {
+
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+
+			formattedFileName = profile.getScreenName() + "-instagram-visao-geral-" 
+					+ dateFormatToFileName.format(new Date(reportInstagramOverview.getDateFrom() * 1000L)) + "--" 
+					+ dateFormatToFileName.format(new Date(reportInstagramOverview.getDateUntil() * 1000L));
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	private void addInteractionsPerHour() {
+		
+		rowSheetMetricsPerHourCount += 2;
+		
+		Row rowInteractionsPerHourTitle = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowInteractionsPerHourTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellInteractionsPerHourTitle = rowInteractionsPerHourTitle.createCell(0);
+		cellInteractionsPerHourTitle.setCellValue("INTERAÇÕES TOTAIS POR HORÁRIO");
+		cellInteractionsPerHourTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetMetricsPerHour.addMergedRegion(new CellRangeAddress(rowSheetMetricsPerHourCount, rowSheetMetricsPerHourCount, 0, 4));
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowInteractionsPerHourTitleItems = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowInteractionsPerHourTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellInteractionsHourTitle = rowInteractionsPerHourTitleItems.createCell(0);
+		cellInteractionsHourTitle.setCellValue("Horário");
+		cellInteractionsHourTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellInteractionsTotalTitle = rowInteractionsPerHourTitleItems.createCell(1);
+		cellInteractionsTotalTitle.setCellValue("Interações totais");
+		cellInteractionsTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetMetricsPerHourCount++;
+		for(Map.Entry<Integer, Long> interactionsPerHour : reportInstagramOverview.getInteractionsPerHour().entrySet()) {
+			
+			Row rowInteractionsPerHourValues = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+
+			Cell cellInteractionsHourValue = rowInteractionsPerHourValues.createCell(0);
+			cellInteractionsHourValue.setCellValue(new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, interactionsPerHour.getKey(), 0)) + " - " +
+					new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, interactionsPerHour.getKey() + 1, 0)));
+			
+			Cell cellInteractionsTotalValue = rowInteractionsPerHourValues.createCell(1);
+			cellInteractionsTotalValue.setCellValue(interactionsPerHour.getValue());
+
+			rowSheetMetricsPerHourCount++;
+		}
+		
+		int i = 1;
+		for(InstagramInteractionRankingDTO instagramInteractionRanking : reportInstagramOverview.getInstagramInteractionsRanking()) {
+
+			if(i < 4) {
+				
+				rowSheetMetricsPerHourCount++;
+				Row rowTimeMoreInteractions = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+				rowTimeMoreInteractions.setHeightInPoints(headerDataRowHeight);
+				
+				Cell cellTimeMoreInteractionsTitle = rowTimeMoreInteractions.createCell(0);
+				cellTimeMoreInteractionsTitle.setCellValue(i + "° horário em interações");
+				cellTimeMoreInteractionsTitle.setCellStyle(cellStylePreAnalysis);
+				
+				String timeMoreInteractionsFrom = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, instagramInteractionRanking.getHour(), 0, 0));
+				String timeMoreInteractionsUntil = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, instagramInteractionRanking.getHour() + 1, 0, 0));
+				
+				Cell cellTimeMoreInteractionsValue = rowTimeMoreInteractions.createCell(1);
+				cellTimeMoreInteractionsValue.setCellValue(timeMoreInteractionsFrom + " - " + timeMoreInteractionsUntil);
+				cellTimeMoreInteractionsValue.setCellStyle(cellStylePreAnalysisResult);
+				
+				Cell cellTimeMoreInteractionsPerc = rowTimeMoreInteractions.createCell(2);
+				cellTimeMoreInteractionsPerc.setCellValue(instagramInteractionRanking.getPercentage().toString().replace(".", ",") + "%");
+				cellTimeMoreInteractionsPerc.setCellStyle(cellStylePreAnalysisResult);
+				
+			} else {
+				break;
+			}
+			
+			i++;
+		}
+		
+	}
+	
+	private void addCommentsPerHour() {
+		
+		rowSheetMetricsPerHourCount += 2;
+		
+		Row rowCommentsPerHourTitle = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowCommentsPerHourTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentsPerHourTitle = rowCommentsPerHourTitle.createCell(0);
+		cellCommentsPerHourTitle.setCellValue("COMENTÁRIOS POR HORÁRIO");
+		cellCommentsPerHourTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetMetricsPerHour.addMergedRegion(new CellRangeAddress(rowSheetMetricsPerHourCount, rowSheetMetricsPerHourCount, 0, 4));
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowCommentsPerHourTitleItems = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowCommentsPerHourTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentsHourTitle = rowCommentsPerHourTitleItems.createCell(0);
+		cellCommentsHourTitle.setCellValue("Horário");
+		cellCommentsHourTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellCommentsTotalTitle = rowCommentsPerHourTitleItems.createCell(1);
+		cellCommentsTotalTitle.setCellValue("Comentários");
+		cellCommentsTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetMetricsPerHourCount++;
+		for(Map.Entry<Integer, Long> commentsPerHour : reportInstagramOverview.getCommentsPerHour().entrySet()) {
+			
+			Row rowCommentsPerHourValues = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+
+			Cell cellCommentsHourValue = rowCommentsPerHourValues.createCell(0);
+			cellCommentsHourValue.setCellValue(new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, commentsPerHour.getKey(), 0)) + " - " +
+					new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, commentsPerHour.getKey() + 1, 0)));
+			
+			Cell cellCommentsTotalValue = rowCommentsPerHourValues.createCell(1);
+			cellCommentsTotalValue.setCellValue(commentsPerHour.getValue());
+
+			rowSheetMetricsPerHourCount++;
+		}
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowTimeMoreComments = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowTimeMoreComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTimeMoreCommentsTitle = rowTimeMoreComments.createCell(0);
+		cellTimeMoreCommentsTitle.setCellValue("Horário com mais comentários:");
+		cellTimeMoreCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		String timeMoreCommentsFrom = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithMoreComments(), 0, 0));
+		String timeMoreCommentsUntil = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithMoreComments() + 1, 0, 0));
+		
+		Cell cellTimeMoreCommentsValue = rowTimeMoreComments.createCell(1);
+		cellTimeMoreCommentsValue.setCellValue(timeMoreCommentsFrom + " - " + timeMoreCommentsUntil);
+		cellTimeMoreCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		Cell cellTimeMoreCommentsPerc = rowTimeMoreComments.createCell(2);
+		cellTimeMoreCommentsPerc.setCellValue(reportInstagramOverview.getTimeWithMoreCommentsPerc() + "%");
+		cellTimeMoreCommentsPerc.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowTimeLessComments = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowTimeLessComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTimeLessCommentsTitle = rowTimeLessComments.createCell(0);
+		cellTimeLessCommentsTitle.setCellValue("Horário com menos comentários:");
+		cellTimeLessCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		String timeLessCommentsFrom = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithLessComments(), 0, 0));
+		String timeLessCommentsUntil = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithLessComments() + 1, 0, 0));
+		
+		Cell cellTimeLessCommentsValue = rowTimeLessComments.createCell(1);
+		cellTimeLessCommentsValue.setCellValue(timeLessCommentsFrom + " - " + timeLessCommentsUntil);
+		cellTimeLessCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		Cell cellTimeLessCommentsPerc = rowTimeLessComments.createCell(2);
+		cellTimeLessCommentsPerc.setCellValue(reportInstagramOverview.getTimeWithLessCommentsPerc() + "%");
+		cellTimeLessCommentsPerc.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addLikesPerHour() {
+		
+		Row rowLikesPerHourTitle = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowLikesPerHourTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLikesPerHourTitle = rowLikesPerHourTitle.createCell(0);
+		cellLikesPerHourTitle.setCellValue("LIKES POR HORÁRIO");
+		cellLikesPerHourTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetMetricsPerHour.addMergedRegion(new CellRangeAddress(rowSheetMetricsPerHourCount, rowSheetMetricsPerHourCount, 0, 4));
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowLikesPerHourTitleItems = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowLikesPerHourTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLikesHourTitle = rowLikesPerHourTitleItems.createCell(0);
+		cellLikesHourTitle.setCellValue("Horário");
+		cellLikesHourTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellLikesTotalTitle = rowLikesPerHourTitleItems.createCell(1);
+		cellLikesTotalTitle.setCellValue("Likes");
+		cellLikesTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetMetricsPerHourCount++;
+		for(Map.Entry<Integer, Long> likesPerHour : reportInstagramOverview.getLikesPerHour().entrySet()) {
+			
+			Row rowLikesPerHourValues = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+
+			Cell cellLikesHourValue = rowLikesPerHourValues.createCell(0);
+			cellLikesHourValue.setCellValue(new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, likesPerHour.getKey(), 0)) + " - " +
+					new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, likesPerHour.getKey() + 1, 0)));
+			
+			Cell cellLikesTotalValue = rowLikesPerHourValues.createCell(1);
+			cellLikesTotalValue.setCellValue(likesPerHour.getValue());
+
+			rowSheetMetricsPerHourCount++;
+		}
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowTimeMoreLikes = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowTimeMoreLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTimeMoreLikesTitle = rowTimeMoreLikes.createCell(0);
+		cellTimeMoreLikesTitle.setCellValue("Horário com mais likes:");
+		cellTimeMoreLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		String timeMoreLikesFrom = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithMoreLikes(), 0, 0));
+		String timeMoreLikesUntil = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithMoreLikes() + 1, 0, 0));
+		
+		Cell cellTimeMoreLikesValue = rowTimeMoreLikes.createCell(1);
+		cellTimeMoreLikesValue.setCellValue(timeMoreLikesFrom + " - " + timeMoreLikesUntil);
+		cellTimeMoreLikesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		Cell cellTimeMoreLikesPerc = rowTimeMoreLikes.createCell(2);
+		cellTimeMoreLikesPerc.setCellValue(reportInstagramOverview.getTimeWithMoreLikesPerc() + "%");
+		cellTimeMoreLikesPerc.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetMetricsPerHourCount++;
+		Row rowTimeLessLikes = sheetMetricsPerHour.createRow(rowSheetMetricsPerHourCount);
+		rowTimeLessLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTimeLessLikesTitle = rowTimeLessLikes.createCell(0);
+		cellTimeLessLikesTitle.setCellValue("Horário com menos likes:");
+		cellTimeLessLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		String timeLessLikesFrom = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithLessLikes(), 0, 0));
+		String timeLessLikesUntil = new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, reportInstagramOverview.getTimeWithLessLikes() + 1, 0, 0));
+		
+		Cell cellTimeLessLikesValue = rowTimeLessLikes.createCell(1);
+		cellTimeLessLikesValue.setCellValue(timeLessLikesFrom + " - " + timeLessLikesUntil);
+		cellTimeLessLikesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		Cell cellTimeLessLikesPerc = rowTimeLessLikes.createCell(2);
+		cellTimeLessLikesPerc.setCellValue(reportInstagramOverview.getTimeWithLessLikesPerc() + "%");
+		cellTimeLessLikesPerc.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addTopPostTags() {
+		
+		rowSheetOverviewCount++;
+		
+		Row rowTopPostTagsTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowTopPostTagsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTopPostTagsTitle = rowTopPostTagsTitle.createCell(0);
+		cellTopPostTagsTitle.setCellValue("HASHTAGS COM MAIS INTERAÇÕES");
+		cellTopPostTagsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowTopPostTagsTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowTopPostTagsTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTagNameTitle = rowTopPostTagsTitleItems.createCell(0);
+		cellTagNameTitle.setCellValue("#Hashtag");
+		cellTagNameTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellInteractionsTitle = rowTopPostTagsTitleItems.createCell(1);
+		cellInteractionsTitle.setCellValue("Total de interações");
+		cellInteractionsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellTagLikesTitle = rowTopPostTagsTitleItems.createCell(2);
+		cellTagLikesTitle.setCellValue("Likes");
+		cellTagLikesTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellTagCommentsTitle = rowTopPostTagsTitleItems.createCell(3);
+		cellTagCommentsTitle.setCellValue("Comentários");
+		cellTagCommentsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellInteractionsPercTitle = rowTopPostTagsTitleItems.createCell(4);
+		cellInteractionsPercTitle.setCellValue("% do total");
+		cellInteractionsPercTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(InstagramTopPostTagDTO instagramTopPostTag : reportInstagramOverview.getInstagramTopPostTags()) {
+			
+			Row rowTagValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellTagName = rowTagValues.createCell(0);
+			cellTagName.setCellValue("#" + instagramTopPostTag.getTag().toUpperCase());
+			
+			Cell cellInteractions = rowTagValues.createCell(1);
+			cellInteractions.setCellValue(instagramTopPostTag.getInteractions());
+			
+			Cell cellLikes = rowTagValues.createCell(2);
+			cellLikes.setCellValue(instagramTopPostTag.getLikes());
+			
+			Cell cellComments = rowTagValues.createCell(3);
+			cellComments.setCellValue(instagramTopPostTag.getComments());
+			
+			Cell cellInteractionsPerc = rowTagValues.createCell(4);
+			cellInteractionsPerc.setCellValue(instagramTopPostTag.getInteractionsPercentage().toString().replace(".", ",") + "%");
+			cellInteractionsPerc.setCellStyle(cellDataPercentage);
+			
+			rowSheetOverviewCount++;
+		}
+	}
+	
+	private void addEngagedFollowers() {
+		
+		rowSheetOverviewCount++;
+		
+		Row rowEngagedFollowersTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowEngagedFollowersTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellEngagedFollowersTitle = rowEngagedFollowersTitle.createCell(0);
+		cellEngagedFollowersTitle.setCellValue("SEGUIDORES MAIS ENGAJADOS");
+		cellEngagedFollowersTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowEngagedFollowersTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowEngagedFollowersTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFollowersNameTitle = rowEngagedFollowersTitleItems.createCell(0);
+		cellFollowersNameTitle.setCellValue("Nome");
+		cellFollowersNameTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellFollowersProfileLinkTitle = rowEngagedFollowersTitleItems.createCell(1);
+		cellFollowersProfileLinkTitle.setCellValue("Link do perfil");
+		cellFollowersProfileLinkTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellFollowersLikesTitle = rowEngagedFollowersTitleItems.createCell(2);
+		cellFollowersLikesTitle.setCellValue("Likes");
+		cellFollowersLikesTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellFollowersCommentsTitle = rowEngagedFollowersTitleItems.createCell(3);
+		cellFollowersCommentsTitle.setCellValue("Comentários");
+		cellFollowersCommentsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(InstagramEngagedFollowerDTO instagramEngagedFollower : reportInstagramOverview.getMostEngagedFollowers()) {
+			
+			Row rowFollowersValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellName = rowFollowersValues.createCell(0);
+			cellName.setCellValue(instagramEngagedFollower.getInstagramFollower().getUserName());
+			
+			final String profileUrl = "http://instagram.com/" + instagramEngagedFollower.getInstagramFollower().getUserName();
+			
+			Hyperlink hyperLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
+    		hyperLink.setAddress(profileUrl);
+		
+			Cell cellProfileLink = rowFollowersValues.createCell(1);
+			cellProfileLink.setCellValue(profileUrl);
+			cellProfileLink.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLink);
+			cellProfileLink.setCellStyle(cellStyleHLink);
+			
+			Cell cellFollowerLikes = rowFollowersValues.createCell(2);
+			cellFollowerLikes.setCellValue(instagramEngagedFollower.getLikes());
+			
+			Cell cellFollowerComments = rowFollowersValues.createCell(3);
+			cellFollowerComments.setCellValue(instagramEngagedFollower.getComments());
+
+			rowSheetOverviewCount++;
+		}
+	}
+	
+	private void addPostsWithMoreComments() {
+		
+		rowSheetOverviewCount += 2;
+		
+		Row rowPostsWithMoreCommentsTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowPostsWithMoreCommentsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsWithMoreCommentsTitle = rowPostsWithMoreCommentsTitle.createCell(0);
+		cellPostsWithMoreCommentsTitle.setCellValue("POSTS COM MAIS COMENTÁRIOS NO PERÍODO");
+		cellPostsWithMoreCommentsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowPostsWithMoreCommentsTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowPostsWithMoreCommentsTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsLinkTitle = rowPostsWithMoreCommentsTitleItems.createCell(0);
+		cellPostsLinkTitle.setCellValue("Post");
+		cellPostsLinkTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellPostCommentsTitle = rowPostsWithMoreCommentsTitleItems.createCell(1);
+		cellPostCommentsTitle.setCellValue("Total de comentários");
+		cellPostCommentsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(InstagramReportPostDTO instagramReportPost : reportInstagramOverview.getPostsWithMoreComments()) {
+			
+			Row rowPostValues = sheetOverview.createRow(rowSheetOverviewCount);
+			
+			Hyperlink hyperLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
+    		hyperLink.setAddress(instagramReportPost.getLink());
+		
+			Cell cellProfileLink = rowPostValues.createCell(0);
+			cellProfileLink.setCellValue(instagramReportPost.getLink());
+			cellProfileLink.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLink);
+			cellProfileLink.setCellStyle(cellStyleHLink);
+			
+			Cell cellCommentsTotal = rowPostValues.createCell(1);
+			cellCommentsTotal.setCellValue(instagramReportPost.getComments());
+
+			rowSheetOverviewCount++;
+		}
+	}
+	
+	private void addCommentsStats() {
+		
+		rowSheetOverviewCount += 2;
+		
+		Row rowCommentsStatsTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowCommentsStatsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentsStatsTitle = rowCommentsStatsTitle.createCell(0);
+		cellCommentsStatsTitle.setCellValue("COMENTÁRIOS NO PERÍODO");
+		cellCommentsStatsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowCommentsStatsTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowCommentsStatsTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentsDateTitle = rowCommentsStatsTitleItems.createCell(0);
+		cellCommentsDateTitle.setCellValue("Data");
+		cellCommentsDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellCommentsTotalTitle = rowCommentsStatsTitleItems.createCell(1);
+		cellCommentsTotalTitle.setCellValue("Total de comentários");
+		cellCommentsTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(Map.Entry<String, Long> commentsPerDay : reportInstagramOverview.getCommentsPerDay().entrySet()) {
+			
+			Row rowCommentsValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellDateValue = rowCommentsValues.createCell(0);
+			cellDateValue.setCellValue(commentsPerDay.getKey());
+			
+			Cell cellTotalValue = rowCommentsValues.createCell(1);
+			cellTotalValue.setCellValue(commentsPerDay.getValue());
+
+			rowSheetOverviewCount++;
+		}
+		
+		rowSheetOverviewCount++;
+		Row rowTotalComments = sheetOverview.createRow(rowSheetOverviewCount);
+		rowTotalComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalCommentsTitle = rowTotalComments.createCell(0);
+		cellTotalCommentsTitle.setCellValue("Total de comentários:");
+		cellTotalCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalCommentsValue = rowTotalComments.createCell(1);
+		cellTotalCommentsValue.setCellValue(reportInstagramOverview.getComments());
+		cellTotalCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowAverageComments = sheetOverview.createRow(rowSheetOverviewCount);
+		rowAverageComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAverageCommentsTitle = rowAverageComments.createCell(0);
+		cellAverageCommentsTitle.setCellValue("Média de comentários por dia:");
+		cellAverageCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAverageCommentsValue = rowAverageComments.createCell(1);
+		cellAverageCommentsValue.setCellValue(reportInstagramOverview.getCommentsAverage().toString().replace(".", ","));
+		cellAverageCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowFollowersComments = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFollowersComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFollowersCommentsTitle = rowFollowersComments.createCell(0);
+		cellFollowersCommentsTitle.setCellValue("Comentários de seguidores:");
+		cellFollowersCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellFollowersCommentsValue = rowFollowersComments.createCell(1);
+		cellFollowersCommentsValue.setCellValue(reportInstagramOverview.getCommentsFollowers() + "%");
+		cellFollowersCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowNoFollowersComments = sheetOverview.createRow(rowSheetOverviewCount);
+		rowNoFollowersComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellNoFollowersCommentsTitle = rowNoFollowersComments.createCell(0);
+		cellNoFollowersCommentsTitle.setCellValue("Comentários de não-seguidores:");
+		cellNoFollowersCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellNoFollowersCommentsValue = rowNoFollowersComments.createCell(1);
+		cellNoFollowersCommentsValue.setCellValue(reportInstagramOverview.getCommentsNoFollowers() + "%");
+		cellNoFollowersCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addPostsWithMoreLikes() {
+		
+		rowSheetOverviewCount += 2;
+		
+		Row rowPostsWithMoreLikesTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowPostsWithMoreLikesTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsWithMoreLikesTitle = rowPostsWithMoreLikesTitle.createCell(0);
+		cellPostsWithMoreLikesTitle.setCellValue("POSTS COM MAIS LIKES NO PERÍODO");
+		cellPostsWithMoreLikesTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowPostsWithMoreLikesTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowPostsWithMoreLikesTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsLinkTitle = rowPostsWithMoreLikesTitleItems.createCell(0);
+		cellPostsLinkTitle.setCellValue("Post");
+		cellPostsLinkTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellPostLikesTitle = rowPostsWithMoreLikesTitleItems.createCell(1);
+		cellPostLikesTitle.setCellValue("Total de likes");
+		cellPostLikesTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(InstagramReportPostDTO instagramReportPost : reportInstagramOverview.getPostsWithMoreLikes()) {
+			
+			Row rowPostValues = sheetOverview.createRow(rowSheetOverviewCount);
+			
+			Hyperlink hyperLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
+    		hyperLink.setAddress(instagramReportPost.getLink());
+		
+			Cell cellProfileLink = rowPostValues.createCell(0);
+			cellProfileLink.setCellValue(instagramReportPost.getLink());
+			cellProfileLink.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLink);
+			cellProfileLink.setCellStyle(cellStyleHLink);
+			
+			Cell cellLikesTotal = rowPostValues.createCell(1);
+			cellLikesTotal.setCellValue(instagramReportPost.getLikes());
+
+			rowSheetOverviewCount++;
+		}
+	}
+	
+	private void addLikesStats() {
+		
+		rowSheetOverviewCount += 2;
+		
+		Row rowLikesStatsTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowLikesStatsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLikesStatsTitle = rowLikesStatsTitle.createCell(0);
+		cellLikesStatsTitle.setCellValue("LIKES NO PERÍODO");
+		cellLikesStatsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowLikesStatsTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowLikesStatsTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLikesDateTitle = rowLikesStatsTitleItems.createCell(0);
+		cellLikesDateTitle.setCellValue("Data");
+		cellLikesDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellLikesTotalTitle = rowLikesStatsTitleItems.createCell(1);
+		cellLikesTotalTitle.setCellValue("Total de likes");
+		cellLikesTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(Map.Entry<String, Long> likesPerDay : reportInstagramOverview.getLikesPerDay().entrySet()) {
+			
+			Row rowLikesValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellDateValue = rowLikesValues.createCell(0);
+			cellDateValue.setCellValue(likesPerDay.getKey());
+			
+			Cell cellTotalValue = rowLikesValues.createCell(1);
+			cellTotalValue.setCellValue(likesPerDay.getValue());
+
+			rowSheetOverviewCount++;
+		}
+		
+		rowSheetOverviewCount++;
+		Row rowTotalLikes = sheetOverview.createRow(rowSheetOverviewCount);
+		rowTotalLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalLikesTitle = rowTotalLikes.createCell(0);
+		cellTotalLikesTitle.setCellValue("Total de likes:");
+		cellTotalLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalLikesValue = rowTotalLikes.createCell(1);
+		cellTotalLikesValue.setCellValue(reportInstagramOverview.getLikes());
+		cellTotalLikesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowAverageLikes = sheetOverview.createRow(rowSheetOverviewCount);
+		rowAverageLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAverageLikesTitle = rowAverageLikes.createCell(0);
+		cellAverageLikesTitle.setCellValue("Média de likes por dia:");
+		cellAverageLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAverageLikesValue = rowAverageLikes.createCell(1);
+		cellAverageLikesValue.setCellValue(reportInstagramOverview.getLikesAverage().toString().replace(".", ","));
+		cellAverageLikesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowFollowersLikes = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFollowersLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFollowersLikesTitle = rowFollowersLikes.createCell(0);
+		cellFollowersLikesTitle.setCellValue("Likes de seguidores:");
+		cellFollowersLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellFollowersLikesValue = rowFollowersLikes.createCell(1);
+		cellFollowersLikesValue.setCellValue(reportInstagramOverview.getLikesFollowers() + "%");
+		cellFollowersLikesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowNoFollowersLikes = sheetOverview.createRow(rowSheetOverviewCount);
+		rowNoFollowersLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellNoFollowersLikesTitle = rowNoFollowersLikes.createCell(0);
+		cellNoFollowersLikesTitle.setCellValue("Likes de não-seguidores:");
+		cellNoFollowersLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellNoFollowersLikesValue = rowNoFollowersLikes.createCell(1);
+		cellNoFollowersLikesValue.setCellValue(reportInstagramOverview.getLikesNoFollowers() + "%");
+		cellNoFollowersLikesValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addFollowersStats() {
+		
+		Row rowFollowersStatsTitle = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFollowersStatsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFollowersStatsTitle = rowFollowersStatsTitle.createCell(0);
+		cellFollowersStatsTitle.setCellValue("MUDANÇA DE FOLLOWERS NO PERÍODO");
+		cellFollowersStatsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetOverview.addMergedRegion(new CellRangeAddress(rowSheetOverviewCount, rowSheetOverviewCount, 0, 4));
+		
+		rowSheetOverviewCount++;
+		Row rowFollowersStatsTitleItems = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFollowersStatsTitleItems.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFollowersDateTitle = rowFollowersStatsTitleItems.createCell(0);
+		cellFollowersDateTitle.setCellValue("Data");
+		cellFollowersDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellFollowersNewTitle = rowFollowersStatsTitleItems.createCell(1);
+		cellFollowersNewTitle.setCellValue("Novos seguidores");
+		cellFollowersNewTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellFollowersLostTitle = rowFollowersStatsTitleItems.createCell(2);
+		cellFollowersLostTitle.setCellValue("Deixaram de seguir");
+		cellFollowersLostTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellFollowersBalanceTitle = rowFollowersStatsTitleItems.createCell(3);
+		cellFollowersBalanceTitle.setCellValue("Total líquido");
+		cellFollowersBalanceTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetOverviewCount++;
+		for(InstagramFollowerTrend instagramFollowerTrend : reportInstagramOverview.getInstagramFollowerTrends()) {
+			
+			Row rowFollowersValues = sheetOverview.createRow(rowSheetOverviewCount);
+
+			Cell cellDateValue = rowFollowersValues.createCell(0);
+			cellDateValue.setCellValue(new SimpleDateFormat("dd/MM/yyyy").format(instagramFollowerTrend.getDate()));
+			
+			Cell cellNewFollowersValue = rowFollowersValues.createCell(1);
+			cellNewFollowersValue.setCellValue(instagramFollowerTrend.getNewFollowers());
+			
+			Cell cellLostFollowersValue = rowFollowersValues.createCell(2);
+			cellLostFollowersValue.setCellValue(instagramFollowerTrend.getUnfollowers());
+			
+			Cell cellBalanceFollowersValue = rowFollowersValues.createCell(3);
+			cellBalanceFollowersValue.setCellValue(instagramFollowerTrend.getBalanceFollowers());
+
+			rowSheetOverviewCount++;
+		}
+		
+		rowSheetOverviewCount++;
+		Row rowTotalFollowers = sheetOverview.createRow(rowSheetOverviewCount);
+		rowTotalFollowers.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalFollowersTitle = rowTotalFollowers.createCell(0);
+		cellTotalFollowersTitle.setCellValue("Total geral de seguidores:");
+		cellTotalFollowersTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalFollowersValue = rowTotalFollowers.createCell(1);
+		cellTotalFollowersValue.setCellValue(reportInstagramOverview.getFollowers().toString());
+		cellTotalFollowersValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowNewFollowers = sheetOverview.createRow(rowSheetOverviewCount);
+		rowNewFollowers.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellNewFollowersTitle = rowNewFollowers.createCell(0);
+		cellNewFollowersTitle.setCellValue("Novos seguidores:");
+		cellNewFollowersTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellNewFollowersValue = rowNewFollowers.createCell(1);
+		cellNewFollowersValue.setCellValue(reportInstagramOverview.getInstagramFollowerTrend().getNewFollowers());
+		cellNewFollowersValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowLostFollowers = sheetOverview.createRow(rowSheetOverviewCount);
+		rowLostFollowers.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellLostFollowersTitle = rowLostFollowers.createCell(0);
+		cellLostFollowersTitle.setCellValue("Seguidores perdidos:");
+		cellLostFollowersTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellLostFollowersValue = rowLostFollowers.createCell(1);
+		cellLostFollowersValue.setCellValue(reportInstagramOverview.getInstagramFollowerTrend().getUnfollowers());
+		cellLostFollowersValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetOverviewCount++;
+		Row rowFollowersBalance = sheetOverview.createRow(rowSheetOverviewCount);
+		rowFollowersBalance.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFollowersBalanceTotalTitle = rowFollowersBalance.createCell(0);
+		cellFollowersBalanceTotalTitle.setCellValue("Saldo de seguidores:");
+		cellFollowersBalanceTotalTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellFollowersBalanceValue = rowFollowersBalance.createCell(1);
+		cellFollowersBalanceValue.setCellValue(reportInstagramOverview.getInstagramFollowerTrend().getBalanceFollowers());
+		cellFollowersBalanceValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+
+	private void initiateDefautStyles() {
+
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte) 102, (byte) 153, (byte) 204);
+		palette.setColorAtIndex(IndexedColors.YELLOW.index, (byte) 255, (byte) 211, (byte) 32);
+		palette.setColorAtIndex(IndexedColors.GREEN.index, (byte) 174, (byte) 207, (byte) 0);
+
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+
+		fontHeaderData = wb.createFont();
+		fontHeaderData.setFontHeightInPoints((short) 11);
+		fontHeaderData.setBold(true);
+
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.YELLOW.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setFont(fontHeaderData);
+
+		cellStyleHeaderDataPositive = wb.createCellStyle();
+		cellStyleHeaderDataPositive.setFillForegroundColor(IndexedColors.GREEN.index);
+		cellStyleHeaderDataPositive.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataPositive.setFont(fontHeaderData);
+
+		cellStyleHeaderDataNegative = wb.createCellStyle();
+		cellStyleHeaderDataNegative.setFillForegroundColor(IndexedColors.RED.index);
+		cellStyleHeaderDataNegative.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataNegative.setFont(fontHeaderData);
+
+		cellSecondaryHeaderData = wb.createCellStyle();
+		cellSecondaryHeaderData.setFont(fontHeaderData);
+
+		cellSecondaryHeaderNumber = wb.createCellStyle();
+		cellSecondaryHeaderNumber.setFont(fontHeaderData);
+		cellSecondaryHeaderNumber.setAlignment(CellStyle.ALIGN_RIGHT);
+
+		cellSecondaryHeaderCenter = wb.createCellStyle();
+		cellSecondaryHeaderCenter.setFont(fontHeaderData);
+		cellSecondaryHeaderCenter.setAlignment(CellStyle.ALIGN_CENTER);
+
+		cellStylePreAnalysis = wb.createCellStyle();
+		cellStylePreAnalysis.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysis.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysis.setFont(fontHeaderData);
+
+		cellStylePreAnalysisResult = wb.createCellStyle();
+		cellStylePreAnalysisResult.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysisResult.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysisResult.setAlignment(CellStyle.ALIGN_RIGHT);
+
+		createHelper = wb.getCreationHelper();
+
+		cellDateStyle = wb.createCellStyle();
+		cellDateStyle.setDataFormat(
+				createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+
+		//by default hyperlinks are blue and underlined
+		cellStyleHLink = wb.createCellStyle();
+
+		Font fontHLink = wb.createFont();
+		fontHLink.setUnderline(Font.U_SINGLE);
+		fontHLink.setColor(IndexedColors.BLUE.getIndex());
+
+		cellStyleHLink.setFont(fontHLink);
+
+		cellDataPercentage = wb.createCellStyle();
+		cellDataPercentage.setAlignment(CellStyle.ALIGN_RIGHT);
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+	
+}

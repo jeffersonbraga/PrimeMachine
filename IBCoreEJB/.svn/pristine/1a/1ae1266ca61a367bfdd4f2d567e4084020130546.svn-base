@@ -1,0 +1,104 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.InstagramPostLikeDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostLike;
+
+@Stateless
+public class MaintenanceInstagramPostLikeBean extends AbstractDASImpl<InstagramPostLike> implements MaintenanceInstagramPostLikeRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	InstagramPostLikeDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<InstagramPostLike> dao) {
+		this.dao = (InstagramPostLikeDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramPostLike> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramPostLike> getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public Map<Integer, Long> getLikesPerMonthYear(Long idInstagramUser, Integer year) {
+		return dao.getLikesPerMonthYear(idInstagramUser, year);
+	}
+
+	@Override
+	public Map<String, Long> getLikesPerDay(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getLikesPerDay(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getCountOfLikes(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getCountOfLikes(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getLikesOrigin(Long idInstagramUser) {
+		return dao.getLikesOrigin(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getLikesOrigin(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getLikesOrigin(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Integer, Long> getLikesPerHour(Long idInstagramUser) {
+		return dao.getLikesPerHour(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getTimeWithMoreLikes(Long idInstagramUser) {
+		return dao.getTimeWithMoreLikes(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getTimeWithLessLikes(Long idInstagramUser) {
+		return dao.getTimeWithLessLikes(idInstagramUser);
+	}
+
+	@Override
+	public Map<Integer, Long> getLikesPerHour(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getLikesPerHour(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getTimeWithMoreLikes(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getTimeWithMoreLikes(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getTimeWithLessLikes(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getTimeWithLessLikes(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

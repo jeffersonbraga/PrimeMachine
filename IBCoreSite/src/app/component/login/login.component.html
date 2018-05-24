@@ -1,0 +1,73 @@
+<div class="modal-dialog md-modal-op">
+	<div class="modal-content-wrapper padding-10">
+		<div class="modal-content">
+			<div class="modal-header modal-header-generic clearfix text-left">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true" (click)="hideModal()">
+					<i class="pg-close fs-28"></i>
+				</button>
+				<img src="assets/images/logo-svg-fundo-branco.svg" width="100" class="op-logo-modal m-r-15"/>
+			</div>
+			<div class="modal-body m-t-30 p-t-0 p-b-25 p-l-30 p-r-30">
+                <div class="row">
+                    <div class="col-md-6 hidden-xs hidden-sm">
+                        <p class="text-secondary bold font-montserrat fs-13 text-uppercase">Create new Account</p>
+                        <h5 class="bold font-montserrat text-uppercase">Is this your first<br>login?</h5>
+                        <p class="font-heading light l-h-20 m-t-25">
+                            Follow just a few more steps to create 
+                            <br> your account and start using Woop!
+                        </p>
+                        <button class="btn btn-primary btn-cons m-t-20 p-t-10 p-b-10 pull-left text-uppercase bold" 
+                                (click)="createAccount()" type="submit">Create New Account</button>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="m-b-0 text-secondary bold font-montserrat fs-13 text-uppercase hidden-xs hidden-sm">
+                            I HAVE AN ACCOUNT
+                        </p>
+                        <p class="m-b-0 text-secondary bold font-montserrat fs-13 text-uppercase hidden-md hidden-lg hidden-xlg">
+                            LOGIN
+                        </p>
+                        <form id="form-login" class="p-t-15" role="form" action="index.html" novalidate="novalidate">
+                            <div class="form-group form-group-default">
+                                <label>Login</label>
+                                <div class="controls">
+                                    <input type="text" name="email" placeholder="Your email" class="form-control" required aria-required="true"
+                                     [(ngModel)]="email" id="email" (focus)="clearError()" autofocus>
+                                </div>
+                            </div>
+                            <div class="form-group form-group-default m-b-0">
+                                <label>Password</label>
+                                <div class="controls">
+                                    <input type="password" class="form-control" name="password" placeholder="Your password" required aria-required="true"
+                                     [(ngModel)]="password" id="password" (focus)="clearError()" (keyup.enter)="login()">
+                                </div>
+                            </div>
+                            <div [hidden]="!error" class="alert alert-warning m-t-10" role="alert">
+                                {{ error }}
+                            </div>
+                            <div class="row m-t-30 xs-m-t-10">
+                                <!-- <div class="col-md-6 no-padding sm-p-l-10">
+                                    <div class="checkbox ">
+                                        <input type="checkbox" value="1" id="checkbox1">
+                                        <label for="checkbox1" class="font-heading fs-13 light">Keep Me Signed in</label>
+                                    </div>
+                                </div> -->
+                                <div class="col-md-6">
+                                    <a class="btn btn-secondary btn-cons p-t-10 p-b-10 text-white text-uppercase bold sm-full-width" 
+                                    [class.disabled]="!email || !password" (click)="login()">
+                                        <span>Login</span>
+                                        <i *ngIf="accountSending" class="fa fa-spinner fa-spin" aria-hidden="true"></i>
+                                        <i *ngIf="accountSent" class="fa fa-check" aria-hidden="true"></i>
+                                        <i *ngIf="accountError" class="fa fa-exclamation-circle" aria-hidden="true"></i>
+                                    </a>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-center justify-content-end m-t-10 m-b-5 sm-text-center">
+                                    <a (click)="forgotPassword()" href="javascript:void(0)" class="small font-heading fs-13 text-secondary">Forgot your password?</a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,66 @@
+/* Modal Content */
+.modal-timepicker {
+    display: inline-block; 
+    vertical-align: top;
+    position: absolute;
+    background-color: #fefefe;
+    box-shadow: 1px 1px 1px 1px #c6c6c6;
+    margin: auto;
+    padding: 3px;
+    top: -120px;
+}
+
+.form-control[readonly] {
+    background-color: #fff !important;
+}
+
+.pg-clock {
+    padding: 0 .5px;
+}
+
+.option-gmt option {
+    font-weight: normal;
+    display: block;
+    white-space: pre;
+    min-height: 1.2em;
+    padding: 100px 2px 1px;
+}
+
+.select-gmt select {
+    margin: 50px;
+    width: 150px;
+    padding: 5px 35px 5px 5px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    height: 34px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: url(http://www.stackoverflow.com/favicon.ico) 96% / 15% no-repeat #eee;
+  }
+  
+  
+  /* CAUTION: IE hackery ahead */
+  
+  
+  select::-ms-expand { 
+      display: none; /* remove default arrow in IE 10 and 11 */
+  }
+  
+  /* target Internet Explorer 9 to undo the custom arrow */
+  @media screen and (min-width:0\0) {
+      select {
+          background:none\9;
+          padding: 5px\9;
+      }
+  }
+
+timepicker .select2-container .select2-selection--single {
+    padding-top: 0px!important;
+    height: 22px!important;
+    max-width: 50px;
+  }
+
+.select2-container .select2-selection .select2-selection__rendered {
+    max-width: 120px;
+  }

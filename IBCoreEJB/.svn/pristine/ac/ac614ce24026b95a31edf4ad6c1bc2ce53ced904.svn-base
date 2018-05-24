@@ -1,0 +1,32 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostLike;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+
+@Local
+public interface InstagramPostLikeDAO extends AbstractDAO<InstagramPostLike> {
+
+	public Map<Integer, Long> getLikesPerMonthYear(String idInstagramUser, Integer year);
+	public List<InstagramReport> getLikesPerDay(String idInstagramUser, Long dateFrom, Long dateUntil);
+	public Long getCountOfLikes(String idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getLikesOrigin(String idInstagramUser);
+	public Object[] getLikesOrigin(String idInstagramUser, Long dateFrom, Long dateUntil);
+	
+	public Map<Integer, Long> getLikesPerHour(String idInstagramUser, Long dateFrom, Long dateUntil);
+	public Map<Integer, Long> getLikesPerHour(String idInstagramUser);
+	
+	public Object[] getTimeWithMoreLikes(String idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getTimeWithMoreLikes(String idInstagramUser);
+	
+	public Object[] getTimeWithLessLikes(String idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getTimeWithLessLikes(String idInstagramUser);
+	public List<InstagramSimpleDataDTO> getLikesPerMonthYearSimpleData(String idInstagramUser, Integer year);
+	public List<InstagramSimpleDataDTO> getLikesPerHourSimpleData(String idInstagramUser, Long dateFrom, Long dateUntil);	
+}

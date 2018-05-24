@@ -1,0 +1,17 @@
+<div class="followers p-b-15 scroll-op scroll-hover" *ngIf="followers.length" #follower (scroll)="checkScroll()">
+    <div class="tab-pane active no-padding scroll-op scroll-hover">
+
+        <a class="item-list-follower" *ngFor="let follower of followers, let i = index">
+            <span class="thumbnail-wrapper d39 circular bg-success">
+                <img [src]="follower.profilePicture" class="col-top">
+            </span>
+            <p class="p-l-10 m-t-2 data-info overflow-ellipsis">
+                <span class="text-master all-caps overflow-ellipsis"><strong>{{ follower.userName }}</strong></span>
+                <span class="block text-master hint-text fs-12 last-message overflow-ellipsis"> 
+                    <span class="cursor pseudo-link" [class.active]="followState[follower.userName]=='follow'" (click)="toggleFollow(true, follower)">Follow</span> | 
+                    <span class="cursor pseudo-link" [class.active]="followState[follower.userName]=='unfollow'" (click)="toggleFollow(false, follower)">Unfollow</span>
+                </span>
+            </p>
+        </a>
+    </div>
+</div>

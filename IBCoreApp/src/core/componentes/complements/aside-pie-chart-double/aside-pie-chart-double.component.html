@@ -1,0 +1,41 @@
+<div class="m-r-0 m-l-0 m-b-5 footer-content">
+	<header *ngIf="data.title">
+		<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">
+			<i *ngIf="data.icon" class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#666'}"></i>
+			<img *ngIf="data.iconUrl" src="{{ data.iconUrl }}"/>
+			{{ data.title }} 
+		</h5>
+	</header>
+
+  <div class="row m-t-8">
+    <div class="col-md-4 col-sm-4 col-xs-4">
+      <section>
+        <header>
+          <h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">
+            {{ data.leftContent.title }}
+          </h5>
+        </header>
+        <article>
+          <h4 class=" m-t-0 m-b-0 bold" [ngStyle]="{'color': data.leftContent.valueColor ? data.leftContent.valueColor : '#2c2c2c'}">{{ data.leftContent.value | abbreviateNumber }}</h4>
+          <h5 class=" m-t-0 m-b-0 bold"><small>{{ data.leftContent.smallText }}</small></h5>
+        </article>
+      </section>
+    </div>
+    <div class="col-md-4 col-sm-4 col-xs-4">
+      <pie-chart #pieChart [isDonut]="data.chart.isDonut" [data]="data.chart.data" [height]="data.chart.height" [width]="data.chart.width"></pie-chart>
+    </div>
+    <div class="col-md-4 col-sm-4 col-xs-4">
+      <section>
+        <header>
+          <h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">
+            {{ data.rightContent.title }}
+          </h5>
+        </header>
+        <article>
+          <h4 class=" m-t-0 m-b-0 bold" [ngStyle]="{'color': data.rightContent.valueColor ? data.rightContent.valueColor : '#2c2c2c'}">{{ data.rightContent.value | abbreviateNumber }}</h4>
+          <h5 class=" m-t-0 m-b-0 bold"><small>{{ data.rightContent.smallText }}</small></h5>
+        </article>
+      </section>
+    </div>
+  </div>
+</div>

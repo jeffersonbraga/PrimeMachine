@@ -1,0 +1,30 @@
+.top-report-container{
+	position: absolute;
+	right: 15px;
+    top: 10px;
+	z-index: 2;
+}
+
+.static {
+	position: static !important;
+}
+
+.panel{
+	background: transparent;
+}
+
+.img-responsive {
+	margin: 0 auto;
+}
+
+@media (max-width: 1312px) {
+    .top-report-container {
+        position: static;
+        width: 100%;
+        display: table;
+	}
+	
+	top-report {
+		float: right;
+	}
+}

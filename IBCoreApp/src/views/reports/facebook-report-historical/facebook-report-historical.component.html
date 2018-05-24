@@ -1,0 +1,410 @@
+<h6 class="fs-14">
+  <i class="fa fa-facebook-square m-r-5 v-align-middle"></i>
+  <span class="v-align-middle"><strong>{{ profile.screenName }} • History</strong></span>
+  <!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Histórico</strong></span> -->
+</h6>
+<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+  <button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+  <button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+</nav>
+<div class="hidden-print sm-gutter">
+  <div class="row">
+    <div class="col-md-12 col-lg-7 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">crescimento de fãs na página</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="fanPageGrowthData" height="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-6">
+              <footer-text-icon [data]="majorFanPageGrowthFooter"></footer-text-icon>
+            </div>
+            <div class="col-md-12 col-lg-6">
+              <footer-text-icon [data]="minorFanPageGrowthFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-5 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">demografia do público</div>
+        </div>
+        <div class="panel-body">
+          <div class="radio radio-info">
+            <input type="radio" checked="checked" value="yes" name="aboutFansReachedUsers" id="aboutYourFans" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutYourFans">Fãs da página</label>
+            <input type="radio" value="no" name="aboutFansReachedUsers" id="aboutReachedUsers" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutReachedUsers">Usuários alcançados</label>
+          </div>
+          <div class="row">
+            <div class="col-md-12" [hidden]="!showAboutYourFans">
+              <stacked-column-chart [data]="aboutYourFansData" height="280" [reduceXTicks]="false" [legends]="legendsAboutYourFans"></stacked-column-chart>
+              <div class="row">
+                <div class="col-md-12 col-lg-6">
+                  <footer-text-icon [data]="majorAgeGroupFansFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-12 col-lg-6">
+                  <aside-pie-chart [data]="womenMenFansPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-12" [hidden]="showAboutYourFans">
+              <stacked-column-chart #aboutReachedUsersChart [data]="aboutReachedUsersData" height="280" [reduceXTicks]="false" [legends]="legendsAboutReachedUsers"></stacked-column-chart>
+              <div class="row">
+                <div class="col-md-12 col-lg-6">
+                  <footer-text-icon [data]="majorAgeGroupReachedUsersFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-12 col-lg-6">
+                  <aside-pie-chart #womenMenReachedUsersPieChart [data]="womenMenReachedUsersPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 report-full">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">envolvimento do público por tipo de interação</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12 col-lg-6 report-full">
+              <h6 class="panel-sub-title font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">reactions</h6>
+              <stacked-area-chart [data]="reactionsPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true" [legends]="legendsReactionsPerMonth" [color]="colorsReactionsPerMonth"></stacked-area-chart>
+              <div class="row">
+                <div class="col-md-4 col-lg-6 col-xs-6">
+                  <footer-text-icon [data]="likesFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-4 col-lg-6 col-xs-6">
+                  <footer-text-icon [data]="loveFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-4 col-lg-6 col-xs-6">
+                  <footer-text-icon [data]="hahaFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-4 col-lg-6 col-xs-6">
+                  <footer-text-icon [data]="wowFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-4 col-lg-6 col-xs-6">
+                  <footer-text-icon [data]="sorryFooter"></footer-text-icon>
+                </div>
+                <div class="col-md-4 col-lg-6 col-xs-6">
+                  <footer-text-icon [data]="angerFooter"></footer-text-icon>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-12 col-lg-6 report-full">
+              <h6 class="panel-sub-title font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">comentários</h6>
+              <stacked-area-chart [data]="commentsPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+              <footer-text-icon [data]="commentsFooter"></footer-text-icon>
+            </div>
+          </div>
+          <div class="row m-t-40">
+            <div class="panel-sub-title col-md-12 col-lg-6">
+              <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">shares</h6>
+              <stacked-area-chart [data]="sharesPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+              <footer-text-icon [data]="sharesFooter"></footer-text-icon>
+            </div>
+            <div class="col-md-12 col-lg-6">
+              <h6 class="panel-sub-title font-montserrat text-uppercase hint-text fs-12 m-t-0 bold">cliques</h6>
+              <stacked-area-chart [data]="clicksPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+              <footer-text-icon [data]="clicksFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-5">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Top cidades</div>
+        </div>
+        <div class="panel-body">
+          <div class="radio radio-info">
+            <input type="radio" checked="checked" value="fans" name="citiesReachedFans" id="citiesMoreFans" (change)="showCitiesList($event)">
+            <label for="citiesMoreFans">Fãs da página</label>
+            <input type="radio" value="users" name="citiesReachedFans" id="citiesMoreReached" (change)="showCitiesList($event)">
+            <label for="citiesMoreReached">Usuários alcançados</label>
+          </div>
+          <div class="row p-l-15 p-r-15">
+            <div class="col-md-12" [hidden]="!showCitiesMoreFans">
+              <table-chart [data]='citiesMoreFansData'></table-chart>
+            </div>
+            <div class="col-md-12" [hidden]="showCitiesMoreFans">
+              <table-chart [data]='citiesMoreReachedData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-7">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Usuários com mais interações</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': mostInfluentialFansData2.rows,
+									'col-md-12': !mostInfluentialFansData2.rows
+								}">
+              <table-chart [data]='mostInfluentialFansData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': mostInfluentialFansData2.rows,
+									'hidden': !mostInfluentialFansData2.rows
+								}">
+              <table-chart [data]='mostInfluentialFansData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-7">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Origem das opções curtir</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': fansLikeSourceData2.rows,
+									'col-md-12': !fansLikeSourceData2.rows
+								}">
+              <table-chart [data]='fansLikeSourceData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+									'col-md-12 col-lg-6': fansLikeSourceData2.rows,
+									'hidden': !fansLikeSourceData2.rows
+								}">
+              <table-chart [data]='fansLikeSourceData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-lg-5">
+      <div class="panel panel-default m-b-10">
+        <div class="panel-heading">
+          <div class="panel-title">Referências externas</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12">
+              <table-chart [data]='externalReferencesData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="content-pdf">
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">crescimento de fãs na página</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart [data]="fanPageGrowthData" height="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+          <div class="row">
+            <div class="col-xs-6">
+              <footer-text-icon [data]="majorFanPageGrowthFooter"></footer-text-icon>
+            </div>
+            <div class="col-xs-6">
+              <footer-text-icon [data]="minorFanPageGrowthFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">demografia do público</div>
+        </div>
+        <div class="panel-body">
+          <div class="radio radio-info">
+            <input type="radio" checked="checked" value="yes" name="aboutFansReachedUsers1" id="aboutYourFans1" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutYourFans">Fãs da página</label>
+            <input type="radio" value="no" name="aboutFansReachedUsers1" id="aboutReachedUsers1" (change)="showPublicDemographicInfo($event)">
+            <label for="aboutReachedUsers">Usuários alcançados</label>
+          </div>
+          <div class="row">
+            <div class="col-xs-12" [hidden]="!showAboutYourFans">
+              <stacked-column-chart [data]="aboutYourFansData" height="280" [reduceXTicks]="false" [legends]="legendsAboutYourFans"></stacked-column-chart>
+              <div class="row">
+                <div class="col-xs-6">
+                  <footer-text-icon [data]="majorAgeGroupFansFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-6">
+                  <aside-pie-chart [data]="womenMenFansPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+            <div class="col-xs-12" [hidden]="showAboutYourFans">
+              <stacked-column-chart #aboutReachedUsersChart [data]="aboutReachedUsersData" height="280" [reduceXTicks]="false" [legends]="legendsAboutReachedUsers"></stacked-column-chart>
+              <div class="row">
+                <div class="col-xs-6">
+                  <footer-text-icon [data]="majorAgeGroupReachedUsersFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-6">
+                  <aside-pie-chart #womenMenReachedUsersPieChart [data]="womenMenReachedUsersPie"></aside-pie-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">envolvimento do público por tipo de interação</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">curtir e reações</h6>
+              <stacked-area-chart [data]="reactionsPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true" [legends]="legendsReactionsPerMonth" [color]="colorsReactionsPerMonth"></stacked-area-chart>
+              <div class="row">
+                <div class="col-xs-4">
+                  <footer-text-icon [data]="likesFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-4">
+                  <footer-text-icon [data]="loveFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-4">
+                  <footer-text-icon [data]="hahaFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-4">
+                  <footer-text-icon [data]="wowFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-4">
+                  <footer-text-icon [data]="sorryFooter"></footer-text-icon>
+                </div>
+                <div class="col-xs-4">
+                  <footer-text-icon [data]="angerFooter"></footer-text-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-xs-12 m-t-20">
+              <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">comentários</h6>
+              <stacked-area-chart [data]="commentsPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+              <footer-text-icon [data]="commentsFooter"></footer-text-icon>
+            </div>
+          </div>
+          <div class="row page-break">
+            <div class="col-xs-12">
+              <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">shares</h6>
+              <stacked-area-chart [data]="sharesPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+              <footer-text-icon [data]="sharesFooter"></footer-text-icon>
+            </div>
+            <div class="col-xs-12 m-t-20">
+              <h6 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">cliques</h6>
+              <stacked-area-chart [data]="clicksPerMonthData" heigth="280" format="%m/%y" [reduceXTicks]="true"></stacked-area-chart>
+              <footer-text-icon [data]="clicksFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Top cidades</div>
+        </div>
+        <div class="panel-body">
+          <div class="radio radio-info">
+            <input type="radio" checked="checked" value="fans" name="citiesReachedFans1" id="citiesMoreFans1" (change)="showCitiesList($event)">
+            <label for="citiesMoreFans">Fãs da página</label>
+            <input type="radio" value="users" name="citiesReachedFans1" id="citiesMoreReached1" (change)="showCitiesList($event)">
+            <label for="citiesMoreReached">Usuários alcançados</label>
+          </div>
+          <div class="row p-l-15 p-r-15">
+            <div class="col-xs-12" [hidden]="!showCitiesMoreFans">
+              <table-chart [data]='citiesMoreFansData'></table-chart>
+            </div>
+            <div class="col-xs-12" [hidden]="showCitiesMoreFans">
+              <table-chart [data]='citiesMoreReachedData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Usuários com mais interações</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <table-chart [data]='mostInfluentialFansData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+                      'col-xs-12': mostInfluentialFansData2.rows,
+                      'hidden': !mostInfluentialFansData2.rows
+                    }">
+              <table-chart [data]='mostInfluentialFansData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 col-lg-7">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Origem das opções curtir</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <table-chart [data]='fansLikeSourceData1'></table-chart>
+            </div>
+            <div [ngClass]="{
+                      'col-xs-12': fansLikeSourceData2.rows,
+                      'hidden': !fansLikeSourceData2.rows
+                    }">
+              <table-chart [data]='fansLikeSourceData2'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">Referências externas</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12">
+              <table-chart [data]='externalReferencesData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

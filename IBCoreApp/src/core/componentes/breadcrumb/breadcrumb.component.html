@@ -1,0 +1,7 @@
+<ul class="breadcrumb p-l-10 hidden-print">
+  <li *ngFor="let breadcrumb of breadcrumbs, let i = index">
+    <a [class.active]="i == (breadcrumbs.length - 1)" [routerLink]="[breadcrumb.url, breadcrumb.params]" *ngIf="breadcrumb.url !== '/home'" >{{ breadcrumb.label }}</a>
+    <a class="hidden-xs hidden-sm" [class.active]="i == (breadcrumbs.length - 1)" [routerLink]="['stream']" *ngIf="breadcrumb.url === '/home'" (click)="setStream()">{{ breadcrumb.label }}</a>
+    <a class="hidden-md hidden-lg" [class.active]="i == (breadcrumbs.length - 1)" [routerLink]="['compose']" *ngIf="breadcrumb.url === '/home'" (click)="setCompose()">{{ breadcrumb.label }}</a>
+  </li>
+</ul>

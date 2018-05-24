@@ -1,0 +1,163 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.blogs.BlogPostMonitoringDTO;
+import br.com.opsocial.client.entity.facebook.FacePostMonitoringDTO;
+import br.com.opsocial.client.entity.googleplus.GooglePlusPostMonitoringDTO;
+import br.com.opsocial.client.entity.instagram.InstagramPostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.SampleDTO;
+import br.com.opsocial.client.entity.monitoring.TwitterPostMonitoringDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.news.NewsPostMonitoringDTO;
+import br.com.opsocial.client.entity.reclameaqui.ReclameAquiPostMonitoringDTO;
+import br.com.opsocial.client.entity.youtube.YoutubePostMonitoringDTO;
+import br.com.opsocial.ejb.das.MaintenanceBlogPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceFacePostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceGooglePlusPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceNewsPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceReclameAquiPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceSamplePostRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceYoutubePostMonitoringRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.monitoring.SamplePost;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class RecoverSampleDataAction extends ServerAction {
+	
+	private MaintenanceFacePostMonitoringRemote facePostMonitoringRemote;
+	private MaintenanceTwitterPostMonitoringRemote twitterPostMonitoringRemote;
+	private MaintenanceGooglePlusPostMonitoringRemote googlePlusPostMonitoringRemote;
+	private MaintenanceYoutubePostMonitoringRemote youtubePostMonitoringRemote;
+	private MaintenanceInstagramPostMonitoringRemote instagramPostMonitoringRemote;
+	private MaintenanceReclameAquiPostMonitoringRemote reclameAquiPostMonitoringRemote;
+	private MaintenanceNewsPostMonitoringRemote newsPostMonitoringRemote;
+	private MaintenanceBlogPostMonitoringRemote blogPostMonitoringRemote;
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		SampleDTO sampleDTO = (SampleDTO) getParameters().get("sample");
+		
+		Integer offset = 
+				(Integer) getParameters().get("offset");
+		
+		MaintenanceSamplePostRemote samplePostRemote = (MaintenanceSamplePostRemote) RecoverMaintenance.recoverMaintenance("SamplePost");
+		
+		List<SamplePost> samplePosts = samplePostRemote.listBySample(sampleDTO.getIdSample(), offset);
+		
+		List<PostMonitoringDTO> posts = new ArrayList<PostMonitoringDTO>();
+		
+		facePostMonitoringRemote = (MaintenanceFacePostMonitoringRemote) RecoverMaintenance.recoverMaintenance("FacePostMonitoring");
+		twitterPostMonitoringRemote = (MaintenanceTwitterPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("TwitterPostMonitoring");
+		googlePlusPostMonitoringRemote = (MaintenanceGooglePlusPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("GooglePlusPostMonitoring");
+		youtubePostMonitoringRemote = (MaintenanceYoutubePostMonitoringRemote) RecoverMaintenance.recoverMaintenance("YoutubePostMonitoring");
+		instagramPostMonitoringRemote = (MaintenanceInstagramPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("InstagramPostMonitoring");
+		reclameAquiPostMonitoringRemote = (MaintenanceReclameAquiPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("ReclameAquiPostMonitoring");
+		newsPostMonitoringRemote = (MaintenanceNewsPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("NewsPostMonitoring");
+		blogPostMonitoringRemote = (MaintenanceBlogPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("BlogPostMonitoring");
+		
+		MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("MonitoringPostTag");
+
+		for(int i=samplePosts.size() - 1;i>=0;i--) {
+			
+			SamplePost samplePost = samplePosts.get(i);
+			
+			if(samplePost.getNetwork().equals(Profile.FACEBOOK)) {
+				
+				FacePostMonitoringDTO postMonitoringDTO = MountDTO.mountFacePostMonitoring(facePostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), samplePost.getPostId()));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(postMonitoringDTO.getFacebookPostDTO().getPostId(), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.FACEBOOK)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.TWITTER)) {
+				
+				TwitterPostMonitoringDTO postMonitoringDTO = MountDTO.mountTwitterPostMonitoring(twitterPostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), Long.valueOf(samplePost.getPostId())));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getTwitterPostDTO().getStatusId()), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.TWITTER)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.GOOGLE)) {
+				
+				GooglePlusPostMonitoringDTO postMonitoringDTO = MountDTO.mountGooglePlusPostMonitoring(googlePlusPostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), samplePost.getPostId()));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getGooglePlusPostDTO().getIdActivity()), 
+								postMonitoringDTO.getMonitoringDTO().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.GOOGLE)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.YOUTUBE)) {
+				
+				YoutubePostMonitoringDTO postMonitoringDTO = MountDTO.mountYoutubePostMonitoring(youtubePostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), samplePost.getPostId()));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getYoutubePostDTO().getResourceId().getVideoId()), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.YOUTUBE)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.INSTAGRAM)) {
+				
+				InstagramPostMonitoringDTO postMonitoringDTO = MountDTO.mountInstagramPostMonitoring(instagramPostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), Long.valueOf(samplePost.getPostId())));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getInstagramPostDTO().getIdMedia()), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.INSTAGRAM)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.RECLAMEAQUI)) {
+				
+				ReclameAquiPostMonitoringDTO postMonitoringDTO = MountDTO.mountReclameAquiPostMonitoring(reclameAquiPostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), samplePost.getPostId()));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getReclameAquiPostDTO().getCacheId()), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.RECLAMEAQUI)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.NEWS)) {
+				
+				NewsPostMonitoringDTO postMonitoringDTO = MountDTO.mountNewsPostMonitoring(newsPostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), Long.valueOf(samplePost.getPostId())));
+				
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getNewsPostDTO().getIdNewsPost()), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.NEWS)));
+				
+				posts.add(postMonitoringDTO);
+				
+			} else if(samplePost.getNetwork().equals(Profile.BLOGS)) {
+				
+				BlogPostMonitoringDTO postMonitoringDTO = MountDTO.mountBlogPostMonitoring(blogPostMonitoringRemote.getByComposedId(sampleDTO.getMonitoringDTO().getIdMonitoring(), Long.valueOf(samplePost.getPostId())));
+				
+
+				postMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(String.valueOf(postMonitoringDTO.getBlogPostDTO().getIdBlogPost()), 
+								postMonitoringDTO.getMonitoring().getIdMonitoring(), postMonitoringDTO.getTerm(), Profile.NEWS)));
+				
+				posts.add(postMonitoringDTO);
+			}
+		}
+		
+		setParameters(new HashMap<String,Object>());
+		
+		getParameters().put("posts", posts);
+	}
+}

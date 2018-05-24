@@ -1,0 +1,54 @@
+package br.com.opsocial.server.actions.profiles.linkedin;
+
+import javax.servlet.http.HttpSession;
+
+import org.apache.http.client.utils.URIBuilder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.AuthFacebookCallbackServlet;
+import br.com.opsocial.server.utils.networksintegrations.LinkedinIntegration;
+
+@RestController
+@RequestMapping("woopsocial")
+public class InsertByLinkedInAction {
+
+	//OpSocial
+	public static String CLIENT_ID = "78br1nnake1pin";
+	public static String CLIENT_SECRET = "T7mBXSnd7sI4BKqY";
+	public static final String APP_PERMISSIONS = "r_basicprofile r_emailaddress rw_company_admin w_share";
+
+	@CrossOrigin
+	@RequestMapping(value = "/insert_linkedin",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> doAction(HttpSession session) throws Exception {
+
+		URIBuilder builder = new URIBuilder(LinkedinIntegration.AUTHENTICATION_SERVER_URL);
+
+		builder.addParameter("response_type", "code");
+		builder.addParameter("client_id", LinkedinIntegration.CLIENT_ID);
+		builder.addParameter("redirect_uri", OpSocialBackApplication.SERVER_PATH + "/woopsocial/authLinkedInCallback");
+		builder.addParameter("state", LinkedinIntegration.STATE);
+		builder.addParameter("scope", LinkedinIntegration.APP_PERMISSIONS);
+		
+		String location = builder.toString();
+
+		JsonObject response = new JsonObject();
+	    response.addProperty("authenticationUrl", location);
+	    
+		session.setAttribute("linkedin_auth_action", AuthFacebookCallbackServlet.GET_ACCESS_TOKEN);
+		
+		return new ResponseEntity<String>(response.toString(), HttpStatus.OK);
+	}
+
+}

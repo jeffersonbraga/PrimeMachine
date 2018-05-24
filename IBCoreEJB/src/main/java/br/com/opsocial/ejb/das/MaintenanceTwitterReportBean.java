@@ -1,0 +1,151 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.TwitterReportDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.report.TwitterReport;
+
+@Stateless
+public class MaintenanceTwitterReportBean extends AbstractDASImpl<TwitterReport> implements MaintenanceTwitterReportRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	TwitterReportDAO dao; 
+	
+	@Override
+	public AbstractDAO<TwitterReport> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public Long getSumValuesForProfileProperty(String idProfile, String property)
+			throws IllegalArgumentException {
+		return dao.getSumOfValues(idProfile, property);
+	}
+
+	@Override
+	public TwitterReport getEntityByProfileProperty(String idProfile,
+			String property) throws IllegalArgumentException {
+		return dao.getEntityByProfileProperty(idProfile, property);
+	}
+
+	@Override
+	public Long getSumValuesForProfileProperty(String idProfile,
+			String property, Long dateFrom, Long dateUntil) {
+		return dao.getSumValuesForProfileProperty(idProfile, property, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getValueForProperty(String idProfile, String property) throws IllegalArgumentException {
+		return dao.getValueForProperty(idProfile, property);
+	}
+
+	@Override
+	public Integer[] getValuesForProperty(String idProfile, String property,
+			Long dateFrom, Long dateUntil) throws IllegalArgumentException {
+		return dao.getValuesForProperty(idProfile, property, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Integer[] getValuesForProperty(List<String> idProfiles, String property,
+			Long dateFrom, Long dateUntil) throws IllegalArgumentException {
+		return dao.getValuesForProperty(idProfiles, property, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<TwitterReport> getEntitiesByProfile(String idProfile, String property, Long dateFrom, Long dateUntil)
+			throws IllegalArgumentException {
+		return dao.getEntitiesByProfile(idProfile, property, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<TwitterReport> getEntitiesByProfiles(List<String> idProfiles, String property, Long dateFrom,
+			Long dateUntil) throws IllegalArgumentException {		
+		return dao.getEntitiesByProfiles(idProfiles, property, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<String, Long> getSumsForProperties(String idProfile, List<String> properties, Long dateFrom, Long dateUntil) throws IllegalArgumentException {
+		return dao.getSumsForProperties(idProfile, properties, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Long getSumOfValues(String idProfile, String property) {
+		return dao.getSumOfValues(idProfile, property);
+	}
+	
+	@Override
+	public Long getValue(String idProfile, String property) {
+		return dao.getValue(idProfile, property);
+	}
+	
+	@Override
+	public Long getSumOfValues(String idProfile, String property, Long dateFrom, Long dateUntil) {
+		return dao.getSumOfValues(idProfile, property, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public TwitterReport getDayWithMoreFollowers(String idProfile, String property, Long dateFrom, Long dateUntil) {
+		return dao.getDayWithMoreFollowers(idProfile, property, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Long getAverageOfValues(String idProfile, String property, Long dateFrom, Long dateUntil) {
+		return dao.getAverageOfValues(idProfile, property, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Object[] getTweetTypeWithMoreTweets(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getTweetTypeWithMoreTweets(idProfile, dateFrom, dateUntil); 
+	}
+	
+	@Override
+	public Map<String, Integer> getEngagementPercentages(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getEngagementPercentages(idProfile, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Long getEngagementPeakDay(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getEngagementPeakDay(idProfile, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Map<Date, Long> getTweetsInteractionsByDay(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getTweetsInteractionsByDay(idProfile, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Long getTweetsInteractionsCount(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getTweetsInteractionsCount(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setDao(AbstractDAO<TwitterReport> dao) {
+		this.dao = (TwitterReportDAO) dao;	
+	}
+
+	@Override
+	public AbstractDAO<TwitterReport> getDao() {
+		return dao;
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}

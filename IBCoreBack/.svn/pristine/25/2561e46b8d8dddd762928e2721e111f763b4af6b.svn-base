@@ -1,0 +1,191 @@
+package br.com.opsocial.server.actions.profiles;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceRateLimitStatusRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.ejb.entity.twitter.RateLimitStatus;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.monitorings.MonitoringTwitter;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateThread;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import twitter4j.Twitter;
+
+@RestController
+@RequestMapping("opsocial")
+public class InsertProfilesAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/insert_profiles",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		PersistentList<Profile> pages = (PersistentList<Profile>) getParameters().get("pages");
+		Profile profileDTO = (Profile) getParameters().get("profile");
+		
+		Profile parentProfile = null;
+		
+		setParameters(new HashMap<String, Object>());	
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		MaintenanceReportGenerateRemote reportGenerateRemote = (MaintenanceReportGenerateRemote) 
+				RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		
+		if(pages != null) {
+			
+			ReportGenerateThread reportGenerateThread = new ReportGenerateThread();	
+			
+			User user = (User) getSession().getAttribute("user");
+			
+			for(int i = 0; i < pages.getPersistences().size(); i++) {
+				
+				Profile baseProfile = remote.getEntityByNetworkId(pages.getPersistences().get(i).getNetworkId(), user.getAccount().getIdAccount());
+				
+				if(baseProfile == null) {
+
+					if(remote.hasFacebookProfileInTurn()) {
+						pages.getPersistences().get(i).setTurn('F');
+					} else {
+						pages.getPersistences().get(i).setTurn('T');
+					}
+					
+					if(pages.getPersistences().get(i).getType().equals(Profile.FACEBOOK)) {
+						
+						pages.getPersistences().get(i).setInsertionDate(Calendar.getInstance().getTimeInMillis() / 1000L);
+						
+						parentProfile = remote.save(pages.getPersistences().get(i));
+						
+						List<Profile> basePages = remote.getEntitiesByProfileInformation(
+								pages.getPersistences().get(i).getNetworkId(), getUser().getAccount().getIdAccount());
+						
+						for(Profile basePage : basePages) {
+							basePage.setParentProfile(parentProfile);
+							basePage.setProfileInformation(null);
+							remote.save(basePage);
+						}
+						
+						pages.getPersistences().set(i, parentProfile);
+						
+					} else if (pages.getPersistences().get(i).getType().equals(Profile.FACEBOOK_PAGE)) {
+						
+						pages.getPersistences().get(i).setInsertionDate(Calendar.getInstance().getTimeInMillis() / 1000L);
+						
+						if(parentProfile != null) {
+							pages.getPersistences().get(i).setParentProfile(parentProfile);
+							pages.getPersistences().get(i).setProfileInformation(null);
+						}
+						
+						pages.getPersistences().set(i, remote.save(pages.getPersistences().get(i)));
+					
+						if(!reportGenerateRemote.hasEntity(pages.getPersistences().get(i).getNetworkId(), pages.getPersistences().get(i).getType())) {
+							
+							ReportGenerate reportGenerate = new ReportGenerate();
+							reportGenerate.setNetworkId(pages.getPersistences().get(i).getNetworkId());
+							reportGenerate.setNetworkType(pages.getPersistences().get(i).getType());
+							reportGenerate.setTokenSecret(pages.getPersistences().get(i).getTokenSecret());
+							reportGenerate.setState(ReportFacebook.UNAVAILABLE);
+							
+							// Verifica se a página pode resgatar seus insights.
+							if(ReportGenerateVerification.isReportActive(reportGenerate)) {
+								
+								reportGenerate.setState(ReportFacebook.GENERATING);
+								reportGenerate = reportGenerateRemote.save(reportGenerate);
+								
+								reportGenerateThread.addReportGenerateRunnable(new ReportGenerateRunnable(pages.getPersistences().get(i), ReportGenerateRunnable.REPORT_DAYS));
+							} else {
+								reportGenerate = reportGenerateRemote.save(reportGenerate);
+							}
+						} else {
+							
+							ReportGenerate reportGenerate = reportGenerateRemote.getEntity(pages.getPersistences().get(i).getNetworkId(), pages.getPersistences().get(i).getType());
+							reportGenerate.setTokenSecret(pages.getPersistences().get(i).getTokenSecret());
+							reportGenerate.setState(ReportFacebook.FINALIZED);
+							
+							reportGenerateRemote.save(reportGenerate);
+						}
+					}
+						
+				}
+			}
+			
+			reportGenerateThread.start();
+			
+			getParameters().put("profiles", pages.getPersistences());
+			
+		} else if(profileDTO != null) {
+			
+			profileDTO.setInsertionDate(Calendar.getInstance().getTimeInMillis() / 1000L);
+			
+            Profile profile = remote.save(profileDTO);
+            
+            List<Profile> profiles = new ArrayList<Profile>();
+            profiles.add(profile);
+            
+            getParameters().put("profiles", profiles);
+            
+            if(profile.getType().equals(Profile.TWITTER)) {
+            	
+            	MaintenanceRateLimitStatusRemote rateLimitStatusRemote = (MaintenanceRateLimitStatusRemote) RecoverMaintenance.recoverMaintenance("RateLimitStatus");
+
+            	Twitter twitter = new TwitterIntegration().getTwitter(profile.getToken(), profile.getTokenSecret());
+
+            	twitter4j.RateLimitStatus rateLimitStatusResponse = twitter.getRateLimitStatus("search").get(MonitoringTwitter.RESOURCE_SEARCH_TWEETS);
+
+            	RateLimitStatus rateLimitStatus = new RateLimitStatus();
+            	rateLimitStatus.setProfile(profile);
+            	rateLimitStatus.setResource(MonitoringTwitter.RESOURCE_SEARCH_TWEETS);
+            	rateLimitStatus.setRequestsLimit(rateLimitStatusResponse.getLimit());
+            	rateLimitStatus.setRequestsRemaining(rateLimitStatusResponse.getRemaining());
+            	rateLimitStatus.setResetDate(Long.valueOf(rateLimitStatusResponse.getResetTimeInSeconds()));
+
+            	rateLimitStatusRemote.save(rateLimitStatus);
+            	
+            } else if(profile.getType().equals(Profile.INSTAGRAM)) {
+            	
+            	if(!reportGenerateRemote.hasEntity(profile.getNetworkId(), profile.getType())) {
+            		
+            		ReportGenerate reportGenerate = new ReportGenerate();
+					reportGenerate.setNetworkId(profile.getNetworkId());
+					reportGenerate.setNetworkType(profile.getType());
+					reportGenerate.setTokenSecret(profile.getToken());
+					reportGenerate.setState(ReportFacebook.GENERATING);
+					reportGenerate.setIsInNewInstaFollowersReports('T');
+					
+					reportGenerate = reportGenerateRemote.save(reportGenerate);
+					
+            		Calendar reportDate = Calendar.getInstance();
+    				reportDate.add(Calendar.DATE, -1);
+
+    				Long reportDateStamp = UtilFunctions.getMidnightDateNoDaylightTime(reportDate.getTime());
+
+    				ReportInstagram reportInstagram = new ReportInstagram(profile, reportDateStamp);
+    				reportInstagram.setReportGenerate(reportGenerate);
+    				
+    				new Thread(reportInstagram).start();
+            	}
+            	
+            }
+		}
+	}
+}

@@ -1,0 +1,50 @@
+<script>
+$(document).ready(function() {
+    $('#form-create-rss-group').validate();
+});
+</script>
+<div class="panel panel-transparent">
+    <div class="panel-heading p-l-0">
+        <div class="panel-title">Novo Grupo de Feeds</div>
+        <div>
+            <form id="form-create-rss-group" role="form">
+                <div class="form-group form-group-default new-group pull-left">
+                    <label class="label-sm">Nome do Grupo</label>
+                    <input [(ngModel)]="group.name" name="groupName" type="text" placeholder="Nome do Grupo" class="form-control input-sm" required>
+                </div>
+                <button (click)="createGroup(P)" class="btn btn-primary btn-cons pull-left" type="submit" [disabled]="!group.name">
+                    <i class="fa fa-plus"></i>Novo grupo
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="clearfix"></div>
+    <div class="panel-body p-l-0 p-r-0 p-t-5">
+        <div class="table-responsive overflow-group-table">
+            <table class="table table-hover table-condensed table-detailed">
+                <div class="my-panel-title p-b-8">
+                    Meus Grupos
+                </div>
+                <tbody class="auto-overflow">
+                    <group-item *ngFor="let item of groups, let i = index" [group]="item" 
+                    (deleteGroup)="deleteGroup($event, i)" (sendGroup)="editGroup($event, i)">
+                    </group-item>
+                    
+                    <div class="panel panel-default panel-no-channels p-t-20" *ngIf="!groups.length">
+                        <div class="panel-body no-padding no-overflow">
+                            <div class="row">
+                                <div class="col-l-12">
+                                    <div class="row">
+                                    <div class="p-b-30 p-t-10 text-center">
+                                        <p class="no-channels-p">Você ainda não possui nenhum grupo</p>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

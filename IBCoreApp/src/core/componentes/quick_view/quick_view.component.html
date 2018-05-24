@@ -1,0 +1,53 @@
+<div #quickview id="quickview" class="quickview-wrapper" data-pages="quickview">
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs nav-flex">
+        <li class="active">
+            <a href="#quickview-alerts" data-toggle="tab" pg-tab>Notificações</a>
+        </li>
+    </ul>
+    <a class="btn-link quickview-toggle cursor" (click)="closeQuickview()">
+        <i class="pg-close"></i>
+    </a>
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div class="tab-pane fade in active no-padding" id="quickview-alerts">
+            <div class="view-port clearfix" id="alerts">
+                <div class="view bg-white">
+                    <div class="list-view boreded no-top-border">
+                        <div class="scroll-wrapper list-view-wrapper" style="position: absolute;">
+                            <div class="list-view-wrapper scroll-content" style="height: 610px; margin-bottom: 0px; margin-right: 0px; max-height: none;">
+                                <div class="list-view-group-container" *ngFor="let notification of notifications" >
+                                    <div>
+                                        <div class="list-view-group-header text-uppercase">
+                                            {{ notification.data }}
+                                        </div>
+                                        <ul>
+                                            <li class="alert-list" *ngFor="let item of notification.values" [class.defaulCursor]="!item.action">
+                                                <a [href]="item.action" class="p-t-10 p-b-10" data-navigate="view" data-view-animation="push-parrallax" *ngIf="item.action">
+                                                    <p class="col-xs-height col-middle">
+                                                        <span class="fs-10" [ngStyle]="{'color': item.color ? item.color : '#ccc'}"><i class="fa fa-circle"></i></span>
+                                                    </p>
+                                                    <p class="p-l-10 col-xs-height col-middle col-xs-12 fs-12">
+                                                        <span class="text-master">{{ item.message }}</span>
+                                                    </p>
+                                                </a>
+                                                <a class="p-t-10 p-b-10" data-navigate="view" data-view-animation="push-parrallax" *ngIf="!item.action">
+                                                    <p class="col-xs-height col-middle">
+                                                        <span class="fs-10" [ngStyle]="{'color': item.color ? item.color : '#ccc'}"><i class="fa fa-circle"></i></span>
+                                                    </p>
+                                                    <p class="p-l-10 col-xs-height col-middle col-xs-12 fs-12">
+                                                        <span class="text-master">{{ item.message }}</span>
+                                                    </p>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

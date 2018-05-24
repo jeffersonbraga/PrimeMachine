@@ -1,0 +1,235 @@
+<div id="backModalMedia" (click)="showed = false" *ngIf="showed"></div>
+<div id="modalMedia" *ngIf="showed">
+    <span class="closeModal fa fa-times" (click)="showed = false"></span>
+    <img [src]="mediaPreview" *ngIf="typeModal == 'P'">
+
+    <video controls autoplay loop *ngIf="typeModal == 'V'">
+        <source [src]="mediaPreview"> Your browser does not support the video tag.
+    </video>
+
+    <video autoplay loop *ngIf="typeModal == 'G'">
+        <source [src]="mediaPreview"> Your browser does not support the video tag.
+    </video>
+</div>
+
+<div class="stream-post relative" *ngIf="post" [class.retweeting]="retweeting">
+    <div class="overlay-mask" *ngIf="deleting">
+        <div class="text-center">
+            <div class="sending-comment absolute-center"></div>
+        </div>
+    </div>
+    <header>
+        <div class="clearfix">
+            <div class="pull-left">
+                <div class="main-avatar" *ngIf="profile.type != 'I'">
+                    <a [href]="post.profileLInk" target="_blank">
+                        <img [src]="post.profilePicture" alt="">
+                    </a>
+                </div>
+                <div class="main-avatar" *ngIf="profile.type == 'I'">
+                    <a [href]="'https://www.instagram.com/' + profile.screenName" target="_blank">
+                        <img [src]="post.profilePicture" alt="">
+                    </a>
+                </div>
+            </div>
+            <div class="pull-left">
+                <div class="date">
+                    <a [href]="post.link" target="_blank">
+                        <strong class="all-caps">
+                            <i class="fa fa-calendar" aria-hidden="true"></i> {{ post.createdTime * 1000 | date:'dd' }} {{ post.createdTime * 1000 | date:'MM' | monthName
+                            }}
+                        </strong> {{ post.createdTime * 1000 | date:'yyyy' }} at
+                        <strong>
+                            <i class="fa fa-clock-o" aria-hidden="true"></i> {{ post.createdTime * 1000 | date:'HH' }}H{{ post.createdTime * 1000 | date:'mm' }}
+                        </strong>
+                    </a>
+                </div>
+                <div class="all-caps screenNamePost">
+                    {{ profile.networkId === post.profileId ? '' : 'Postado por' }}
+                    <strong *ngIf="profile.type != 'I'">
+                        <a [href]="post.profileLink" target="_blank">{{ post.profileName }}</a>
+                    </strong>
+                    <strong *ngIf="profile.type == 'I'">
+                        <a [href]="'https://www.instagram.com/' + profile.screenName" target="_blank">{{ post.profileName }}</a>
+                    </strong>
+                </div>
+            </div>
+        </div>
+    </header>
+    <section class="imgs" *ngIf="profile.type != 'I' && post.pictureUrl && post.type != 'album'">
+        <div class="img-wrapper relative">
+            <div class="overlay-mask cursor hover-media" (click)="openPhoto(post.videoUrl, post.type)" *ngIf="post.type == 'video' || post.type == 'gif'">
+                <div class="text-center">
+                    <div class="absolute-center text-white">
+                        <i class="fa fa-play" aria-hidden="true" *ngIf="post.type == 'video'"></i>
+                        <div class="thumbnail-wrapper circular gif" aria-hidden="true" *ngIf="post.type == 'gif'">
+                            <span>gif</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="img-post cursor">
+                <img (click)="openPhoto(post.pictureUrl, post.type)" [src]="post.pictureUrl" alt="" *ngIf="post.type == 'photo'">
+                <img [src]="post.pictureUrl" alt="" *ngIf="post.type == 'video'">
+                <video autoplay loop *ngIf="post.type == 'gif'">
+                    <source [src]="post.videoUrl"> Your browser does not support the video tag.
+                </video>
+            </div>
+        </div>
+    </section>
+
+    <section class="imgs-instagram m-t-5 relative" *ngIf="profile.type == 'I' && post.pictureUrl && post.type != 'album'">
+        <div class="overlay-mask cursor hover-media" (click)="openPhoto(post.pictureUrl, 'video')" *ngIf="getTypeMedia(post.pictureUrl) == 'video'">
+            <div class="text-center">
+                <div class="absolute-center text-white">
+                    <i class="fa fa-play" aria-hidden="true" *ngIf="getTypeMedia(post.pictureUrl) == 'video'"></i>
+                </div>
+            </div>
+        </div>
+
+        <img (click)="openPhoto(post.pictureUrl, 'photo')" [src]="post.pictureUrl" alt="" *ngIf="getTypeMedia(post.pictureUrl) == 'image'">
+        <video *ngIf="getTypeMedia(post.pictureUrl) == 'video'" width="100%">
+            <source [src]="post.pictureUrl"> Your browser does not support the video tag.
+        </video>
+    </section>
+
+    <section class="imgs relative" *ngIf="post.type == 'album'">
+        <div class="img-wrapper relative">
+            <div class="img-post cursor">
+                <a href="" ng-box [group]="post.postId" [hidden]="i > 0" [src]="photo.url" *ngFor="let photo of post.streamPhotos, let i = index">
+                    <img src="{{ photo.url }}">
+                </a>
+            </div>
+            <div class="img-count">
+                + {{ post.streamPhotos.length - 1 }}
+            </div>
+        </div>
+    </section>
+
+    <section class="m-t-5 relative">
+        <div class="overlay-mask" *ngIf="editingPost">
+            <div class="text-center">
+                <div class="sending-comment absolute-center"></div>
+            </div>
+        </div>
+
+        <p class="word-break">
+            <!-- NÃO IDENTAR -->
+            <span class="font-segoe fs-13" [innerHtml]="post.text | seeMoreFb:1 | scapeBreakLines | urlfy | hashtags:type | mentionMark:post.streamMessageTags:type" *ngIf="!editing"></span><span class="reticenses" *ngIf="seeMore">... </span><span *ngIf="showedPost && !editing" [innerHtml]="post.text | seeMoreFb:2 | scapeBreakLines | urlfy | hashtags:type | mentionMark:post.streamMessageTags:type"></span>
+            <span class="text_exposed_hide font-segoe fs-13" (click)="showContent()" *ngIf="seeMore">
+                <span class="text_exposed_link cursor font-segoe fs-13">
+                    <a>
+                        <span class="font-segoe fs-13">Ver mais</span>
+                    </a>
+                </span>
+            </span>
+            <span class="text_exposed_hide font-segoe fs-13" (click)="hideContent()" *ngIf="!seeMore && enableSeeMore">
+                <span class="text_exposed_link cursor">
+                    <a>
+                        <span class="font-segoe fs-13"> Ver menos</span>
+                    </a>
+                </span>
+            </span>
+        </p>
+
+        <!-- <p class="word-break" [innerHtml]="post.text | hashtags | urlfy" *ngIf="!mark && !editing"></p> -->
+        <!-- <p class="word-break" [innerHtml]="post.text | hashtags | mentionMark:profile.screenName:type | urlfy" *ngIf="mark && !editing"></p> -->
+        <textarea [hidden]="!editing" #textareaEdit class="form-control textarea-comment font-montserrat" placeholder="Write a comment" (keydown)="editPost($event, textareaEdit)"
+            (keyup)="resizeTextarea(textareaEdit)" [(ngModel)]="post.text" getCursorPosition></textarea>
+        <div [hidden]="!editing" class="pull-right under-emoji">
+            <i class="fa fa-smile-o" aria-hidden="true" #emojiTrigger (click)="showEmojiEdit(emojiTrigger)" data-toggle-element="emoji"></i>
+        </div>
+        <div class="clearfix"></div>
+    </section>
+
+    <section class="resume-link" *ngIf="post.type == 'link'">
+        <a [href]="post.linkSummary.link" target="_blank" class="img-wrapper">
+            <div class="resume-img img-post">
+                <img [src]="post.linkSummary.image" alt="">
+            </div>
+        </a>
+        <a [href]="post.linkSummary.link" target="_blank">
+            <div class="resume-text">
+                <h2 class="fs-16 font-segoe">{{ post.linkSummary.title }}</h2>
+                <p class="fs-12 font-segoe">{{ post.linkSummary.description }}</p>
+            </div>
+        </a>
+    </section>
+    <section class="interactions" *ngIf="retweeting">
+        <button class="btn btn-xs btn-danger text-white" (click)="toggleRetweet()">Cancel</button>
+        <button class="btn btn-xs btn-complete text-white" (click)="retweet()">Retweet</button>
+    </section>
+    <section class="interactions" *ngIf="!retweeting">
+        <span (click)="like()" class="cursor m-r-10">
+            <i class="action fa fa-thumbs-up" title="Curtir" [class.success]="preliked" aria-hidden="true" *ngIf="profile.type != 'I'"></i>
+            <i class="fa fa-heart" title="Curtir" [class.success]="preliked" aria-hidden="true" *ngIf="profile.type == 'I'"></i> {{ post.likesCount }}
+        </span>
+        <span class="cursor m-r-10" *ngIf="profile.type != 'T'">
+            <i class="action fa fa-comments" title="Comentários" aria-hidden="true"></i> {{ post.commentsCount }}
+        </span>
+        <span class="cursor m-r-10" *ngIf="profile.type != 'I'">
+            <i class="action fa fa-reply fa-flip-horizontal" title="Shares" aria-hidden="true" *ngIf="profile.type != 'T'"></i>
+            <i class="action fa fa-retweet" title="Retwittar" aria-hidden="true" (click)="toggleRetweet()" *ngIf="profile.type == 'T'"></i>
+            {{ post.sharesCount }}
+        </span>
+        <span class="cursor m-r-10" *ngIf="profile.type == 'T' && tab != 'P'">
+            <i class="action fa fa-reply fa-flip-horizontal" title="Responder" aria-hidden="true" (click)="toggleTwitterReply()" data-toggle-element="reply"></i>
+        </span>
+        <div class="dropdown pull-right" *ngIf="profile.type != 'I'">
+            <a class="channel-management" href="#" data-toggle="dropdown">
+                <i class="action fa fa-ellipsis-v" aria-hidden="true"></i>
+            </a>
+
+            <ul class="dropdown-menu pull-right" role="menu">
+                <li>
+                    <a class="dropdown-menu__item cursor" (click)="startEditPost()" *ngIf="profile.type == 'P'">Editar</a>
+                </li>
+                <li>
+                    <a class="dropdown-menu__item cursor" (click)="confirmDeletePost()" *ngIf="profile.type != 'I'">Excluir</a>
+                </li>
+            </ul>
+        </div>
+    </section>
+    <section class="comment-box" *ngIf="profile.type != 'T' || openTwitterReply" #streamComment>
+        <div class="overlay-mask" *ngIf="sendingComment">
+            <div>
+                <div class="sending-comment"></div>
+            </div>
+        </div>
+        <textarea #textarea class="form-control textarea-comment font-segoe fs-13" placeholder="Write a comment" (keydown)="sendComment($event, textarea)"
+            (keyup)="resizeTextarea(textarea)" getCursorPosition>{{ profile.type == 'T' ? '@' + post.screenName + ' ' : '' }}</textarea>
+        <i class="fa fa-smile-o cursor" [class.right10]="profile.type == 'T' || profile.type == 'I'" aria-hidden="true" #emojiTrigger (click)="showEmoji(emojiTrigger)"
+            data-toggle-element="emoji"></i>
+        <i class="fa fa-camera cursor" aria-hidden="true" (click)="openFileUpload()" *ngIf="profile.type != 'T' && profile.type != 'I'"></i>
+        <input #fileInput type="file" id="imgFile" hidden name="file" (change)="saveImage(fileInput)" accept="image/*">
+    </section>
+    <section class="img-preview" [hidden]="!hasImage">
+        <i class="fa fa-times close" aria-hidden="true" (click)="cleanAttachment()"></i>
+        <div class="fit relative">
+            <div class="overlay-mask" *ngIf="loadingImageComment">
+                <div class="text-center">
+                    <div class="sending-comment absolute-center"></div>
+                </div>
+            </div>
+            <img src="" #imgPreview *ngIf="typeMedia == 'photo'">
+            <div class="dz-preview dz-file-preview dz-processing dz-success" *ngIf="typeMedia == 'video'">
+                <div class="dz-details">
+                    <div class="dz-filename">
+                        <div class="fa fa-play-circle-o" style="font-size: 38px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <span data-dz-name="" *ngIf="typeMedia == 'video'">{{ videoName }}</span>
+    </section>
+    <section class="comments" *ngIf="post.streamPostComments && profile.type != 'T'">
+        <stream-post-comment [profile]="profile" [comment]="comment" [post]="post" [index]="i" (emit)="spliceComment($event)" *ngFor="let comment of post.streamPostComments.comments, let i = index"></stream-post-comment>
+        <div class="clearfix interactions load-more cursor" (click)="loadMoreComments()" *ngIf="(post.streamPostComments.comments.length && post.streamPostComments.comments.length < post.commentsCount) || (!post.streamPostComments.comments.length && post.commentsCount > 0)">
+            <!-- <div class="clearfix interactions load-more cursor" (click)="loadMoreComments()"> -->
+            <span class="action">
+                <i class="fa fa-comments success" aria-hidden="true"></i>
+            </span>
+            <span class="font-segoe fs-13"> Carregue mais comentários... </span>
+        </div>
+    </section>
+</div>

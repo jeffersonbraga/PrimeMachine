@@ -1,0 +1,13 @@
+a:hover{
+    color: #ccc !important;
+}
+
+@media (max-width: 360px) {
+    .hidden-xxs {
+        display: none !important;
+    }
+
+    .col-xxs-offset-0 {
+        margin-left: 0;
+    }
+}

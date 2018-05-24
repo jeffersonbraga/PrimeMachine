@@ -1,0 +1,36 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.AuthFacebookCallbackServlet;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import facebook4j.Facebook;
+
+public class ChangeAdminFacebookAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		getSession().setAttribute("facebook_auth_action", AuthFacebookCallbackServlet.CHANGE_ADMIN_TOKEN);
+		getSession().setAttribute("alr_rec_facebook", new Boolean(false));
+		getSession().setAttribute("profiles", (PersistentList<Profile>) getParameters().get("profiles"));
+		
+		Facebook facebook = new FacebookIntegration().getFacebookSystem();
+		facebook.setOAuthPermissions(FacebookIntegration.APP_PERMISSIONS);
+		
+		getRequest().getSession().setAttribute("facebook", facebook);
+		
+		String callbackURL = Persistent.SERVER_PATH + "/opsocial/authFacebookCallback";
+		
+		StringUtil oauthURL =  new StringUtil(facebook.getOAuthAuthorizationURL(callbackURL.toString()));
+		
+		getParameters().put("authenticationurl", oauthURL);
+	}
+
+}

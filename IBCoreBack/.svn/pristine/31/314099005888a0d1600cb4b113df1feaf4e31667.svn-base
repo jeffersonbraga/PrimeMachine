@@ -1,0 +1,910 @@
+package br.com.opsocial.server.utils.reports.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.text.WordUtils;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportDetailedFacebookDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookContentDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+public class ReportFacebookContentXLS {
+
+	private ReportFacebookContentDTO reportFacebookContent;
+	private Profile profile;
+	
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+	
+	private HSSFWorkbook wb;
+	private Sheet sheetContent;
+	
+	private CreationHelper createHelper;
+	
+	private CellStyle cellStyleHeader;
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellStyleHeaderDataPositive;
+	private CellStyle cellStyleHeaderDataNegative;
+	private CellStyle cellSecondaryHeaderData;
+	private CellStyle cellSecondaryHeaderNumber;
+	private CellStyle cellSecondaryHeaderCenter;
+	private CellStyle cellDateStyle;
+	private CellStyle cellStylePreAnalysis;
+	private CellStyle cellStylePreAnalysisResult;
+	private CellStyle cellStyleHLink;
+	private CellStyle cellDataPercentage;
+	
+	private Font fontHeader;
+	private Font fontHeaderData;
+	
+	private Float headerDataRowHeight;
+	
+	private String startDate;
+	private String endDate;
+	
+	private int rowSheetContentCount;
+	
+	public ReportFacebookContentXLS(ReportFacebookContentDTO reportFacebookContent, Profile profile) {
+		this.reportFacebookContent = reportFacebookContent;
+		this.profile = profile;
+	}
+	
+	public void createXLS() {
+			
+		wb = new HSSFWorkbook();
+		
+		initiateDefautStyles();
+		
+		this.reportsPath = ServicesImpl.context.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+		SimpleDateFormat dateFormatToFileName = new SimpleDateFormat("dd-MM-yyyy");
+		
+		startDate = dateFormat.format(new Date(reportFacebookContent.getDateFrom() * 1000L));
+		endDate = dateFormat.format(new Date(reportFacebookContent.getDateUntil() * 1000L));
+		
+		sheetContent = wb.createSheet("Facebook Conteúdo");
+		
+		headerDataRowHeight = 1.2F * sheetContent.getDefaultRowHeightInPoints();
+		
+		addMainHeader(sheetContent, profile.getScreenName() + " - Relatório Facebook - Conteúdo - Período de " + startDate + " a " + endDate, 5);
+		
+		addGeneralPostsStats();
+		addReachOfPosts();
+		addImpressionsOfPosts();
+		addStoriesOfPosts();
+		addConsumptionOfPosts();
+		addFansOnline();
+		
+		sheetContent.setDefaultColumnWidth(25);
+		sheetContent.setColumnWidth(0, 8000);
+		
+		try {
+			
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+			
+			formattedFileName = profile.getScreenName() + "-facebook-conteudo-" 
+					+ dateFormatToFileName.format(new Date(reportFacebookContent.getDateFrom() * 1000L)) + "--" 
+					+ dateFormatToFileName.format(new Date(reportFacebookContent.getDateUntil() * 1000L));
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void addFansOnline() {
+		
+		rowSheetContentCount++;
+		
+		Row rowFansOnlineTitle = sheetContent.createRow(rowSheetContentCount);
+		rowFansOnlineTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellFansOnlineTitle = rowFansOnlineTitle.createCell(0);
+		cellFansOnlineTitle.setCellValue("FÃS ONLINE POR HORÁRIO E DIA DA SEMANA");
+		cellFansOnlineTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowFansOnlinePerHourTitle = sheetContent.createRow(rowSheetContentCount);
+		rowFansOnlinePerHourTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTimeRangeTitle = rowFansOnlinePerHourTitle.createCell(0);
+		cellTimeRangeTitle.setCellValue("Faixa de horário");
+		cellTimeRangeTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellTimeRangeTotalTitle = rowFansOnlinePerHourTitle.createCell(1);
+		cellTimeRangeTotalTitle.setCellValue("Total de fãs");
+		cellTimeRangeTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellTimeRangeAverageTitle = rowFansOnlinePerHourTitle.createCell(2);
+		cellTimeRangeAverageTitle.setCellValue("Média diária de fãs");
+		cellTimeRangeAverageTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		for(Integer i = 0; i < 24; i++) {
+			
+			Row rowFansOnlinePerHourValues = sheetContent.createRow(rowSheetContentCount);
+			
+			Cell cellTimeRangeValue = rowFansOnlinePerHourValues.createCell(0);
+			cellTimeRangeValue.setCellValue(new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, i, 0)) + " - " +
+					new SimpleDateFormat("HH:mm").format(new Date(0, 0, 0, i+1, 0)));
+			
+			Cell cellTimeRangeTotalValue = rowFansOnlinePerHourValues.createCell(1);
+			cellTimeRangeTotalValue.setCellValue(reportFacebookContent.getFansOnlinePerHour().containsKey(ReportDetailedFacebookDTO.PAGE_FANS_ONLINE + "_" + i.toString()) ? 
+					reportFacebookContent.getFansOnlinePerHour().get(ReportDetailedFacebookDTO.PAGE_FANS_ONLINE + "_" + i.toString()) : 0);
+			
+			Cell cellTimeRangeAverageValue = rowFansOnlinePerHourValues.createCell(2);
+			cellTimeRangeAverageValue.setCellValue(reportFacebookContent.getAverageFansOnlinePerHour().containsKey(ReportDetailedFacebookDTO.PAGE_FANS_ONLINE + "_" +  i.toString()) ? 
+					reportFacebookContent.getAverageFansOnlinePerHour().get(ReportDetailedFacebookDTO.PAGE_FANS_ONLINE + "_" +  i.toString()) : 0);
+			
+			rowSheetContentCount++;
+		}
+		
+		rowSheetContentCount++;
+		Row rowTimeMoreFansOnline = sheetContent.createRow(rowSheetContentCount);
+		rowTimeMoreFansOnline.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTimeMoreFansOnlineTitle = rowTimeMoreFansOnline.createCell(0);
+		cellTimeMoreFansOnlineTitle.setCellValue("Maior número de fãs online:");
+		cellTimeMoreFansOnlineTitle.setCellStyle(cellStylePreAnalysis);
+		
+		String timeMoreFansOnlineFrom = new SimpleDateFormat("HH:mm").format(
+				new Date(0, 0, 0, Integer.parseInt(reportFacebookContent.getTimeWithMoreFansOnline().
+						substring(reportFacebookContent.getTimeWithMoreFansOnline().lastIndexOf('_') + 1)), 0));
+		
+		String timeMoreFansOnlineUntil = new SimpleDateFormat("HH:mm").format(
+				new Date(0, 0, 0, Integer.parseInt(reportFacebookContent.getTimeWithMoreFansOnline().
+						substring(reportFacebookContent.getTimeWithMoreFansOnline().lastIndexOf('_') + 1)) + 1, 0));
+		
+		Cell cellTimeMoreFansOnlineValue = rowTimeMoreFansOnline.createCell(1);
+		cellTimeMoreFansOnlineValue.setCellValue(timeMoreFansOnlineFrom + " - " + timeMoreFansOnlineUntil);
+		cellTimeMoreFansOnlineValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowWeekDayMoreFansOnline = sheetContent.createRow(rowSheetContentCount);
+		rowWeekDayMoreFansOnline.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellWeekDayMoreFansOnlineTitle = rowWeekDayMoreFansOnline.createCell(0);
+		cellWeekDayMoreFansOnlineTitle.setCellValue("Dia com maior alcance:");
+		cellWeekDayMoreFansOnlineTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellWeekDayMoreFansOnlineValue = rowWeekDayMoreFansOnline.createCell(1);
+		cellWeekDayMoreFansOnlineValue.setCellValue(WordUtils.capitalize(UtilFunctions.getFormattedWeekDay(reportFacebookContent.getWeekDayWithMoreFansOnline())));
+		cellWeekDayMoreFansOnlineValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addConsumptionOfPosts() {
+		
+		rowSheetContentCount += 2;
+		
+		Row rowConsumptionOfPostsTitle = sheetContent.createRow(rowSheetContentCount);
+		rowConsumptionOfPostsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellConsumptionOfPostsTitle = rowConsumptionOfPostsTitle.createCell(0);
+		cellConsumptionOfPostsTitle.setCellValue("CONSUMO DE CONTEÚDO QUE NÃO GERARAM HISTÓRIAS");
+		cellConsumptionOfPostsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowConsumptionOfPostsPerDayTitle = sheetContent.createRow(rowSheetContentCount);
+		rowConsumptionOfPostsPerDayTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellConsumptionOfPostsDateTitle = rowConsumptionOfPostsPerDayTitle.createCell(0);
+		cellConsumptionOfPostsDateTitle.setCellValue("Data");
+		cellConsumptionOfPostsDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellPhotoViewsTitle = rowConsumptionOfPostsPerDayTitle.createCell(1);
+		cellPhotoViewsTitle.setCellValue("Fotos clicadas");
+		cellPhotoViewsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellLinkClicksTitle = rowConsumptionOfPostsPerDayTitle.createCell(2);
+		cellLinkClicksTitle.setCellValue("Links clicados");
+		cellLinkClicksTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellVideoPlaysTitle = rowConsumptionOfPostsPerDayTitle.createCell(3);
+		cellVideoPlaysTitle.setCellValue("Vídeos reproduzidos");
+		cellVideoPlaysTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellOtherClicksTitle = rowConsumptionOfPostsPerDayTitle.createCell(4);
+		cellOtherClicksTitle.setCellValue("Outros");
+		cellOtherClicksTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellTotalConsumptionsTitle = rowConsumptionOfPostsPerDayTitle.createCell(5);
+		cellTotalConsumptionsTitle.setCellValue("Total");
+		cellTotalConsumptionsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		for(int i = 0; i < reportFacebookContent.getPostsConsumptionsPhotoViewByDay().size(); i++) {
+		
+			Row rowConsumptionsOfPostsValues = sheetContent.createRow(rowSheetContentCount);
+			
+			// Verificação de existência de valor de video plays para um determinado dia,
+			// necessária manter devido a bug que foi corrigido mas que não foi capaz de fechar as lacunas
+			// nos posts em que essa métrica não tinha valores.
+			Long postsConsumptionsVideoPlaysByDay = 0L;
+			for (int j = 0; j < reportFacebookContent.getPostsConsumptionsVideoPlaysByDay().size(); j++) {
+				if(reportFacebookContent.getPostsConsumptionsVideoPlaysByDay().get(j).getDay().equals(reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getDay())
+						&& reportFacebookContent.getPostsConsumptionsVideoPlaysByDay().get(j).getMonth().equals(reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getMonth())
+						&& reportFacebookContent.getPostsConsumptionsVideoPlaysByDay().get(j).getYear().equals(reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getYear())) {
+					postsConsumptionsVideoPlaysByDay = reportFacebookContent.getPostsConsumptionsVideoPlaysByDay().get(j).getSum(); 
+				}
+			}
+
+			Cell cellDateValue = rowConsumptionsOfPostsValues.createCell(0);
+			cellDateValue.setCellValue(reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getDay() + "/" 
+						+ reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getMonth() + "/"  
+						+ reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getYear());
+			
+			Cell cellPhotoViewsValue = rowConsumptionsOfPostsValues.createCell(1);
+			cellPhotoViewsValue.setCellValue(reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getSum());
+			
+			Cell cellLinkClicksValue = rowConsumptionsOfPostsValues.createCell(2);
+			cellLinkClicksValue.setCellValue(reportFacebookContent.getPostsConsumptionsLinkClicksByDay().get(i).getSum());
+			
+			Cell cellVideoPlaysValue = rowConsumptionsOfPostsValues.createCell(3);
+			cellVideoPlaysValue.setCellValue(postsConsumptionsVideoPlaysByDay);
+			
+			Cell cellOtherClicksValue = rowConsumptionsOfPostsValues.createCell(4);
+			cellOtherClicksValue.setCellValue(reportFacebookContent.getPostsConsumptionsOtherClicksByDay().get(i).getSum());
+			
+			Long consumptionsOfPosts = reportFacebookContent.getPostsConsumptionsPhotoViewByDay().get(i).getSum() +
+					reportFacebookContent.getPostsConsumptionsLinkClicksByDay().get(i).getSum() +
+					postsConsumptionsVideoPlaysByDay +
+					reportFacebookContent.getPostsConsumptionsOtherClicksByDay().get(i).getSum();
+			
+			Cell cellConsumptionsOfPostsValue = rowConsumptionsOfPostsValues.createCell(5);
+			cellConsumptionsOfPostsValue.setCellValue(consumptionsOfPosts);
+			
+			rowSheetContentCount++;
+		}
+	}
+	
+	private void addStoriesOfPosts() {
+		
+		rowSheetContentCount += 2;
+		
+		Row rowStoriesOfPostsTitle = sheetContent.createRow(rowSheetContentCount);
+		rowStoriesOfPostsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellStoriesOfPostsTitle = rowStoriesOfPostsTitle.createCell(0);
+		cellStoriesOfPostsTitle.setCellValue("ENVOLVIMENTO DO PÚBLICO POR TIPO DE INTERAÇÃO");
+		cellStoriesOfPostsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowStoriesOfPostsPerDayTitle = sheetContent.createRow(rowSheetContentCount);
+		rowStoriesOfPostsPerDayTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellStoriesOfPostsDateTitle = rowStoriesOfPostsPerDayTitle.createCell(0);
+		cellStoriesOfPostsDateTitle.setCellValue("Data");
+		cellStoriesOfPostsDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellLikesOfPostsPerDayTitle = rowStoriesOfPostsPerDayTitle.createCell(1);
+		cellLikesOfPostsPerDayTitle.setCellValue("Curtir");
+		cellLikesOfPostsPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentsOfPostsPerDayTitle = rowStoriesOfPostsPerDayTitle.createCell(2);
+		cellCommentsOfPostsPerDayTitle.setCellValue("Comentários");
+		cellCommentsOfPostsPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellSharesOfPostsPerDayTitle = rowStoriesOfPostsPerDayTitle.createCell(3);
+		cellSharesOfPostsPerDayTitle.setCellValue("Compartilhamentos");
+		cellSharesOfPostsPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellStoriesOfPostsPerDayTitle = rowStoriesOfPostsPerDayTitle.createCell(4);
+		cellStoriesOfPostsPerDayTitle.setCellValue("Total");
+		cellStoriesOfPostsPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		Long totalLikes = 0L;
+		Long totalComments = 0L;
+		Long totalShares = 0L;
+		for(int i = 0; i < reportFacebookContent.getPostsStoriesLikeByDay().size(); i++) {
+		
+			Row rowStoriesOfPostsValues = sheetContent.createRow(rowSheetContentCount);
+
+			Cell cellDateValue = rowStoriesOfPostsValues.createCell(0);
+			cellDateValue.setCellValue(reportFacebookContent.getPostsStoriesLikeByDay().get(i).getDay() + "/" 
+						+ reportFacebookContent.getPostsStoriesLikeByDay().get(i).getMonth() + "/"  
+						+ reportFacebookContent.getPostsStoriesLikeByDay().get(i).getYear());
+			
+			Cell cellLikesOfPostsValue = rowStoriesOfPostsValues.createCell(1);
+			cellLikesOfPostsValue.setCellValue(reportFacebookContent.getPostsStoriesLikeByDay().get(i).getSum());
+			totalLikes += reportFacebookContent.getPostsStoriesLikeByDay().get(i).getSum();
+			
+			Cell cellCommentsOfPostsValue = rowStoriesOfPostsValues.createCell(2);
+			cellCommentsOfPostsValue.setCellValue(reportFacebookContent.getPostsStoriesCommmentByDay().get(i).getSum());
+			totalComments += reportFacebookContent.getPostsStoriesCommmentByDay().get(i).getSum();
+			
+			Cell cellSharesOfPostsValue = rowStoriesOfPostsValues.createCell(3);
+			cellSharesOfPostsValue.setCellValue(reportFacebookContent.getPostsStoriesShareByDay().get(i).getSum());
+			totalShares += reportFacebookContent.getPostsStoriesShareByDay().get(i).getSum();
+			
+			Long storiesOfPosts = reportFacebookContent.getPostsStoriesLikeByDay().get(i).getSum() + 
+					reportFacebookContent.getPostsStoriesCommmentByDay().get(i).getSum() +
+					reportFacebookContent.getPostsStoriesShareByDay().get(i).getSum();
+			
+			Cell cellStoriesOfPostsValue = rowStoriesOfPostsValues.createCell(4);
+			cellStoriesOfPostsValue.setCellValue(storiesOfPosts);
+			
+			rowSheetContentCount++;
+		}
+		
+		rowSheetContentCount++;
+		Row rowTotalStories = sheetContent.createRow(rowSheetContentCount);
+		rowTotalStories.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalStoriesTitle = rowTotalStories.createCell(0);
+		cellTotalStoriesTitle.setCellValue("Total de interações no período:");
+		cellTotalStoriesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalStoriesValue = rowTotalStories.createCell(1);
+		cellTotalStoriesValue.setCellValue(reportFacebookContent.getPostsStoriesCount());
+		cellTotalStoriesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowTotalLikes = sheetContent.createRow(rowSheetContentCount);
+		rowTotalLikes.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalLikesTitle = rowTotalLikes.createCell(0);
+		cellTotalLikesTitle.setCellValue("Total curtir:");
+		cellTotalLikesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalLikesValue = rowTotalLikes.createCell(1);
+		cellTotalLikesValue.setCellValue(totalLikes);
+		cellTotalLikesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowTotalComments = sheetContent.createRow(rowSheetContentCount);
+		rowTotalComments.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalCommentsTitle = rowTotalComments.createCell(0);
+		cellTotalCommentsTitle.setCellValue("Total comentários:");
+		cellTotalCommentsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalCommentsValue = rowTotalComments.createCell(1);
+		cellTotalCommentsValue.setCellValue(totalComments);
+		cellTotalCommentsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowTotalShares = sheetContent.createRow(rowSheetContentCount);
+		rowTotalShares.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalSharesTitle = rowTotalShares.createCell(0);
+		cellTotalSharesTitle.setCellValue("Total compartilhamentos:");
+		cellTotalSharesTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalSharesValue = rowTotalShares.createCell(1);
+		cellTotalSharesValue.setCellValue(totalShares);
+		cellTotalSharesValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount += 2;
+		Row rowStoriesByTypePostTitle = sheetContent.createRow(rowSheetContentCount);
+		rowStoriesByTypePostTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellStoriesByTypePostTitle = rowStoriesByTypePostTitle.createCell(0);
+		cellStoriesByTypePostTitle.setCellValue("TOTAL DE INTERAÇÕES POR TIPO DE POST");
+		cellStoriesByTypePostTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowStoriesByTypePostSubTitle = sheetContent.createRow(rowSheetContentCount);
+		rowStoriesByTypePostSubTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellStoriesByTypePostTypeTitle = rowStoriesByTypePostSubTitle.createCell(0);
+		cellStoriesByTypePostTypeTitle.setCellValue("Tipo de posts");
+		cellStoriesByTypePostTypeTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellLikesByTypePostTitle = rowStoriesByTypePostSubTitle.createCell(1);
+		cellLikesByTypePostTitle.setCellValue("Curtir");
+		cellLikesByTypePostTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentsByTypePostTitle = rowStoriesByTypePostSubTitle.createCell(2);
+		cellCommentsByTypePostTitle.setCellValue("Comentários");
+		cellCommentsByTypePostTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellSharesByTypePostTitle = rowStoriesByTypePostSubTitle.createCell(3);
+		cellSharesByTypePostTitle.setCellValue("Compartilhamentos");
+		cellSharesByTypePostTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellStoriesByTypePostTotalTitle = rowStoriesByTypePostSubTitle.createCell(4);
+		cellStoriesByTypePostTotalTitle.setCellValue("Total");
+		cellStoriesByTypePostTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		Row rowStatusValues = sheetContent.createRow(rowSheetContentCount);
+		
+		Cell cellStatusValue = rowStatusValues.createCell(0);
+		cellStatusValue.setCellValue("Status");
+		
+		Long likesInStatus = reportFacebookContent.getPostsStoriesLikeByStatusType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookContent.getPostsStoriesLikeByStatusType().get(FaceReportPostDTO.STATUS_UPDATE) : 0L;
+		
+		Cell cellLikesInStatusValue = rowStatusValues.createCell(1);
+		cellLikesInStatusValue.setCellValue(likesInStatus);
+		
+		Long commentsInStatus = reportFacebookContent.getPostsStoriesCommentByStatusType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookContent.getPostsStoriesCommentByStatusType().get(FaceReportPostDTO.STATUS_UPDATE) : 0L;
+		
+		Cell cellCommentsInStatusValue = rowStatusValues.createCell(2);
+		cellCommentsInStatusValue.setCellValue(commentsInStatus);
+		
+		Long sharesInStatus = reportFacebookContent.getPostsStoriesShareByStatusType().containsKey(FaceReportPostDTO.STATUS_UPDATE) ? 
+				reportFacebookContent.getPostsStoriesShareByStatusType().get(FaceReportPostDTO.STATUS_UPDATE) : 0L;
+		
+		Cell cellSharesInStatusValue = rowStatusValues.createCell(3);
+		cellSharesInStatusValue.setCellValue(sharesInStatus);
+		
+		Cell cellStoriesInStatusValue = rowStatusValues.createCell(4);
+		cellStoriesInStatusValue.setCellValue(likesInStatus + commentsInStatus + sharesInStatus);
+		
+		rowSheetContentCount++;
+		Row rowPhotosValues = sheetContent.createRow(rowSheetContentCount);
+		
+		Cell cellPhotosValue = rowPhotosValues.createCell(0);
+		cellPhotosValue.setCellValue("Foto");
+		
+		Long likesInPhotos = reportFacebookContent.getPostsStoriesLikeByStatusType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookContent.getPostsStoriesLikeByStatusType().get(FaceReportPostDTO.PHOTOS_POSTED) : 0L;
+		
+		Cell cellLikesInPhotosValue = rowPhotosValues.createCell(1);
+		cellLikesInPhotosValue.setCellValue(likesInPhotos);
+		
+		Long commentsInPhotos = reportFacebookContent.getPostsStoriesCommentByStatusType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookContent.getPostsStoriesCommentByStatusType().get(FaceReportPostDTO.PHOTOS_POSTED) : 0L;
+		
+		Cell cellCommentsInPhotosValue = rowPhotosValues.createCell(2);
+		cellCommentsInPhotosValue.setCellValue(commentsInPhotos);
+		
+		Long sharesInPhotos = reportFacebookContent.getPostsStoriesShareByStatusType().containsKey(FaceReportPostDTO.PHOTOS_POSTED) ? 
+				reportFacebookContent.getPostsStoriesShareByStatusType().get(FaceReportPostDTO.PHOTOS_POSTED) : 0L;
+		
+		Cell cellSharesInPhotosValue = rowPhotosValues.createCell(3);
+		cellSharesInPhotosValue.setCellValue(sharesInPhotos);
+		
+		Cell cellStoriesInPhotosValue = rowPhotosValues.createCell(4);
+		cellStoriesInPhotosValue.setCellValue(likesInPhotos + commentsInPhotos + sharesInPhotos);
+		
+		rowSheetContentCount++;
+		Row rowLinksValues = sheetContent.createRow(rowSheetContentCount);
+		
+		Cell cellLinksValue = rowLinksValues.createCell(0);
+		cellLinksValue.setCellValue("Link");
+		
+		Long likesInLinks = reportFacebookContent.getPostsStoriesLikeByStatusType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookContent.getPostsStoriesLikeByStatusType().get(FaceReportPostDTO.LINK_POSTED) : 0L;
+		
+		Cell cellLikesInLinksValue = rowLinksValues.createCell(1);
+		cellLikesInLinksValue.setCellValue(likesInLinks);
+		
+		Long commentsInLinks = reportFacebookContent.getPostsStoriesCommentByStatusType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookContent.getPostsStoriesCommentByStatusType().get(FaceReportPostDTO.LINK_POSTED) : 0L;
+		
+		Cell cellCommentsInLinksValue = rowLinksValues.createCell(2);
+		cellCommentsInLinksValue.setCellValue(commentsInLinks);
+		
+		Long sharesInLinks = reportFacebookContent.getPostsStoriesShareByStatusType().containsKey(FaceReportPostDTO.LINK_POSTED) ? 
+				reportFacebookContent.getPostsStoriesShareByStatusType().get(FaceReportPostDTO.LINK_POSTED) : 0L;
+		
+		Cell cellSharesInLinksValue = rowLinksValues.createCell(3);
+		cellSharesInLinksValue.setCellValue(sharesInLinks);
+		
+		Cell cellStoriesInLinksValue = rowLinksValues.createCell(4);
+		cellStoriesInLinksValue.setCellValue(likesInLinks + commentsInLinks + sharesInLinks);
+		
+		rowSheetContentCount++;
+		Row rowVideoValues = sheetContent.createRow(rowSheetContentCount);
+		
+		Cell cellVideoValue = rowVideoValues.createCell(0);
+		cellVideoValue.setCellValue("Link");
+		
+		Long likesInVideo = reportFacebookContent.getPostsStoriesLikeByStatusType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookContent.getPostsStoriesLikeByStatusType().get(FaceReportPostDTO.VIDEO_POSTED) : 0L;
+		
+		Cell cellLikesInVideoValue = rowVideoValues.createCell(1);
+		cellLikesInVideoValue.setCellValue(likesInVideo);
+		
+		Long commentsInVideo = reportFacebookContent.getPostsStoriesCommentByStatusType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookContent.getPostsStoriesCommentByStatusType().get(FaceReportPostDTO.VIDEO_POSTED) : 0L;
+		
+		Cell cellCommentsInVideoValue = rowVideoValues.createCell(2);
+		cellCommentsInVideoValue.setCellValue(commentsInVideo);
+		
+		Long sharesInVideo = reportFacebookContent.getPostsStoriesShareByStatusType().containsKey(FaceReportPostDTO.VIDEO_POSTED) ? 
+				reportFacebookContent.getPostsStoriesShareByStatusType().get(FaceReportPostDTO.VIDEO_POSTED) : 0L;
+		
+		Cell cellSharesInVideoValue = rowVideoValues.createCell(3);
+		cellSharesInVideoValue.setCellValue(sharesInVideo);
+		
+		Cell cellStoriesInVideoValue = rowVideoValues.createCell(4);
+		cellStoriesInVideoValue.setCellValue(likesInVideo + commentsInVideo + sharesInVideo);
+	}
+	
+	private void addImpressionsOfPosts() {
+		
+		rowSheetContentCount += 2;
+		
+		Row rowImpressionsOfPostsTitle = sheetContent.createRow(rowSheetContentCount);
+		rowImpressionsOfPostsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellImpressionsOfPostsTitle = rowImpressionsOfPostsTitle.createCell(0);
+		cellImpressionsOfPostsTitle.setCellValue("IMPRESSÕES DURANTE O PERÍODO");
+		cellImpressionsOfPostsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowImpOfPostsPerDayTitle = sheetContent.createRow(rowSheetContentCount);
+		rowImpOfPostsPerDayTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellImpOfPostsDateTitle = rowImpOfPostsPerDayTitle.createCell(0);
+		cellImpOfPostsDateTitle.setCellValue("Data");
+		cellImpOfPostsDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellImpOfPostsPerDayTitle = rowImpOfPostsPerDayTitle.createCell(1);
+		cellImpOfPostsPerDayTitle.setCellValue("Impressões totais");
+		cellImpOfPostsPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellOrganicImpPerDayTitle = rowImpOfPostsPerDayTitle.createCell(2);
+		cellOrganicImpPerDayTitle.setCellValue("Orgânico");
+		cellOrganicImpPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellViralImpPerDayTitle = rowImpOfPostsPerDayTitle.createCell(3);
+		cellViralImpPerDayTitle.setCellValue("Viral");
+		cellViralImpPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellPaidImpPerDayTitle = rowImpOfPostsPerDayTitle.createCell(4);
+		cellPaidImpPerDayTitle.setCellValue("Pago");
+		cellPaidImpPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		for(int i = 0; i < reportFacebookContent.getPostsImpressionsOrganicByDay().size(); i++) {
+		
+			Row rowImpOfPostsValues = sheetContent.createRow(rowSheetContentCount);
+
+			Cell cellDateValue = rowImpOfPostsValues.createCell(0);
+			cellDateValue.setCellValue(reportFacebookContent.getPostsImpressionsOrganicByDay().get(i).getDay() + "/" 
+						+ reportFacebookContent.getPostsImpressionsOrganicByDay().get(i).getMonth() + "/" 
+						+ reportFacebookContent.getPostsImpressionsOrganicByDay().get(i).getYear());
+			
+			Long impressionsOfPosts = reportFacebookContent.getPostsImpressionsOrganicByDay().get(i).getSum() + 
+					reportFacebookContent.getPostsImpressionsPaidByDay().get(i).getSum() +
+					reportFacebookContent.getPostsImpressionsViralByDay().get(i).getSum();
+			
+			Cell cellImpressionsOfPostsValue = rowImpOfPostsValues.createCell(1);
+			cellImpressionsOfPostsValue.setCellValue(impressionsOfPosts);
+			
+			Cell cellOrganicImpressionsValue = rowImpOfPostsValues.createCell(2);
+			cellOrganicImpressionsValue.setCellValue(reportFacebookContent.getPostsImpressionsOrganicByDay().get(i).getSum());
+			
+			Cell cellViralImpressionsValue = rowImpOfPostsValues.createCell(3);
+			cellViralImpressionsValue.setCellValue(reportFacebookContent.getPostsImpressionsViralByDay().get(i).getSum());
+			
+			Cell cellPaidImpressionsValue = rowImpOfPostsValues.createCell(4);
+			cellPaidImpressionsValue.setCellValue(reportFacebookContent.getPostsImpressionsPaidByDay().get(i).getSum());
+			
+			rowSheetContentCount++;
+		}
+		
+		rowSheetContentCount++;
+		Row rowTotalImpressions = sheetContent.createRow(rowSheetContentCount);
+		rowTotalImpressions.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellTotalImpressionsTitle = rowTotalImpressions.createCell(0);
+		cellTotalImpressionsTitle.setCellValue("Impressões totais:");
+		cellTotalImpressionsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellTotalImpressionsValue = rowTotalImpressions.createCell(1);
+		cellTotalImpressionsValue.setCellValue(reportFacebookContent.getPostsImpressionsCount());
+		cellTotalImpressionsValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowAverageImpressions = sheetContent.createRow(rowSheetContentCount);
+		rowAverageImpressions.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAverageImpressionsTitle = rowAverageImpressions.createCell(0);
+		cellAverageImpressionsTitle.setCellValue("Média diária de impressões:");
+		cellAverageImpressionsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAverageImpressionsValue = rowAverageImpressions.createCell(1);
+		cellAverageImpressionsValue.setCellValue(reportFacebookContent.getAverageImpressionsOfPostsPerDay());
+		cellAverageImpressionsValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addReachOfPosts() {
+		
+		rowSheetContentCount += 2;
+		
+		Row rowReachOfPostsTitle = sheetContent.createRow(rowSheetContentCount);
+		rowReachOfPostsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellReachOfPostsTitle = rowReachOfPostsTitle.createCell(0);
+		cellReachOfPostsTitle.setCellValue("ALCANCE DURANTE O PERÍODO");
+		cellReachOfPostsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowReachOfPostsPerDayTitle = sheetContent.createRow(rowSheetContentCount);
+		rowReachOfPostsPerDayTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellReachOfPostsDateTitle = rowReachOfPostsPerDayTitle.createCell(0);
+		cellReachOfPostsDateTitle.setCellValue("Data");
+		cellReachOfPostsDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellReachOfPostsPerDayTitle = rowReachOfPostsPerDayTitle.createCell(1);
+		cellReachOfPostsPerDayTitle.setCellValue("Alcance total");
+		cellReachOfPostsPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellOrganicReachPerDayTitle = rowReachOfPostsPerDayTitle.createCell(2);
+		cellOrganicReachPerDayTitle.setCellValue("Orgânico");
+		cellOrganicReachPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellViralReachPerDayTitle = rowReachOfPostsPerDayTitle.createCell(3);
+		cellViralReachPerDayTitle.setCellValue("Viral");
+		cellViralReachPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellPaidReachPerDayTitle = rowReachOfPostsPerDayTitle.createCell(4);
+		cellPaidReachPerDayTitle.setCellValue("Pago");
+		cellPaidReachPerDayTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		for(int i = 0; i < reportFacebookContent.getPostsReachOrganicByDay().size(); i++) {
+		
+			Row rowReachOfPostsValues = sheetContent.createRow(rowSheetContentCount);
+
+			Cell cellDateValue = rowReachOfPostsValues.createCell(0);
+			cellDateValue.setCellValue(reportFacebookContent.getPostsReachOrganicByDay().get(i).getDay() + "/" 
+						+ reportFacebookContent.getPostsReachOrganicByDay().get(i).getMonth() + "/" 
+						+ reportFacebookContent.getPostsReachOrganicByDay().get(i).getYear());
+			
+			Long reachOfPosts = reportFacebookContent.getPostsReachOrganicByDay().get(i).getSum() + 
+					reportFacebookContent.getPostsReachPaidByDay().get(i).getSum() +
+					reportFacebookContent.getPostsReachViralByDay().get(i).getSum();
+			
+			Cell cellReachOfPostsValue = rowReachOfPostsValues.createCell(1);
+			cellReachOfPostsValue.setCellValue(reachOfPosts);
+			
+			Cell cellOrganicReachValue = rowReachOfPostsValues.createCell(2);
+			cellOrganicReachValue.setCellValue(reportFacebookContent.getPostsReachOrganicByDay().get(i).getSum());
+			
+			Cell cellViralReachValue = rowReachOfPostsValues.createCell(3);
+			cellViralReachValue.setCellValue(reportFacebookContent.getPostsReachViralByDay().get(i).getSum());
+			
+			Cell cellPaidReachValue = rowReachOfPostsValues.createCell(4);
+			cellPaidReachValue.setCellValue(reportFacebookContent.getPostsReachPaidByDay().get(i).getSum());
+			
+			rowSheetContentCount++;
+		}
+		
+		rowSheetContentCount++;
+		Row rowTotalReachOfPosts = sheetContent.createRow(rowSheetContentCount);
+		rowTotalReachOfPosts.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAveragePostsReachTitle = rowTotalReachOfPosts.createCell(0);
+		cellAveragePostsReachTitle.setCellValue("Alcance total no período:");
+		cellAveragePostsReachTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAveragePostsReachValue = rowTotalReachOfPosts.createCell(1);
+		cellAveragePostsReachValue.setCellValue(reportFacebookContent.getPostsReachCount());
+		cellAveragePostsReachValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowAverageReachOfPosts = sheetContent.createRow(rowSheetContentCount);
+		rowAverageReachOfPosts.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAverageReachOfPostsTitle = rowAverageReachOfPosts.createCell(0);
+		cellAverageReachOfPostsTitle.setCellValue("Média diária de alcance:");
+		cellAverageReachOfPostsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAverageReachOfPostsValue = rowAverageReachOfPosts.createCell(1);
+		cellAverageReachOfPostsValue.setCellValue(reportFacebookContent.getAverageReachOfPostsPerDay());
+		cellAverageReachOfPostsValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addGeneralPostsStats() {
+		
+		rowSheetContentCount = 2;
+		
+		Row rowGeneralPostsStatsTitle = sheetContent.createRow(rowSheetContentCount);
+		rowGeneralPostsStatsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellGeneralPostsStatsTitle = rowGeneralPostsStatsTitle.createCell(0);
+		cellGeneralPostsStatsTitle.setCellValue("POSTS DURANTE O PERÍODO");
+		cellGeneralPostsStatsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetContent.addMergedRegion(new CellRangeAddress(rowSheetContentCount, rowSheetContentCount, 0, 5));
+		
+		rowSheetContentCount++;
+		Row rowPostsPerDayTitle = sheetContent.createRow(rowSheetContentCount);
+		rowPostsPerDayTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostsDateTitle = rowPostsPerDayTitle.createCell(0);
+		cellPostsDateTitle.setCellValue("Data");
+		cellPostsDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellPostsTotalTitle = rowPostsPerDayTitle.createCell(1);
+		cellPostsTotalTitle.setCellValue("Total de posts");
+		cellPostsTotalTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		rowSheetContentCount++;
+		for (SumByDate postsPerDay : reportFacebookContent.getNumberOfPosts()) {
+
+			Row rowPostsTotalValues = sheetContent.createRow(rowSheetContentCount);
+
+			Cell cellDateValue = rowPostsTotalValues.createCell(0);
+			cellDateValue.setCellValue(postsPerDay.getDay() + "/" + postsPerDay.getMonth() + "/" + postsPerDay.getYear());
+			
+			Cell cellTotalValue = rowPostsTotalValues.createCell(1);
+			cellTotalValue.setCellValue(postsPerDay.getSum());
+
+			rowSheetContentCount++;
+		}
+		
+		rowSheetContentCount++;
+		Row rowAveragePostsReach = sheetContent.createRow(rowSheetContentCount);
+		rowAveragePostsReach.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAveragePostsReachTitle = rowAveragePostsReach.createCell(0);
+		cellAveragePostsReachTitle.setCellValue("Alcance médio dos posts:");
+		cellAveragePostsReachTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAveragePostsReachValue = rowAveragePostsReach.createCell(1);
+		cellAveragePostsReachValue.setCellValue(reportFacebookContent.getAveragePostsReach());
+		cellAveragePostsReachValue.setCellStyle(cellStylePreAnalysisResult);
+		
+		rowSheetContentCount++;
+		Row rowAveragePostsInteractions = sheetContent.createRow(rowSheetContentCount);
+		rowAveragePostsInteractions.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellAveragePostsInteractionsTitle = rowAveragePostsInteractions.createCell(0);
+		cellAveragePostsInteractionsTitle.setCellValue("Média de interações por post:");
+		cellAveragePostsInteractionsTitle.setCellStyle(cellStylePreAnalysis);
+		
+		Cell cellAveragePostsInteractionsValue = rowAveragePostsInteractions.createCell(1);
+		cellAveragePostsInteractionsValue.setCellValue(reportFacebookContent.getAveragePostsInteractions());
+		cellAveragePostsInteractionsValue.setCellStyle(cellStylePreAnalysisResult);
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+		
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+		
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+	
+	private void initiateDefautStyles() {
+		
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+		
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte) 102, (byte) 153, (byte) 204);
+		palette.setColorAtIndex(IndexedColors.YELLOW.index, (byte) 255, (byte) 211, (byte) 32);
+		palette.setColorAtIndex(IndexedColors.GREEN.index, (byte) 174, (byte) 207, (byte) 0);
+		
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
+		fontHeaderData = wb.createFont();
+		fontHeaderData.setFontHeightInPoints((short) 11);
+		fontHeaderData.setBold(true);
+		
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.YELLOW.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataPositive = wb.createCellStyle();
+		cellStyleHeaderDataPositive.setFillForegroundColor(IndexedColors.GREEN.index);
+		cellStyleHeaderDataPositive.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataPositive.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataNegative = wb.createCellStyle();
+		cellStyleHeaderDataNegative.setFillForegroundColor(IndexedColors.RED.index);
+		cellStyleHeaderDataNegative.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataNegative.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderData = wb.createCellStyle();
+		cellSecondaryHeaderData.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderNumber = wb.createCellStyle();
+		cellSecondaryHeaderNumber.setFont(fontHeaderData);
+		cellSecondaryHeaderNumber.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		cellSecondaryHeaderCenter = wb.createCellStyle();
+		cellSecondaryHeaderCenter.setFont(fontHeaderData);
+		cellSecondaryHeaderCenter.setAlignment(CellStyle.ALIGN_CENTER);
+		
+		cellStylePreAnalysis = wb.createCellStyle();
+		cellStylePreAnalysis.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysis.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysis.setFont(fontHeaderData);
+		
+		cellStylePreAnalysisResult = wb.createCellStyle();
+		cellStylePreAnalysisResult.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysisResult.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysisResult.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		createHelper = wb.getCreationHelper();
+		
+		cellDateStyle = wb.createCellStyle();
+	    cellDateStyle.setDataFormat(
+	        createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+	        
+    	//by default hyperlinks are blue and underlined
+    	cellStyleHLink = wb.createCellStyle();
+    	
+    	Font fontHLink = wb.createFont();
+    	fontHLink.setUnderline(Font.U_SINGLE);
+    	fontHLink.setColor(IndexedColors.BLUE.getIndex());
+    	
+    	cellStyleHLink.setFont(fontHLink);
+    	
+    	cellDataPercentage = wb.createCellStyle();
+    	cellDataPercentage.setAlignment(CellStyle.ALIGN_RIGHT);
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+	
+}

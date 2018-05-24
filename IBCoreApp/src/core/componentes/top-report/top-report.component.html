@@ -1,0 +1,19 @@
+<div class="hidden-print" *ngIf="isValidPeriod" >
+	<div class="pull-left mobi-xs-4">
+		<button class="btn btn-default btn-days btn-mobile" (click)="choseInterval(7)">7 dias</button>
+	</div>
+	<div class="pull-left mobi-xs-4">	
+		<button class="btn btn-default btn-days btn-mobile" (click)="choseInterval(15)">15 dias</button>
+	</div>
+	<div class="pull-left mobi-xs-4">	
+		<button class="btn btn-default btn-days btn-mobile" (click)="choseInterval(30)">30 dias</button>
+	</div>
+	<div class="pull-left div-calendar btn-mobile">
+		<div class="input-group date" *ngIf="bsRangeValue.length">
+			<span class="input-group-addon cursor" (click)="drp.toggle()"><i class="fa fa-calendar"></i></span>
+			<!-- <input type="text" class="form-control" #datePickerFrom [ngModel]="dateFrom | date:'MM/dd/yyyy'"> -->
+			<!-- <input type="text" #datePickerFrom [ngModel]="dateFrom | date:'MM/dd/yyyy'" bsDatepicker #dp="bsDatepicker" [bsConfig]="bsConfig" class="form-control"> -->
+			<input class="form-control" #drp="bsDaterangepicker" [bsConfig]="bsConfig" bsDaterangepicker [(ngModel)]="bsRangeValue" (bsValueChange)="emit()">
+		</div>
+	</div>
+</div>

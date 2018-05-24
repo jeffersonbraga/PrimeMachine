@@ -1,0 +1,436 @@
+<h6 class="fs-14">
+  <i class="fa fa-instagram m-r-5 v-align-middle"></i>
+  <span class="v-align-middle"><strong>{{ profile.screenName }} • Overview • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+  <!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Visão Geral • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+</h6>
+<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+  <button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+  <button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+</nav>
+<div class="sm-gutter">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="row p-l-20">
+          <div class="col-lg-2 col-md-2 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-instagram fs-14" aria-hidden="true" style="color:#989898"></i>
+                  TOTAL DE POSTS																						
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.totalPosts}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-2 col-md-2 col-xs-4">								
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-picture-o" aria-hidden="true" style="color:#989898"></i>
+                  POSTS EM FOTO
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.totalPostsImage}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-2 col-md-2 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-video-camera" aria-hidden="true" style="color:#989898"></i>
+                  POSTS EM VIDEO																						
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.totalPostsVideo}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-2 col-md-2 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-book" aria-hidden="true" style="color:#989898"></i>
+                  POSTS EM ALBUM																						
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.totalPostsCarousel}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-2 col-md-2 col-xs-4" style="border-left: 4px;">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-hand-o-up" aria-hidden="true" style="color:#989898"></i>
+                  MÉDIA DE INTERAÇÕES POR POST																					
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.averageInteractionsPosts}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-2 col-md-2 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-user" aria-hidden="true" style="color:#989898"></i>
+                  MÉDIA DE INTERAÇÕES POR SEGUIDOR																						
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.averageInteractionsFollower}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="row p-l-20">
+          <div class="col-lg-3 col-md-6 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-eye" aria-hidden="true" style="color:#989898"></i>
+                  IMPRESSÕES NO PERÍODO																						
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.impressions}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-3 col-md-6 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-user" aria-hidden="true" style="color:#989898"></i>
+                  ALCANCE NO PERÍODO																						
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.reach}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-3 col-md-6 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-mobile" aria-hidden="true" style="color:#989898"></i>
+                  VISUALIZAÇÕES DO PERFIL																						
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.profileViews}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <div class="col-lg-3 col-md-6 col-xs-4">
+            <div class="panel no-border no-margin">
+              <div class="panel-heading p-b-0 p-l-0 p-r-0" style="min-height: 0;">
+                <div class="panel-title">
+                  <i class="fa fa-link" aria-hidden="true" style="color:#989898"></i>
+                  CLIQUES NA URL																						
+                  
+                </div>
+              </div>
+              <div class="panel-body p-l-0 mobi-h-40">
+                <div class="row">
+                  <div class="col-md-12">
+                    <h1 class="m-t-0 m-b-0 bold" style="color:#00d6f6">{{dataOverview.websiteClicks}}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+        </div>
+      </div>
+    </div>
+  
+    <div class="col-md-12 col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">MUDANÇA DE FOLLOWERS NO PERÍODO</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+              <div class="col-md-9 p-r-0 col-xs-12">
+                <stacked-column-chart [data]="instagramFollowerTrend" [legends]="legendsFollowerTrend" heigth="280"></stacked-column-chart>
+              </div>
+              <div class="col-md-3 p-l-10 col-xs-3">
+                <aside-text-icon [data]="totalFollowersPeakAside"></aside-text-icon>
+              </div>
+              <div class="col-md-3 p-l-10 col-xs-3">
+                <aside-text-icon [data]="newFollowersPeakAside"></aside-text-icon>
+              </div>
+              <div class="col-md-3 p-l-10 col-xs-3">
+                <aside-text-icon [data]="unFollowersPeakAside"></aside-text-icon>
+              </div>
+              <div class="col-md-3 p-l-10 col-xs-3">
+                <aside-text-icon [data]="followersBalancePeakAside"></aside-text-icon>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="col-md-4 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">DEMOGRAFIA DO PÚBLICO</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-xs-12 col-xs-12">
+              <stacked-column-chart [data]="instagramPublicAgeGender" heigth="280" [legends]="legendsPublicAgeGender"></stacked-column-chart>
+              <div class="row">
+                <div class="col-md-12 col-lg-6 col-xs-6">
+                    <footer-text-icon [data]="complementPublicAge"></footer-text-icon> 
+                </div>
+                <div class="col-md-12 col-lg-6 col-xs-6">
+                  <aside-pie-chart [data]="complementPublicGender"></aside-pie-chart>
+                </div> 
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">TOP PAÍSES</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12">
+              <table-chart [data]='countriesWithMoreFollowersData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">TOP CIDADES</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12">
+              <table-chart [data]='citiesWithMoreFollowersData'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="col-md-8 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">SEGUIDORES ONLINE POR HORÁRIO</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12 col-xs-12">
+              <stacked-area-chart class="col-md-12 col-xs-12" [data]="onlineFollowersByHour" heigth="280" format="%H:%M" [tickValues]="fansOnlinePerHourTickValues"
+                rotateLabels="-45"></stacked-area-chart>
+              <footer-text-icon class="col-xs-12" [data]="timeWithMoreFansOnlineFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">SEGUIDORES ONLINE POR DIA DA SEMANA</div>
+        </div>
+        <div class="panel-body">
+          <stacked-column-chart class="col-md-12 col-xs-12" [data]="onlineFollowersByDay" heigth="250"></stacked-column-chart>
+          <footer-text-icon class="col-md-12 col-xs-12" [data]="weekDayWithMoreFansOnlineFooter"></footer-text-icon>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">LIKES NO PERÍODO</div>
+        </div>
+        <div class="panel-body">
+            <stacked-column-chart class="col-md-12 col-lg-12 col-xs-12" [data]="likesPerDay" heigth="250"></stacked-column-chart>
+            <div class="row">
+              <div class="col-md-6 col-lg-6 col-xs-6">
+                <footer-text-icon [data]="totalLikesFooter"></footer-text-icon>
+              </div>
+              <div class="col-md-6 col-lg-6 col-xs-6">
+                <footer-text-icon [data]="averageLikesPerDayFooter"></footer-text-icon>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 report-full col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">COMMENTS NO PERÍODO</div>
+        </div>
+        <div class="panel-body">
+          <stacked-column-chart [data]="commentsPerDay" heigth="250"></stacked-column-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-6 col-xs-9">
+              <footer-text-icon [data]="totalCommentsFooter"></footer-text-icon>
+            </div>
+            <div class="col-md-12 col-lg-6 col-xs-3">
+              <footer-text-icon [data]="averageCommentsPerDayFooter"></footer-text-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="col-md-12 col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">LIKES E COMMMENTS POR HORÁRIO</div>
+        </div>
+        <div class="panel-body">
+          <stacked-area-chart class="col-xs-12" [data]="likesCommentsPerHour" heigth="280" format="%H" [color]="colorsReactionsPerDay" [tickValues]="fansOnlinePerHourTickValues"></stacked-area-chart>
+          <div class="row">
+            <div class="col-md-12 col-lg-4 col-xs-3">
+                <footer-text-icon [data]="firstInteractionRanking"></footer-text-icon>  
+            </div>
+            <div class="col-md-12 col-lg-4 col-xs-3">
+              <footer-text-icon [data]="secondInteractionRanking"></footer-text-icon>    
+            </div>
+            <div class="col-md-12 col-lg-4 col-xs-3">
+                <footer-text-icon [data]="thirdInteractionRanking"></footer-text-icon>      
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">POSTS COM MAIS INTERAÇÕES</div>
+        </div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-12 col-xs-12">
+              <div class="row row-eq-height">
+                <div *ngFor="let itPostInteract of dataOverview.postsWithMoreInteractions;" class="col-md-5ths col-sm-3 col-xs-4 m-b-10">
+                  <div class="instagram-post-container">
+                    <img src="{{itPostInteract.pictureUrl}}" alt="" class="img-responsive img-instagram-post">
+                    <div class="post-interactions-box">
+                      <div>
+                        <div class="post-interaction-box">
+                          <i class="fa fa-heart" style="color: #00d6f6;" aria-hidden="true"></i>
+                          <span class="bold">{{itPostInteract.likes}}</span>
+                        </div>
+                        <div class="post-interaction-box">
+                          <i class="fa fa-comment" style="color: #00d6f6;" aria-hidden="true"></i>
+                          <span class="bold">{{itPostInteract.comments}}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--<div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">SEGUIDORES MAIS ENGAJADOS</div>
+        </div>
+        <div class="panel-body">
+          <div class="row p-l-15 p-r-15">
+            <div class="col-md-12">
+              <table-chart [data]='mostEngagedFollowers'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>-->
+    <div class="col-md-12 col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">HASHTAGS COM MAIS INTERAÇÕES</div>
+        </div>
+        <div class="panel-body">
+          <div class="row p-l-15 p-r-15 col-xs-12">
+            <div class="col-md-12 col-xs-12">
+              <table-chart [data]='instagramTopPostTags'></table-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

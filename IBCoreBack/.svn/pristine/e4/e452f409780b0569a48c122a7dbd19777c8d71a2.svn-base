@@ -1,0 +1,232 @@
+package br.com.opsocial.server.services.cielo;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.services.ipag.IpagDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import cieloecommerce.sdk.Merchant;
+import cieloecommerce.sdk.ecommerce.CardToken;
+import cieloecommerce.sdk.ecommerce.CieloEcommerce;
+import cieloecommerce.sdk.ecommerce.Customer;
+import cieloecommerce.sdk.ecommerce.Environment;
+import cieloecommerce.sdk.ecommerce.Payment;
+import cieloecommerce.sdk.ecommerce.Payment.Currency;
+import cieloecommerce.sdk.ecommerce.RecurrentPayment;
+import cieloecommerce.sdk.ecommerce.RecurrentPayment.Interval;
+import cieloecommerce.sdk.ecommerce.Sale;
+import cieloecommerce.sdk.ecommerce.SaleResponse;
+import cieloecommerce.sdk.ecommerce.request.CieloError;
+import cieloecommerce.sdk.ecommerce.request.CieloRequestException;
+
+@RestController
+@RequestMapping("api")
+public class CieloService {
+
+	@RequestMapping(value = "/cieloTransaction",
+	    method = RequestMethod.POST,
+	    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> makeTransaction(@Valid @RequestBody IpagDTO ipagDTO) {
+
+		System.out.printf("::::::::::::::::::::::makeTransaction::::::::::::::::::::::");
+
+		User user = SecurityUtils.getCurrentUser();
+
+		Boolean statusRequest = false;
+		//TESTES
+		//MerchantId: 54b596cf-c22f-4cae-8346-cf85fc74a577
+		//MerchantKey: QMQMLKCKGDFYYCLMZKGUQYPKFTNIHNBLBIGMFTHG
+		//OFICIAL
+		//MerchantId: 54e56bf8-5490-4c81-a82b-a5838a4d5238
+		//MerchantKey: ICL2yvmXNWspxRFB7LUDfVkvyMy4NmfgFc3BD5nE
+		Merchant merchant = new Merchant("54b596cf-c22f-4cae-8346-cf85fc74a577", "QMQMLKCKGDFYYCLMZKGUQYPKFTNIHNBLBIGMFTHG");
+
+		// Crie uma instância de Sale informando o ID do pagamento
+		String paymentIdWoop = new Double(Math.random()).toString();
+		paymentIdWoop = paymentIdWoop.substring(2, 12);
+		Sale sale = new Sale(paymentIdWoop);
+
+		// Crie uma instância de Customer informando o nome do cliente
+		//Customer customer = sale.customer("Comprador Teste JJJJ");
+		Customer customer = sale.customer(user.getName());
+
+		// Crie uma instância de Payment informando o valor do pagamento
+		// Crie  uma instância de Credit Card utilizando os dados de teste
+		// esses dados estão disponíveis no manual de integração
+		String mes = ipagDTO.getMes_cartao();
+		if (mes.length() < 2) {
+			mes = "0" + ipagDTO.getMes_cartao();
+		}
+		Byte plCode = -1;
+		Integer numProfiles = -1;
+		Integer valuePlan 	= 1;
+		switch (ipagDTO.getPlantype()) {
+			case "basic"			: 
+				{
+					plCode = Account.WOOP_BASIC;
+					numProfiles = 10;
+					if (ipagDTO.getFrequencia().equals("Y")) {
+						valuePlan = 100;
+					} else {
+						valuePlan = 10;
+					}
+				}
+			break;
+			case "intermediate"		: 
+				{
+					plCode = Account.WOOP_INTERMEDIATE;
+					numProfiles = 20;
+					if (ipagDTO.getFrequencia().equals("Y")) {
+						valuePlan = 200;
+					} else {
+						valuePlan = 20;
+					}
+				}
+			break;
+			case "advanced"			: 
+				{
+					plCode = Account.WOOP_ADVANCED;
+					numProfiles = 30;
+					if (ipagDTO.getFrequencia().equals("Y")) {
+						valuePlan = 300;
+					} else {
+						valuePlan = 30;
+					}
+				}
+			break;
+		}
+
+
+		Account acc = user.getAccount();
+		Calendar cExpire = Calendar.getInstance();
+		Payment payment = sale.payment(valuePlan);
+		RecurrentPayment recurrentPayment = new RecurrentPayment(false);
+		recurrentPayment.setAuthorizeNow(true);
+		recurrentPayment.setAmount(valuePlan);
+
+		if (ipagDTO.getFrequencia().equals("Y")) {
+
+			cExpire.add(Calendar.YEAR, 1);
+			recurrentPayment.setInterval(Interval.Annual);
+		} else {
+
+			cExpire.add(Calendar.MONTH, 1);
+			recurrentPayment.setInterval(Interval.Monthly);
+		}
+
+		//payment.setRecurrent(true);
+		payment.setCurrency(Currency.USD);
+		payment.setRecurrentPayment(recurrentPayment);
+		payment.setSoftDescriptor("Woop_" + numProfiles + "_P_" + ipagDTO.getFrequencia());
+
+		acc.setPlanExpire(cExpire.getTime());
+		acc.setProfiles(numProfiles);
+		acc.setPlanType(plCode);
+
+		payment.creditCard(ipagDTO.getCvv_cartao(), ipagDTO.getMetodo()).setExpirationDate(mes + "/" + ipagDTO.getAno_cartao())
+		                                 .setCardNumber(ipagDTO.getNum_cartao())
+		                                 .setHolder(ipagDTO.getNome_cartao());
+		//user.getAccount().setPlanType(acc.getPlanType());
+		// Crie o pagamento na Cielo
+		try {
+		    // Configure o SDK com seu merchant e o ambiente apropriado para criar a venda
+		    sale = new CieloEcommerce(merchant, Environment.SANDBOX).createSale(sale);
+
+		    // Com a venda criada na Cielo, já temos o ID do pagamento, TID e demais
+		    // dados retornados pela Cielo
+		    String paymentId = sale.getPayment().getPaymentId();
+		    // Com o ID do pagamento, podemos fazer sua captura, se ela não tiver sido capturada ainda
+		    SaleResponse saleResponse = new CieloEcommerce(merchant, Environment.SANDBOX).captureSale(paymentId, new Integer(ipagDTO.getValor()), 0);
+
+		    /**
+		     * 	0	NotFinished	ALL	Aguardando atualização de status
+				1	Authorized	ALL	Pagamento apto a ser capturado ou definido como pago
+				2	PaymentConfirmed	ALL	Pagamento confirmado e finalizado
+				3	Denied	CC + CD + TF	Pagamento negado por Autorizador
+				10	Voided	ALL	Pagamento cancelado
+				11	Refunded	CC + CD	Pagamento cancelado após 23:59 do dia de autorização
+				12	Pending	ALL	Aguardando Status de instituição financeira
+				13	Aborted	ALL	Pagamento cancelado por falha no processamento
+				20	Scheduled	CC	Recorrência agendada
+		     */
+
+		    if (saleResponse.getStatus().equals("2")) {
+			    statusRequest = true;
+			    // E também podemos fazer seu cancelamento, se for o caso
+			    //saleResponse = new CieloEcommerce(merchant, Environment.SANDBOX).cancelSale(paymentId, new Integer(ipagDTO.getValor()));
+
+				MaintenanceAccountRemote accountRemote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+
+				try {
+					accountRemote.save(acc);
+				} catch (IllegalArgumentException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+		    }
+		} catch (CieloRequestException e) {
+		    // Em caso de erros de integração, podemos tratar o erro aqui.
+		    // os códigos de erro estão todos disponíveis no manual de integração.
+		    CieloError error = e.getError();
+			return new ResponseEntity<>("Code: " + error.getMessage() + " = " + error.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return new ResponseEntity<>("Operação não realizada.", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		System.out.printf("::::::::::::::::::::::FINALIZAR makeTransaction::::::::::::::::::::::");
+		return new ResponseEntity<>("Operação realizada.", HttpStatus.OK);
+	}
+
+	@RequestMapping(value = "/cardToken",
+	    method = RequestMethod.POST,
+	    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void cardSafetyToken() {
+
+		System.out.printf("::::::::::::::::::::::cardSafetyToken::::::::::::::::::::::");
+
+		Merchant merchant = new Merchant("MERCHANT ID", "MERCHANT KEY");
+
+		// Informe os dados do cartão que irá tokenizar
+		CardToken cardToken = new CardToken().setBrand("Visa")
+		                                     .setCardNumber("4532117080573700")
+		                                     .setHolder("Comprador T Cielo")
+		                                     .setExpirationDate("12/2018");
+
+		// Crie o Token para o cartão
+		try {
+			// // Configure o SDK com seu merchant e o ambiente apropriado para
+			// gerar o token
+			cardToken = new CieloEcommerce(merchant, Environment.SANDBOX).createCardToken(cardToken);
+
+			String generatedToken = cardToken.getCardToken();
+
+			System.out.printf("CardToken: %s\n", generatedToken);
+		} catch (CieloRequestException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		System.out.printf("::::::::::::::::::::::FINALIZAR cardSafetyToken::::::::::::::::::::::");
+	}
+}

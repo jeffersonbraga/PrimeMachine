@@ -1,0 +1,39 @@
+package br.com.opsocial.client.entity.monitoring;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class SampleMonitoringTagDTO extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	private Long idSampleMonitoringTag;
+	private SampleDTO sampleDTO;
+	private MonitoringTagDTO monitoringTagDTO;
+	
+	public SampleMonitoringTagDTO() {
+	}
+
+	public Long getIdSampleMonitoringTag() {
+		return idSampleMonitoringTag;
+	}
+
+	public void setIdSampleMonitoringTag(Long idSampleMonitoringTag) {
+		this.idSampleMonitoringTag = idSampleMonitoringTag;
+	}
+
+	public SampleDTO getSampleDTO() {
+		return sampleDTO;
+	}
+
+	public void setSampleDTO(SampleDTO sampleDTO) {
+		this.sampleDTO = sampleDTO;
+	}
+
+	public MonitoringTagDTO getMonitoringTagDTO() {
+		return monitoringTagDTO;
+	}
+
+	public void setMonitoringTagDTO(MonitoringTagDTO monitoringTagDTO) {
+		this.monitoringTagDTO = monitoringTagDTO;
+	}
+}

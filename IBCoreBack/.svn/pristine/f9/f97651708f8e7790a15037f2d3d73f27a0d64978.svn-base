@@ -1,0 +1,152 @@
+package br.com.opsocial.server.services;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.auth.AccessToken;
+import twitter4j.auth.RequestToken;
+
+@RestController
+@RequestMapping("woopsocial")
+public class AuthTwitterCallbackServlet {
+	
+	private Profile baseProfile;
+	private User userSystem;
+	private Twitter twitterSystem;
+	private Twitter twitter;
+	private AccessToken accessToken;
+	
+	private MaintenanceProfileRemote profileRemote;
+	
+	@CrossOrigin
+	@RequestMapping(value = "/refresh_tokenby_twitter/callback",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	protected void doAction(@RequestParam(value = "oauth_verifier", required = false) String oauthVerifier, HttpSession session) throws ServletException, IOException {
+		
+		twitterSystem = (Twitter) session.getAttribute("twitterSystem");
+        RequestToken requestToken = (RequestToken) session.getAttribute("requestToken");
+        
+        try {
+        	
+            accessToken = twitterSystem.getOAuthAccessToken(requestToken, oauthVerifier);
+            
+            TwitterIntegration twitterIntegration = new TwitterIntegration();
+            twitter = twitterIntegration.getTwitter(accessToken.getToken(), accessToken.getTokenSecret());
+			userSystem = SecurityUtils.getCurrentUser();
+
+			profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+			baseProfile = profileRemote.getEntityByNetworkId(String.valueOf(twitter.getId()), userSystem.getAccount().getIdAccount());
+
+			String twitterAuthAction = (String) session.getAttribute("twitter_auth_action");
+			
+			if(twitterAuthAction.equals(AuthFacebookCallbackServlet.GET_ACCESS_TOKEN)) {
+				getAccessToken(session);
+			} else {
+				refreshToken(((Profile) session.getAttribute("profile_twitter")), session);
+			}
+
+			session.removeAttribute("requestToken");
+			
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			e.printStackTrace();
+		} catch (TwitterException e) {
+			e.printStackTrace();
+		}
+            
+	}
+	
+	private void refreshToken(Profile profile, HttpSession session) {
+		
+		if(baseProfile != null) {
+			if(profile.getIdProfile().equals(baseProfile.getIdProfile())) {
+				
+				try {
+				
+					baseProfile.setActive('T');
+					baseProfile.setToken(accessToken.getToken());
+					baseProfile.setTokenSecret(accessToken.getTokenSecret());
+					baseProfile.setIsTokenValid('T');
+					baseProfile = profileRemote.save(baseProfile);
+					
+					session.setAttribute("profile_twitter", baseProfile);
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+								
+			} else {
+				session.setAttribute("message_twitter", OpSocialBackApplication.messageByLocaleService.getMessage("profile.reconnect.profileinvalid", new Object[]{"Twitter"}));
+			}
+    	} else {
+			session.setAttribute("message_twitter", OpSocialBackApplication.messageByLocaleService.getMessage("profile.reconnect.profileinvalid", new Object[]{"Twitter"}));
+		}
+    	
+    	session.setAttribute("alr_rec_twitter", new Boolean(true));
+	}
+	
+	private void getAccessToken(HttpSession session) { 
+		
+		try {
+			List<Profile> profiles = new ArrayList<Profile>();
+
+			if(baseProfile == null) {
+
+				Profile profile = new Profile();
+				profile.setAccount(userSystem.getAccount());
+				profile.setNetworkId(String.valueOf(twitter.getId()));
+				profile.setScreenName(twitter.getScreenName());
+
+				twitter4j.User user = twitter.showUser(twitter.getId());
+
+				if(user.getProfileImageURLHttps().contains("normal")) {
+					profile.setAvatar(user.getProfileImageURLHttps().replace("_normal", ""));
+				} else {
+					profile.setAvatar(user.getProfileImageURLHttps());	
+				}
+
+				profile.setType(Profile.TWITTER);
+				profile.setToken(accessToken.getToken());
+				profile.setTokenSecret(accessToken.getTokenSecret());
+
+				profiles.add(profile);
+
+				session.setAttribute("profile_twitter", profiles);
+			} else {
+				session.setAttribute("message_twitter", OpSocialBackApplication.messageByLocaleService.getMessage("profile.connect.alreayinserted", new Object[]{"Twitter"}));
+			}
+			
+		} catch (IllegalStateException e) {
+			e.printStackTrace();
+		} catch (TwitterException e) {
+			e.printStackTrace();
+		}
+		
+		session.setAttribute("alr_rec_twitter", new Boolean(true));
+	}
+}

@@ -1,0 +1,24 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.report.FaceReportLocation;
+import br.com.opsocial.ejb.entity.report.ReportFacebookCity;
+
+@Local
+public interface FaceReportLocationDAO extends AbstractDAO<FaceReportLocation> {
+	
+	public FaceReportLocation getEntity(String pageId, String location, String fromGroup);
+	public List<ReportFacebookCity> getReportFacebookCityImp(String pageId, Long dateFrom, Long dateUntil);
+	public List<ReportFacebookCity> getReportFacebookCityImp(String pageId, Integer offset, Integer limit);
+	public List<ReportFacebookCity> getReportFacebookCityFan(String pageId);
+	public List<ReportFacebookCity> getReportFacebookCityFan(String pageId, Integer offset, Integer limit);
+	
+	public Map<String, Long> getExternalReferences(String pageId, Long dateFrom, Long dateUntil, Integer offset, Integer limit);
+
+	public boolean deleteFaceReportsLocations(String pageId);
+}

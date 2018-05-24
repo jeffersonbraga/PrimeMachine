@@ -1,0 +1,31 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.Remote;
+
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostLike;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+
+@Remote 
+public interface MaintenanceInstagramPostLikeRemote extends AbstractDAS<InstagramPostLike> {
+
+	public Map<Integer, Long> getLikesPerMonthYear(Long idInstagramUser, Integer year);
+	public Map<String, Long> getLikesPerDay(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Long getCountOfLikes(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getLikesOrigin(Long idInstagramUser);
+	public Object[] getLikesOrigin(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	
+	public Map<Integer, Long> getLikesPerHour(Long idInstagramUser);
+	public Map<Integer, Long> getLikesPerHour(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	
+	public Object[] getTimeWithMoreLikes(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getTimeWithMoreLikes(Long idInstagramUser);
+	
+	public Object[] getTimeWithLessLikes(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getTimeWithLessLikes(Long idInstagramUser);
+	public List<InstagramSimpleDataDTO> getLikesPerMonthYearSimpleData(Long valueOf, int i);
+	public List<InstagramSimpleDataDTO> getLikesPerHourSimpleData(Long valueOf, Long dateFrom, Long dateUntil);
+}

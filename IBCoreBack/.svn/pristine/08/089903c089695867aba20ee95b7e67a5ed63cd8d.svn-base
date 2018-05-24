@@ -1,0 +1,92 @@
+package br.com.opsocial.server.actions.mailbox;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mailbox.ConversationDTO;
+import br.com.opsocial.client.entity.mailbox.MessageDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.twitter.TwitterAPI;
+import br.com.opsocial.ejb.das.MaintenanceConversationRemote;
+import br.com.opsocial.ejb.das.MaintenanceMessageRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.mailbox.Conversation;
+import br.com.opsocial.ejb.entity.mailbox.Message;
+
+@RestController
+@RequestMapping("opsocial")
+public class UpdateMailboxAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/update_mailbox",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		ConversationDTO actualConversationDTO = (ConversationDTO) getParameters().get("conversation");
+		
+		System.out.println("Conversação do perfil " + actualConversationDTO.getProfile().getScreenName() + 
+				" do " + actualConversationDTO.getProfile().getType() + " com o perfil " + actualConversationDTO.getUserName());
+		
+		MaintenanceConversationRemote conversationRemote = 
+				(MaintenanceConversationRemote) RecoverMaintenance.recoverMaintenance("Conversation");
+		
+		Conversation actualConversation = conversationRemote.getByProfileAndConversation(
+				actualConversationDTO.getProfile().getIdProfile(), actualConversationDTO.getIdConversation());
+		
+		// Verificação de novas mensagens para perfil conversação selecionada no momento.
+		if(actualConversation.getProfile().getType().equals(Profile.TWITTER)) {
+			new TwitterAPI().saveTwitterMessages(actualConversation.getProfile());
+		} else if (actualConversation.getProfile().getType().equals(Profile.FACEBOOK_PAGE)){
+			new FacebookAPI().saveFacebookConversations(actualConversation.getProfile());
+		}
+		
+		actualConversation = conversationRemote.getByProfileAndConversation(
+				actualConversationDTO.getProfile().getIdProfile(), actualConversationDTO.getIdConversation());
+		
+		List<Conversation> notreadConversations = conversationRemote.listNotReadConversations(actualConversation.getProfile().getIdProfile());
+		
+		List<ConversationDTO> notreadConversationDTO = new ArrayList<ConversationDTO>();
+
+		for(Conversation notread : notreadConversations) {
+			if(notread.getIdConversation().equals(actualConversation.getIdConversation())) {
+				actualConversation.setUnread(false);
+				actualConversation = conversationRemote.save(actualConversation);
+			} else {
+				notreadConversationDTO.add((ConversationDTO) MountDTO.mountConversation(notread));
+			}
+		}
+		
+		final MaintenanceMessageRemote messageRemote = 
+				(MaintenanceMessageRemote) RecoverMaintenance.recoverMaintenance("Message");
+		
+		actualConversation.setMessages(messageRemote.listByConversation(actualConversation.getIdConversation()));
+		
+		List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+		
+		for(Message message : actualConversation.getMessages()) {
+			messageDTOs.add(MountDTO.mountMessage(message));
+		}
+		
+		actualConversationDTO = (ConversationDTO) MountDTO.mountConversation(actualConversation);
+		
+		actualConversationDTO.setMessages(messageDTOs);
+		
+		getParameters().put("conversation", actualConversationDTO);
+		getParameters().put("notreadConversations", notreadConversationDTO);
+		
+		System.out.println("Término atualizações conversação do perfil " + actualConversationDTO.getProfile().getScreenName() + 
+				" do " + actualConversationDTO.getProfile().getType() + " com o perfil " + actualConversationDTO.getUserName());
+	}
+
+}

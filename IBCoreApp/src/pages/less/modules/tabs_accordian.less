@@ -1,0 +1,961 @@
+/*------------------------------------------------------------------
+[11. Tabs & Accordians]
+*/
+
+/* Tabs
+------------------------------------
+*/
+.nav-tabs {
+	& > li {
+		padding-left: 0;
+		padding-right: 0;
+		&.active {
+			& > a,
+			& > a:hover,
+			& > a:focus {
+				border-color: @color-master-light;
+				color: @color-master;
+				background-color: @color-master-light;
+			}
+		}
+		& > a {
+			border-radius: 0;
+			padding: 15px 20px;
+			.margin-right(0);
+			font-family: 'Montserrat';
+			font-weight: 400;
+			color: fade(@color-master,
+			70%);
+			font-size: 12px;
+			min-width: 70px;
+			text-transform: uppercase;
+			border-color: transparent;
+			&:hover,
+			&:focus {
+				background: transparent;
+				border-color: transparent;
+				color: @color-master;
+			}
+			.tab-icon {
+				.margin-right(6px);
+			}
+		}
+	}
+	& ~ .tab-content {
+		overflow: hidden;
+		padding: 15px;
+		& > .tab-pane {
+			&.slide-left,
+			&.slide-right {
+				.transition(all .3s ease) !important;
+				&.sliding {
+					opacity: 0 !important;
+				}
+				&.active {
+					.translate3d(0, 0, 0);
+					opacity: 1;
+				}
+			}
+			&.slide-left.sliding {
+				.translate3d(10%, 0, 0) !important;
+			}
+			&.slide-right.sliding {
+				.translate3d(-10%, 0, 0) !important;
+			}
+		}
+	}
+	// POSITIONG OPTIONS
+	&.nav-tabs-left,
+	&.nav-tabs-right {
+		&:after {
+			border-bottom: 0px;
+		}
+		& > li {
+			float: none;
+		}
+	}
+	&.nav-tabs-left {
+		float: left;
+		padding-right:0;
+		& ~ .tab-content {
+			border-left: 1px solid rgba(0, 0, 0, 0.1);
+		}
+	}
+	&.nav-tabs-right {
+		float: right;
+		padding-right: 0;
+		& ~ .tab-content {
+			border-right: 1px solid rgba(0, 0, 0, 0.1);
+		}
+	}
+}
+
+/* Tabs : Simple 
+------------------------------------
+*/
+
+.nav-tabs-simple {
+	border-bottom: 0px;
+	&:after {
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		width: 100%;
+		position: relative;
+		bottom: 3px;
+		z-index: 120;
+	}
+	& > li {
+		margin-bottom: 0;
+		&:after {
+			.transition(all 0.1s linear 0s);
+			-webkit-backface-visibility: hidden;
+			width: 100%;
+			display: block;
+			background-color: @color-danger;
+			height: 0px;
+			content: '';
+			z-index: 125;
+			.nav-tabs-primary& {
+				background-color: @color-primary;
+			}
+			.nav-tabs-success& {
+				background-color: @color-success;
+			}
+			.nav-tabs-complete& {
+				background-color: @color-complete;
+			}
+			.nav-tabs-danger& {
+				background-color: @color-danger;
+			}
+			.nav-tabs-warning& {
+				background-color: @color-warning;
+			}
+			.nav-tabs-info& {
+				background-color: @color-info;
+			}
+		}
+		&.active a {
+			&,
+			&:hover,
+			&:focus {
+				background-color: transparent;
+				border-color: transparent;
+			}
+		}
+		&.active,
+		&:hover {
+			&:after {
+				height: 3px;
+			}
+		}
+	}
+	// POSITIONG OPTIONS
+	&.nav-tabs-left,
+	&.nav-tabs-right {
+		&:after {
+			border-bottom: 0px;
+		}
+		& > li {
+			&:after {
+				width: 0px;
+				height: 100%;
+				top: 0;
+				bottom: 0;
+				position: absolute;
+			}
+			&.active,
+			&:hover {
+				&:after {
+					width: 3px;
+				}
+			}
+		}
+		& ~ .tab-content {
+		}
+	}
+	&.nav-tabs-left {
+		& > li:after {
+			right: 0;
+		}
+	}
+	&.nav-tabs-right {
+		& > li:after {
+			left: 0;
+		}
+	}
+}
+
+/* Tabs : Line Triangles
+------------------------------------
+*/
+
+.nav-tabs-linetriangle {
+	border-bottom: 0;
+	&:after {
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		width: 100%;
+		position: relative;
+		bottom: 0;
+	}
+	& > li {
+		&.active {
+			& > a {
+				background: transparent;
+				box-shadow: none;
+				border-color: transparent;
+				&:hover,
+				&:focus,
+				&:active {
+					border-color: transparent;
+					background-color: transparent;
+				}
+				&:after,
+				&:before {
+					border: medium solid transparent;
+					content: "";
+					height: 0;
+					left: 50%;
+					pointer-events: none;
+					position: absolute;
+					width: 0;
+					z-index: 1;
+					top: 100%;
+				}
+				&:after {
+					border-top-color: @body-background;
+					border-width: 10px;
+					.margin-left(-10px);
+				}
+				&:before {
+					border-top-color: rgba(0, 0, 0, 0.2);
+					border-width: 11px;
+					.margin-left(-11px);
+				}
+			}
+		}
+		& > a {
+			span {
+				font-size: 1em;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+		}
+		& > a,
+		& > a:hover,
+		& > a:focus {
+			overflow: visible;
+			.transition( color 0.2s ease 0s);
+		}
+	}
+	& ~ .tab-content {
+		background: #fff;
+	}
+	// POSITIONG OPTIONS
+	&.nav-tabs-left {
+		&.nav-tabs {
+			&:after {
+				border-bottom: none;
+			}
+			& > li.active {
+				& > a:before {
+					border-top: 11px solid transparent;
+					border-bottom: 11px solid transparent;
+					border-left: 11px solid rgba(0, 0, 0, 0.2);
+				}
+				& > a:after {
+					border-top: 10px solid transparent;
+					border-bottom: 10px solid transparent;
+					border-left: 10px solid @body-background;
+					margin-top: 1px;
+					.margin-right(2px);
+				}
+				& > a:after,
+				& > a:before {
+					top: auto;
+					right: -23px;
+					left: auto;
+				}
+			}
+		}
+	}
+	&.nav-tabs-right {
+		&.nav-tabs {
+			&:after {
+				border-bottom: none;
+			}
+			& > li.active {
+				& > a:before {
+					border-top: 11px solid transparent;
+					border-bottom: 11px solid transparent;
+					border-right: 11px solid rgba(0, 0, 0, 0.2);
+				}
+				& > a:after {
+					border-top: 10px solid transparent;
+					border-bottom: 10px solid transparent;
+					border-right: 10px solid @body-background;
+					margin-top: 1px;
+					.margin-left(-9px);
+				}
+				& > a:after,
+				& > a:before {
+					top: auto;
+					left: -12px;
+					right: auto;
+				}
+			}
+		}
+	}
+}
+@media screen and (max-width:58em) {
+	.nav-tabs-linetriangle {
+		font-size: 0.6em;
+	}
+}
+
+/* Tabs : Fill-up 
+------------------------------------
+*/
+
+.nav-tabs-fillup {
+	.backface-visibility(hidden);
+	.perspective(1000);
+	& > li {
+		overflow: hidden;
+		& > a {
+			.backface-visibility(hidden);
+			.transition(color 0.3s ease 0s);
+			background: transparent;
+			&:after {
+				.backface-visibility(hidden);
+				background: none repeat scroll 0 0 @color-success;
+				border: 1px solid @color-success;
+				content: "";
+				height: calc(~'100% + 1px');
+				left: 0;
+				position: absolute;
+				top: 0;
+				-webkit-transform: translate3d(0,
+				100%,
+				0px);
+				transform: translate3d(0,
+				100%,
+				0px);
+				-webkit-transition: -webkit-transform 0.3s ease 0s;
+				transition: transform 0.3s ease 0s;
+				width: 100%;
+				z-index: -1;
+				.nav-tabs-primary& {
+					background: none repeat scroll 0 0 @color-primary;
+					border: 1px solid @color-primary;
+				}
+				.nav-tabs-success& {
+					background: none repeat scroll 0 0 @color-success;
+					border: 1px solid @color-success;
+				}
+				.nav-tabs-complete& {
+					background: none repeat scroll 0 0 @color-complete;
+					border: 1px solid @color-complete;
+				}
+				.nav-tabs-warning& {
+					background: none repeat scroll 0 0 @color-warning;
+					border: 1px solid @color-warning;
+				}
+				.nav-tabs-danger& {
+					background: none repeat scroll 0 0 @color-danger;
+					border: 1px solid @color-danger;
+				}
+				.nav-tabs-info& {
+					background: none repeat scroll 0 0 @color-info;
+					border: 1px solid @color-info;
+				}
+			}
+			span {
+				.backface-visibility(hidden);
+				-webkit-transform: translate3d(0px, 5px, 0px);
+				transform: translate3d(0px, 5px, 0px);
+				-webkit-transition: -webkit-transform 0.5s ease 0s;
+				transition: transform 0.5s ease 0s;
+				display: block;
+				font-weight: 700;
+				line-height: 1.5;
+			}
+		}
+		&.active {
+			z-index: 100;
+			> a {
+				&,
+				&:hover,
+				&:focus {
+					border-color: transparent;
+					background: transparent;
+					color: #fff;
+				}
+				&:after {
+					.translate3d(0px, 0px, 0px);
+				}
+				span {
+					.translate3d(0px, -5px, 0px);
+				}
+			}
+			.icon:before {
+				.translate3d(0px, -5px, 0px);
+			}
+		}
+	}
+	.icon:before {
+		.translate3d(0px, 5px, 0px);
+		.transition(transform 0.5s ease 0s);
+		display: block;
+		margin: 0;
+	}
+	& ~ .tab-content {
+		background: #fff;
+	}
+	// POSITIONG OPTIONS
+	&.nav-tabs-left,
+	&.nav-tabs-right {
+		border-bottom: none;
+		&:after {
+			border-bottom: none;
+		}
+		& > li {
+			& > a {
+				&:after {
+					width: calc(~'100% + 1px');
+					height: 100%;
+				}
+			}
+			&.active {
+				a{&:after {
+						.translate3d(0px, 0px, 0px);
+					}
+				}
+			}
+		}
+	}
+	&.nav-tabs-left {
+		& > li {
+			& > a {
+				&:after {
+					.translate3d(100%, 0, 0);
+				}
+				span {
+					.translate3d(5px, 0, 0px);
+				}
+			}
+			&.active {
+				a{span {
+						.translate3d(-5px, 0, 0px);
+					}
+				}
+				.icon:before {
+					.translate3d(-5px, 0, 0px);
+				}
+			}
+		}
+	}
+	&.nav-tabs-right {
+		& > li {
+			& > a {
+				&:after {
+					.translate3d(-100%, 0, 0);
+					left: -1px;
+				}
+				span {
+					.translate3d(-5px, 0, 0px);
+				}
+			}
+			&.active {
+				a{span {
+						.translate3d(5px, 0, 0px);
+					}
+				}
+				.icon:before {
+					.translate3d(5px, 0, 0px);
+				}
+			}
+		}
+	}
+}
+
+.nav-tabs-header{
+	overflow: scroll;
+	width: 100%;
+	.nav-tabs{
+		width:auto;
+		white-space: nowrap;
+		 & > li{
+				display:inline-block;
+				float: inherit;
+			}
+	}
+	&.nav-tabs-linetriangle{
+		height:61px;
+		overflow-y: hidden;
+		&:after{
+			border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+			width: 100%;
+			position: relative;
+			bottom: 3px;
+			z-index: 120;    
+			content: "";
+			clear: both;    
+		}
+		&  ~ .tab-content{
+			position: relative;
+			top:-12px;
+		}
+	}
+}
+.nav-tabs-header ~ .tab-content{
+	overflow: hidden;
+	padding: 15px;
+}
+.nav-tab-dropdown .cs-select{
+	width: 100% !important;
+	max-width: 100%;
+}
+
+/* Panel Groups
+------------------------------------
+*/
+
+.panel-group {
+	
+	margin-bottom: 18px;
+	.panel-heading {
+		padding: 0;
+		&.collapsed {
+			background-color: #fff;
+		}
+		& + .panel-collapse {
+			.panel-body {
+				border: 0;
+			}
+		}
+		.panel-title {
+			width: 100%;
+			& > a {
+				color: @color-master;
+				font-size: 13px;
+				font-weight: normal;
+				display: block;
+				opacity: 1;
+				&:hover {
+					color: @color-master !important;
+					&:after {
+						color: @color-master !important;
+					}
+				}
+				&:after {
+					font-family: 'FontAwesome';
+					content: "\f056";
+					position: absolute;
+					.right(13px);
+					top: 36%;
+					color: @color-master;
+				}
+				&.collapsed {
+					color: fade(@color-master,
+					70%);
+					opacity: 1;
+					&:after {
+						content: "\f055";
+						color: fade(@color-master, 70%);
+					}
+				}
+			}
+		}
+		// Accordion Menu OPSOCIAL 3.0
+		.panel-title {
+			&.accordion {
+				width: 100%;
+
+				& > a {
+					color: @color-master-dark;
+					font-size: 11px;
+					font-weight: normal;
+					display: block;
+					opacity: 1;
+					text-decoration: none;
+					&:hover {
+						color: @color-master-darker !important;
+						&:after {
+						color: @color-master-darker !important;
+						}
+					}
+					&:after {
+						font-family: 'FontAwesome';
+						content: "\f078";
+						position: absolute;
+						.right(0px);
+						top: 15%;
+						color: @color-master-darker;
+					}
+					&.collapsed {
+						color: fade(@color-master-darker,
+						70%);
+						opacity: 1;
+						&:after {
+						.right(0px);
+						content: "\f053";
+						color: fade(@color-master-darker, 90%);
+						}
+					}
+				}
+			}
+		}
+	}
+	.panel {
+		& + .panel {
+			margin-top: 2px;
+		}
+		.panel-body {
+			height: auto;
+		}
+	}
+}
+
+//No Channels OPSOCIAL 3.0
+
+.no-channels-p {
+	font-family: "Segoe UI";
+	font-weight: 400;
+	font-size: 14px;
+	color: @color-master;
+	margin-bottom: -8px;
+}
+
+.no-channels-a {
+	font-family: "Montserrat";
+	font-weight: 600;
+	font-size: 11px;
+	color: @color-primary;
+	text-decoration: none !important;
+	cursor: hand;
+	cursor: pointer;
+}
+
+.no-channels-a:hover {
+	color: @color-master !important;
+}
+
+// Button Channels OPSOCIAL 3.0
+
+.channel-button-wrapper {
+	&.center {
+		display: block;
+		width: 250px;
+		margin: 0 auto;
+	}
+}
+
+.channel-clicked{
+	.check-icon{
+		display: none;
+	}
+}
+
+.checked-button{
+	display: none;
+
+	&:checked {
+		& + .channel-clicked {
+			background-color: #ccf8ff !important;
+			border-color: @color-primary-light !important;
+
+			.check-icon{
+				display: inline;
+			}
+		}
+	}
+}
+
+.channel-button {
+	padding: 0px 0px !important;
+	border-radius: 2px !important;
+	margin-bottom: 5px !important;
+	border-color: @color-master-lighter !important;
+	max-width: 250px;
+
+	&:active {
+		background-color: #ccf8ff !important;
+		border-color: @color-primary-light !important;
+	}
+
+	&:focus:not(.channel-clicked) {
+		background-color: @color-white !important;
+		border-color: @color-master-lighter !important;
+	}
+
+	&:hover:not(.channel-clicked) {
+		background-color: #f1f1f1 !important;
+		border-color: @color-master-light !important;
+	}
+
+	.social-icon {
+		width: 15px;
+		height: 33px;
+		background-color: @color-facebook;
+		border-radius: 1px; 
+		color: @color-white;
+
+		.fa {
+				font-size: 11px;
+		}
+
+		&.bg-facebook {
+			background-color: @color-facebook;
+		}
+
+		&.bg-twitter {
+			background-color: @color-twitter;
+		}
+
+		&.bg-instagram {
+			background-color: @color-instagram;
+		}
+
+		&.bg-google {
+			background-color: @color-google;
+		}
+
+		&.bg-youtube {
+			background-color: @color-youtube;
+		}
+
+		&.bg-news {
+		background-color: @color-news;
+		}
+
+		&.bg-linkedin {
+		background-color: @color-linkedin;
+		}
+  	}
+
+	.channel-avatar {
+		width: 33px;
+		height: 33px;
+	}
+
+	.channel-text {
+		font-size: 14px;
+		font-family: "Segoe UI";
+		color: @color-master;
+		display: inline-block;
+		width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: left;
+	}
+
+	.check-icon > i {
+		color: @color-primary;
+		margin-right: 10px;
+	}
+}
+
+.checked-button{
+	&:checked {
+		& + .rssfeed-button .rssfeed-clicked {
+			border: 2px solid @color-primary !important;
+		}
+	}
+}
+
+// RssFeed Button OPSOCIAL 3.0
+.rssfeed-button {
+    padding: 0px 0px !important;
+    border-radius: 2px !important;
+    margin-bottom: 5px !important;
+    border-color: transparent!important;
+    max-width: 250px;
+    background-color: transparent!important;
+
+	&:active {
+		background-color: #ccf8ff !important;
+		border-color: @color-primary-light !important;
+	}
+
+	&:focus:not(.channel-clicked) {
+		background-color: @color-white !important;
+		border-color: @color-master-lighter !important;
+	}
+
+	&:hover:not(.channel-clicked) {
+		background-color: @color-master-lighter !important;
+		border-color: @color-master-lighter !important;
+	}
+
+	.channel-text {
+		font-size: 14px;
+		font-family: "Segoe UI";
+		color: @color-master;
+		display: inline-block;
+		width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: left;
+	}
+
+	.check-icon > i {
+		color: @color-primary;
+		margin-right: 10px;
+	}
+}
+
+.rssfeed-icon {
+	width: 17px;
+	height: 17px;
+	float: left;
+	background-color: #6447f4;
+	margin-top: 2px;
+	// border: 2px solid #23dffe;
+}
+
+// Checkall Button OPSOCIAL 3.0
+
+.checkall-icon__clicked {
+	background-color: @color-primary !important;
+}
+
+.checkall-button {
+	padding: 0px 0px !important;
+	border-radius: 2px !important;
+	margin-bottom: 5px !important;
+	border-color: @color-master-lighter !important;
+	max-width: 250px !important;
+	
+	&:hover:not(.b-primary) {
+		border-color: #e6e6e6 !important;
+	}
+	
+	&:hover {
+		background-color: #f1f1f1 !important;
+	}
+
+	&:focus {
+		background-color: @color-white !important;
+	
+		&:hover {
+			background-color: #f1f1f1 !important;
+		}
+	}
+
+	.checkall-button__selector {
+		width: 50px;
+		height: 33px;
+		border-color: @color-master-lighter !important;
+		background-color: #f1f1f1 !important;
+
+		.checkall-icon__container {
+			display: inline-block;
+			background-color: @color-white;
+			width: 18px;
+			height: 18px;
+			margin-top: 8px;
+			border-radius: 3px;
+			border: 1px solid @color-master-light;
+		}
+
+		.fa-check {
+			font-size: 10px;
+			color: @color-white;
+			display: block;
+			padding-top: 3px;
+		}
+	}
+
+	.channel-text {
+		font-size: 14px;
+		font-family: "Segoe UI";
+		color: @color-master;
+		display: inline-block;
+		width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: left;
+	}
+}
+
+.nav-pills {
+	> li {
+		// Links rendered as pills
+		> a {
+			border-radius: 0;
+			color: @color-master;
+		}
+		// Active state
+		&.active > a {
+			&,
+			&:hover,
+			&:focus {
+				color: @color-master;
+				background-color: @color-master-light;
+			}
+		}
+	}
+
+}
+@media (max-width:767px) {
+	.nav.nav-tabs.nav-stack-sm {
+		li {
+			float: none;
+		}
+		&.nav-tabs-linetriangle > li.active > a:after,
+		&.nav-tabs-linetriangle > li.active > a:before {
+			display: none;
+		}
+	}
+}
+
+
+/*CUSTOM*/
+
+.panel-opsocial{
+	background-color: #eee;
+
+	.nav-tabs{
+		margin: 0 auto;
+
+		& > li{
+			margin-bottom: -5px;
+			box-sizing: border-box;
+			text-align: center;
+
+			& > a {
+				padding: 15px 5px;
+			}
+
+			&.active{
+				& a, a:focus, a:hover{
+					border: none;
+					border-bottom: 3px solid @color-primary;
+					background-color: transparent;
+					text-align: center;
+    				padding-top: 15.990px !important;
+					padding-left: 5.990px !important;
+					padding-right: 5.990px !important;
+					padding-bottom: 12px;
+				}
+			}
+		}
+
+		&.nav-flex{
+			display: flex !important;
+			flex-wrap: wrap;
+			justify-content: center;
+
+			& > li{
+				height: 65px;
+			}
+		}
+	}
+}
+
+stream .nav-tabs > li.active > a {
+	padding-bottom: 2px !important;
+}

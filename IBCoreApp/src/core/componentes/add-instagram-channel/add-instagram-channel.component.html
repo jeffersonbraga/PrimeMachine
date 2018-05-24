@@ -1,0 +1,36 @@
+<div class="panel panel-transparent p-t-20 p-l-20 p-r-20 p-b-0 m-b-0">
+  <div class="panel-heading p-l-0">
+    <div class="panel-title">
+      ADICIONAR novo perfil do INSTAGRAM
+    </div>
+  </div>
+  <div class="panel-body p-r-0 p-l-0 p-b-0">
+  <div class="row">
+      <div class="col-md-5">
+        <p class="all-caps font-montserrat small no-margin ">PASSO 1 - OBRIGATÓRIO</p>
+        <p class="small">
+          Sincronize o perfil do Instagram logado no computador com a sua conta para gerar relatórios de desempenho.
+        </p>
+      </div>
+      <div class="col-md-7">
+        <p class="all-caps font-montserrat small no-margin ">PASSO 2</p>
+        <p class="small">
+          Para agendar postagens, faça login na conta do Instagram diretamente na plataforma do WoopSocial.
+        </p>
+      </div>
+    </div>
+    <div *ngFor="let profile of profilesToConnect; let last = last">
+      <div [ngClass]="{'b-grey b-b' : !last}" class="p-b-10 p-t-10">
+        <add-instagram-scheduling [profileInserted]="profile"></add-instagram-scheduling>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="!disableBackButton" class="panel-footer clearfix p-t-30">
+    <button class="btn btn-primary pull-right" type="button" (click)="backToChannels()">
+      <span class="pull-left">
+        <i class="fa fa-arrow-left fs-14" aria-hidden="true"></i>
+      </span>
+      <span class="m-l-5">Voltar aos meus canais</span>
+    </button>
+  </div>
+</div>

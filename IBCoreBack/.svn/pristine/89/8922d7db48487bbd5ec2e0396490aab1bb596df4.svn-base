@@ -1,0 +1,72 @@
+package br.com.opsocial.server.utils;
+
+import org.apache.commons.httpclient.NameValuePair;
+
+import com.face4j.facebook.enums.HttpClientType;
+import com.face4j.facebook.exception.FacebookException;
+import com.face4j.facebook.http.APICallerFactory;
+import com.face4j.facebook.http.APICallerInterface;
+/*import com.face4j.facebook.enums.HttpClientType;
+import com.face4j.facebook.exception.FacebookException;
+import com.face4j.facebook.http.APICallerFactory;
+import com.face4j.facebook.http.APICallerInterface;*/
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+
+//import org.apache.commons.httpclient.NameValuePair;
+
+import br.com.opsocial.client.entity.primitive.BitlyShortenUrlDTO;
+
+public class BitlyClient {
+
+	private static final Gson gson = new GsonBuilder()
+			.setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+			.create();
+
+	private APICallerInterface caller = null;
+	
+	private static final String BITLY_USERNAME = "o_2ffbuke2vg";
+	private static final String BITLY_API_KEY = "R_338f98afba02e000a3b624f3ee85778c";
+
+	private static final String SHORTEN_URL = "http://api-ssl.bitly.com/v3/shorten";
+	
+	public BitlyClient() {
+		
+	}
+	
+	public BitlyShortenUrlDTO shortenUrl(BitlyShortenUrlDTO urlToShorten) {
+
+		try {
+			NameValuePair[] nameValuePairs = {new NameValuePair("login", BITLY_USERNAME),
+					new NameValuePair("apiKey", BITLY_API_KEY),
+					new NameValuePair("longUrl", urlToShorten.getLongUrl()),
+					new NameValuePair("format", "json")};
+
+			caller = APICallerFactory.getAPICallerInstance(HttpClientType.APACHE_HTTP_CLIENT);
+
+			String jsonResponse = caller.getData(SHORTEN_URL, nameValuePairs);
+
+			jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+
+			JsonParser parser = new JsonParser();
+
+			int jsonStatusCode = parser.parse(jsonResponse).getAsJsonObject().get("status_code").getAsInt();
+			if(jsonStatusCode == 200) {
+				urlToShorten.setUrl(parser.parse(jsonResponse).getAsJsonObject().get("data").getAsJsonObject().get("url").getAsString());
+				urlToShorten.setHash(parser.parse(jsonResponse).getAsJsonObject().get("data").getAsJsonObject().get("hash").getAsString());
+				urlToShorten.setShortened(true);
+			}
+
+			return urlToShorten;
+		} catch (JsonSyntaxException e) {
+			e.printStackTrace();
+			return urlToShorten;
+		} catch (FacebookException e) {
+			e.printStackTrace();
+			return urlToShorten;
+		}
+	}
+}

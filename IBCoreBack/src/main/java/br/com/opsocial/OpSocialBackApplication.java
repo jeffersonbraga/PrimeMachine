@@ -1,0 +1,207 @@
+package br.com.opsocial;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.ServletContext;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.support.SpringBootServletInitializer;
+import org.springframework.core.env.Environment;
+
+import br.com.opsocial.server.locale.MessageByLocaleServiceImpl;
+import br.com.opsocial.server.utils.UtilFunctionsService;
+import br.com.opsocial.server.utils.tasks.EmailsController;
+import br.com.opsocial.server.utils.tasks.FacebookInsightsController;
+import br.com.opsocial.server.utils.tasks.InstagramInsightsController;
+import br.com.opsocial.server.utils.tasks.LinkedinInsightsController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+import br.com.opsocial.server.utils.tasks.SetsInstagramController;
+import br.com.opsocial.server.utils.tasks.TwitterFollowersController;
+import br.com.opsocial.server.utils.tasks.TwitterInsightsController;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+
+@SpringBootApplication()
+public class OpSocialBackApplication extends SpringBootServletInitializer {
+
+	@Autowired
+	ServletContext context;
+
+	@Autowired
+    MessageByLocaleServiceImpl messageByLocaleServiceImpl;
+
+	@Autowired
+    UtilFunctionsService utilFunctionsServiceImpl;
+
+	public static ServletContext opSocialContext;
+	public static MessageByLocaleServiceImpl messageByLocaleService;
+	public static UtilFunctionsService utilFunctionsService; 
+
+	@Autowired
+	Environment env;
+
+    public static final String SPRING_PROFILE_DEVELOPMENT = "dev";
+    public static final String SPRING_PROFILE_PRODUCTION = "prod";
+    public static final String SPRING_PROFILE_CLOUD = "cloud";
+
+    // Directories for files.
+    public static String UPLOAD_DIR_AVATAR = "/woopsocial/images/avatar";
+    public static String UPLOAD_DIR_IMAGES_POSTS = "/woopsocial/images/posts";
+    public static String UPLOAD_DIR_REPORTS = "/woopsocial/images/reports";
+    public static String GET_DIR_REPORTS_XLS = "/woopsocial/reports/xls";
+    public static String UPLOAD_DIR_VIDEO_POSTS = "/woopsocial/videos/posts";
+    public static String UPLOAD_DIR_COMMENT_POSTS = "/woopsocial/images/comments";
+    public static String UPLOAD_DIR_THUMBNAILS = "/woopsocial/images/thumbnails";
+    public static String EMAILS_DIR = "/woopsocial/emails/";
+
+    // Host Urls.
+	//public static String SERVER_PATH = "https://app.woopsocial.com";
+	public static String SERVER_PATH = "http://localhost:8080/OpSocialBackApplication";
+    
+	/*public static String IMAGES_POSTS_PATH = "https://s3.amazonaws.com/woopsocial.com/images/posts/";
+	public static String VIDEOS_POSTS_PATH = "https://s3.amazonaws.com/woopsocial.com/videos/posts/";
+	public static String AVATAR_PATH = "https://s3.amazonaws.com/woopsocial.com/images/avatar/";
+	public static String ACTIVATON_LINK = "https://app.woopsocial.com/newuser/";
+	public static String UNSUBSCRIBE_EMAIL_LINK = "https://app.woopsocial.com/unsubscribeemail/";
+	*/
+	public static String IMAGES_POSTS_PATH = "/woopsocial.com/images/posts/";
+	public static String VIDEOS_POSTS_PATH = "/woopsocial.com/videos/posts/";
+	public static String AVATAR_PATH = "/woopsocial.com/images/avatar/";
+	public static String ACTIVATON_LINK = "/newuser/";
+	public static String UNSUBSCRIBE_EMAIL_LINK = "/unsubscribeemail/";
+	
+    public static final String CREDENTIAL_ADMINSTRATOR 	= "ADMIN";
+    public static final String CREDENTIAL_ANALYST 		= "ANALYST";
+    public static final String CREDENTIAL_WOOP 			= "WOOP";
+
+    public static String MATRIX_KEY = "pn2g66S5";
+
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+        return application.sources(applicationClass);
+    }
+ 
+    private static Class<OpSocialBackApplication> applicationClass = OpSocialBackApplication.class;
+
+	public static void main(String[] args) {
+		SpringApplication.run(OpSocialBackApplication.class, args);
+	}
+
+    /**
+     * Initializes hipster.
+     * <p>
+     * Spring profiles can be configured with a program arguments --spring.profiles.active=your-active-profile
+     * <p>
+     * You can find more information on how profiles work with JHipster on <a href="http://jhipster.github.io/profiles/">http://jhipster.github.io/profiles/</a>.	
+     */
+    @PostConstruct
+    public void initApplication() {
+
+    	// TODO DE ACORDO COM O  "SPRING_PROFILE_DEVELOPMENT" USAR  context.getRealPath("/") OU CAMINHO DE HD CLOUD
+    	opSocialContext = context;
+
+    	messageByLocaleService = messageByLocaleServiceImpl;
+    	utilFunctionsService = utilFunctionsServiceImpl;
+
+        Collection<String> activeProfiles = Arrays.asList(env.getActiveProfiles());
+        if (activeProfiles.contains(SPRING_PROFILE_DEVELOPMENT) && activeProfiles.contains(SPRING_PROFILE_PRODUCTION)) {
+        	/*----- System.out.println("You have misconfigured your application! It should not run " +
+                "with both the 'dev' and 'prod' profiles at the same time.");*/
+        }
+
+        if (activeProfiles.contains(SPRING_PROFILE_DEVELOPMENT)) {
+
+	        UPLOAD_DIR_AVATAR 		= context.getRealPath("/") + "/woopsocial/images/avatar";
+	        UPLOAD_DIR_IMAGES_POSTS = context.getRealPath("/") + "/woopsocial/images/posts";
+	        UPLOAD_DIR_REPORTS 		= context.getRealPath("/") + "/woopsocial/images/reports";
+	        UPLOAD_DIR_COMMENT_POSTS= context.getRealPath("/") + "/woopsocial/images/comments";
+	        GET_DIR_REPORTS_XLS 	= context.getRealPath("/") + "/woopsocial/reports/xls";
+	        UPLOAD_DIR_VIDEO_POSTS 	= context.getRealPath("/") + "/woopsocial/videos/posts";
+	        UPLOAD_DIR_THUMBNAILS 	= context.getRealPath("/") + "/woopsocial/images/thumbnails";
+
+	    	SERVER_PATH = "http://localhost:8080/OpSocialBack";
+	    	IMAGES_POSTS_PATH = "http://localhost:8080/OpSocialBack/woopsocial/images/posts/";
+	    	VIDEOS_POSTS_PATH = "http://localhost:8080/OpSocialBack/woopsocial/videos/posts/";
+	    	AVATAR_PATH = "http://localhost:8080/OpSocialBack/woopsocial/images/avatar/";
+	    	ACTIVATON_LINK = "http://localhost:4200/newuser/";
+	    	UNSUBSCRIBE_EMAIL_LINK = "http://localhost:4200/unsubscribeemail/";
+        }
+
+        EMAILS_DIR = context.getRealPath("/") + "/woopsocial/emails/";
+
+        if (activeProfiles.contains(SPRING_PROFILE_DEVELOPMENT) && activeProfiles.contains(SPRING_PROFILE_CLOUD)) {
+            /*----- System.out.println("You have misconfigured your application! It should not" +
+                "run with both the 'dev' and 'cloud' profiles at the same time.");*/
+        }
+
+        if (activeProfiles.contains(SPRING_PROFILE_PRODUCTION)) {
+        	/*        	
+          new EmailsController();
+        	
+          new InstagramInsightsController();
+
+          new TwitterFollowersController();
+
+          new TwitterInsightsController();
+
+          new FacebookInsightsController();
+
+          new ValidateTokensController();
+
+          new LinkedinInsightsController();
+          
+          new SetsController();
+
+          new SetsInstagramController();
+        	*/
+        	// OpSocial Services
+/*
+			new NewsBlogsPostsController();
+	
+			new ReclameAquiPostController();
+			
+			new ValidateTokensController();
+	
+			new ProfileTurnController();
+			
+			new AccountActiveController(this.context);
+				
+			new MonitoringController();
+			
+			new MonitoringReportController();
+			
+			new SetsController();
+			
+			new SetsInstagramController();
+			
+			new TwitterFollowersController();
+			
+			new TwitterInsightsController();
+			
+			new FacebookInsightsController();
+			
+			new InstagramInsightsController();
+			
+			new EmailsController();
+			
+			new MailboxController();
+			
+			new MonitoringLogReportController();
+			
+			new TwitterTrendingTopicsController();
+			
+			new LinkedinInsightsController();
+*/			
+        } else {
+
+            /*new SetsController();
+            new SetsInstagramController();*/
+        }
+        
+//        new IpagService();
+    }
+}

@@ -1,0 +1,39 @@
+package br.com.opsocial.ejb.entity.application.idclass;
+
+import java.io.Serializable;
+
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+
+@Embeddable
+public class InstagramPostLikeId implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	@Column(name = "idmedia")
+	private Long instagramReportPost;
+	
+	@Column(name = "idinstagramuser")
+	private Long idInstagramUser;
+	
+	public InstagramPostLikeId() {
+		
+	}
+
+	public Long getInstagramReportPost() {
+		return instagramReportPost;
+	}
+
+	public void setInstagramReportPost(Long instagramReportPost) {
+		this.instagramReportPost = instagramReportPost;
+	}
+
+	public Long getIdInstagramUser() {
+		return idInstagramUser;
+	}
+
+	public void setIdInstagramUser(Long idInstagramUser) {
+		this.idInstagramUser = idInstagramUser;
+	}
+	
+}

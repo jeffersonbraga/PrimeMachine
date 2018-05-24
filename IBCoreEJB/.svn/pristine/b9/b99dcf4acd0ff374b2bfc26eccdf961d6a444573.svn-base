@@ -1,0 +1,534 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.BlogPostMonitoringId;
+import br.com.opsocial.ejb.entity.blogs.BlogPost;
+import br.com.opsocial.ejb.entity.blogs.BlogPostMonitoring;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+
+@Stateless
+public class BlogPostMonitoringDAOImpl extends AbstractDAOImpl<BlogPostMonitoring> implements BlogPostMonitoringDAO {
+	
+	@Override
+	public void delete(BlogPostMonitoring object) throws Exception {
+		try {
+			object = em.merge(object);
+			em.remove(object);
+			this.flush();
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> listMostRecents(Long idMonitoring, Integer maxResults) {
+	
+		sql = "Select b From BlogPostMonitoring b where b.monitoring.idMonitoring = :idMonitoring and b.garbage='F' order by b.blogPost.createdTime desc";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setMaxResults(maxResults);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> listMostRecents(Long createdTime, Long idMonitoring) {
+	
+		sql = "Select b From BlogPostMonitoring b where b.blogPost.createdTime > :createdTime and b.monitoring.idMonitoring = :idMonitoring and b.garbage='F' order by b.blogPost.createdTime";
+		query = em.createQuery(sql);
+		query.setParameter("createdTime", createdTime);
+		query.setParameter("idMonitoring", idMonitoring);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> listElder(Long createdTime, Long idMonitoring, Integer maxResults) {
+	
+		sql = "Select b From BlogPostMonitoring b where b.blogPost.createdTime < :createdTime and b.monitoring.idMonitoring = :idMonitoring and b.garbage='F' order by b.blogPost.createdTime desc";
+		query = em.createQuery(sql);
+		query.setParameter("createdTime", createdTime);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setMaxResults(maxResults);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> getByInterval(Long idMonitoring, Long startDate, Long endDate, 
+			String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		
+		if(monitoringWords != null) {
+
+			sql = "Select bpm.idmonitoring, bpm.idblogpost, bpm.term, bpm.qualification, bpm.retrieveddate, " +
+					"bpm.garbage, bp.createdtime From opsocial.blogpostsmonitorings bpm " + 
+					"JOIN opsocial.blogposts bp on (bpm.idblogpost = bp.idblogpost) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+					"bpm.idmonitoring = mpt.idmonitoring AND bpm.term = mpt.term AND CAST(bpm.idblogpost AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.BLOGS + "' " +
+					"WHERE bpm.idmonitoring = " + idMonitoring + " and " +
+					"bp.createdtime >= " + startDate + " and " +
+					"bp.createdtime <= " + endDate + " " +
+					"and bpm.garbage='F'";
+
+			sql += " and bp.idblogpost in ( "
+				+ "Select bp2.idblogpost From opsocial.blogposts bp2 where ";
+			
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(bp2.title) LIKE LOWER('%" + w + "%') or LOWER(bp2.url) LIKE LOWER('%" + w + "%') or LOWER(bp2.description) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+			sql += ")";
+			
+		} else {
+
+			sql = "Select bpm.idmonitoring, bpm.idblogpost, bpm.term, bpm.qualification, bpm.retrieveddate, " +
+					"bpm.garbage, bp.createdtime From opsocial.blogpostsmonitorings bpm " + 
+					"JOIN opsocial.blogposts bp on (bpm.idblogpost = bp.idblogpost) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+					"bpm.idmonitoring = mpt.idmonitoring AND bpm.term = mpt.term AND CAST(bpm.idblogpost AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.BLOGS + "' " +
+					"WHERE bpm.idmonitoring = " + idMonitoring + " and " +
+					"bp.createdtime >= " + startDate + " and " +
+					"bp.createdtime <= " + endDate + " " +
+					"and bpm.garbage='F'";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " bpm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " bpm.qualification is null or";
+				} else {
+					sql += " bpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		sql += " GROUP BY bpm.idmonitoring, bpm.idblogpost, bpm.term, bpm.qualification, bpm.retrieveddate, bpm.garbage, bp.createdtime";
+		
+		sql += " ORDER BY bp.createdtime desc";
+		
+		query = em.createNativeQuery(sql);
+		query.setFirstResult(offset * 50);
+		query.setMaxResults(limit);
+		
+		List<BlogPostMonitoring> blogPostsMonitorings = new ArrayList<BlogPostMonitoring>();
+		
+		List<Object[]> result = query.getResultList();
+
+		Monitoring monitoring = new Monitoring();
+		sql = "SELECT mn FROM Monitoring mn WHERE mn.idMonitoring=" + idMonitoring;
+		query = em.createQuery(sql);
+		monitoring = (Monitoring) query.getSingleResult();
+		
+		for (Object[] object : result) {
+			
+			BlogPostMonitoring blogPostsMonitoring = new BlogPostMonitoring();
+			
+			BlogPost blogPost = new BlogPost();
+			Long idBlogPost = (Long) object[1];
+			sql = "SELECT bp FROM BlogPost bp WHERE bp.idBlogPost = :idBlogPost"; 
+			query = em.createQuery(sql);
+			query.setParameter("idBlogPost", idBlogPost);
+			blogPost = (BlogPost) query.getSingleResult();
+			
+			blogPostsMonitoring.setMonitoring(monitoring);
+			blogPostsMonitoring.setBlogPost(blogPost); //TODO ver os que podem ser null
+			blogPostsMonitoring.setTerm((String) object[2]);
+			blogPostsMonitoring.setQualification(object[3] != null ? ((String) object[3]).charAt(0) : null);
+			blogPostsMonitoring.setRetrievedDate(object[4] != null ? ((Long) object[4]) : null);
+			blogPostsMonitoring.setGarbage(object[5] != null ? ((String) object[5]).charAt(0) : null);
+			
+			blogPostsMonitorings.add(blogPostsMonitoring);
+		}
+		
+		return blogPostsMonitorings;
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate,
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+		
+		Long postsCount = 0L;
+		
+		if(monitoringWords != null) {
+
+			sql = "SELECT count(distinct(bpm)) FROM opsocial.blogpostsmonitorings AS bpm " + 
+							"INNER JOIN opsocial.blogposts AS bp ON " + 
+							"bp.idblogpost = bpm.idblogpost " +
+							"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+							"bpm.idmonitoring = mpt.idmonitoring AND bpm.term = mpt.term AND CAST(bpm.idblogpost AS varchar) = mpt.postid " +
+							"AND mpt.network = '" + Profile.BLOGS + "' " +
+						"WHERE bpm.idmonitoring = " + idMonitoring + " AND bp.createdtime >= " + startDate + " AND " +
+						"bp.createdtime <= " + endDate + " AND bpm.garbage = 'F'";
+
+			sql += " and bp.idblogpost in ( "
+				+ "Select bp2.idblogpost From opsocial.blogposts bp2 where ";
+			
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(bp2.title) LIKE LOWER('%" + w + "%') or LOWER(bp2.url) LIKE LOWER('%" + w + "%') or LOWER(bp2.description) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+			sql += ")";
+			
+		} else {
+
+			sql = "SELECT count(distinct(bpm)) FROM opsocial.blogpostsmonitorings AS bpm " + 
+					"INNER JOIN opsocial.blogposts AS bp ON " + 
+					"bp.idblogpost = bpm.idblogpost " +
+							"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+							"bpm.idmonitoring = mpt.idmonitoring AND bpm.term = mpt.term AND CAST(bpm.idblogpost AS varchar) = mpt.postid " +
+							"AND mpt.network = '" + Profile.BLOGS + "' " +
+						"WHERE bpm.idmonitoring = " + idMonitoring + " AND bp.createdtime >= " + startDate + " AND " +
+						"bp.createdtime <= " + endDate + " AND bpm.garbage = 'F'";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " bpm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " bpm.qualification is null or";
+				} else {
+					sql += " bpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		query = em.createNativeQuery(sql);
+		
+		postsCount = (Long) query.getSingleResult(); 
+		
+		return postsCount;
+	}
+
+	@Override
+	public BlogPostMonitoring getByComposedId(Long idMonitoring, Long idBlogPost, String term) {
+		
+		sql = "Select b From BlogPostMonitoring b where b.monitoring.idMonitoring = :idMonitoring and b.term = :term and b.blogPost.idBlogPost = :idBlogPost";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+		query.setParameter("idBlogPost", idBlogPost);
+		
+		return (BlogPostMonitoring) query.getSingleResult();
+	}
+	
+	@Override
+	public BlogPostMonitoring merge(BlogPostMonitoring blogPostMonitoring) throws Exception {
+
+		BlogPostMonitoringId blogPostMonitoringId = new BlogPostMonitoringId();
+		blogPostMonitoringId.setBlogPost(blogPostMonitoring.getBlogPost().getIdBlogPost());
+		blogPostMonitoringId.setMonitoring(blogPostMonitoring.getMonitoring().getIdMonitoring());
+		blogPostMonitoringId.setTerm(blogPostMonitoring.getTerm());
+		
+		BlogPostMonitoring objTmp = getById(blogPostMonitoringId);
+
+		try {
+			validateVersion(objTmp, blogPostMonitoring);
+		} catch (IllegalStateException ex) {
+			throw new OptimisticLockException();
+		}
+
+		em.merge(blogPostMonitoring);
+		blogPostMonitoring = getById(blogPostMonitoringId);
+		
+		this.flush();
+
+		return blogPostMonitoring;
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> listByTerm(String term, Long idMonitoring) {
+
+		sql = "Select b From BlogPostMonitoring b where b.monitoring.idMonitoring = :idMonitoring and b.term = :term";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT bpm.term, COUNT(bpm) FROM BlogPostMonitoring bpm " +
+				"WHERE bpm.monitoring.idMonitoring = :idMonitoring AND (bpm.retrievedDate >= :date AND bpm.retrievedDate < (:date + 86400)) " +
+				"AND bpm.garbage = 'F' " +
+				"GROUP BY bpm.term";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(bpm) FROM BlogPostMonitoring bpm WHERE bpm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (bpm.retrievedDate >= :date AND bpm.retrievedDate < (:date + 86400)) AND bpm.garbage = 'F'";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+
+	@Override
+	public List<Object[]> getCountOfPostsPerHourDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT series.hour, count(n) FROM (SELECT generate_series(0,23)*1 AS hour) AS series " +
+				"LEFT JOIN (SELECT b.* FROM opsocial.blogpostsmonitorings as b INNER JOIN opsocial.monitorings AS m ON b.idmonitoring = m.idmonitoring " +
+					"WHERE b.idmonitoring = " + idMonitoring + " and b.garbage='F' AND (b.retrieveddate >= " + date + " AND b.retrieveddate < (" + date + " + 86400))) AS b ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(b.retrieveddate)::timestamp with time zone) " +
+			  "GROUP BY series.hour " +  
+			  "ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT bpm.qualification, bpm.term, COUNT(*) FROM opsocial.blogpostsmonitorings bpm WHERE bpm.idmonitoring = " + idMonitoring + " " + 
+				"AND bpm.garbage = 'F' AND (bpm.retrieveddate >= " + date + " AND bpm.retrieveddate < (" + date + " + 86400)) AND bpm.qualification <> '' " + 
+				"GROUP BY bpm.qualification, bpm.term";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT mpt.idtag, COUNT(*) FROM opsocial.blogpostsmonitorings AS bpm " +
+				"INNER JOIN opsocial.monitoringspoststags AS mpt ON " +
+				"mpt.postid = CAST(bpm.idblogpost AS varchar) AND mpt.term = bpm.term AND mpt.idmonitoring = bpm.idmonitoring " + 
+				"WHERE mpt.idmonitoring = " + idMonitoring + " AND bpm.garbage = 'F' AND (bpm.retrieveddate >= " + date + " AND bpm.retrieveddate < (" + date + " + 86400)) " +
+				"GROUP BY mpt.idtag";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public BlogPostMonitoring getByComposedId(Long idMonitoring, Long idBlogPost) {
+		
+		sql = "Select b From BlogPostMonitoring b where b.monitoring.idMonitoring = :idMonitoring and b.blogPost.idBlogPost = :idBlogPost";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("idBlogPost", idBlogPost);
+		
+		if(!query.getResultList().isEmpty()) {
+			return (BlogPostMonitoring) query.getSingleResult();
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public Long getCountOfGarbagePostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(bpm) FROM BlogPostMonitoring bpm WHERE bpm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (bpm.retrievedDate >= :date AND bpm.retrievedDate < (:date + 86400)) AND bpm.garbage = 'T'";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+	
+	@Override
+	public List<BlogPostMonitoring> listSample(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		
+		sql = "Select * From opsocial.blogpostsmonitorings bpm inner join opsocial.blogposts bp on bpm.idblogpost = bp.idblogpost where " +
+				"bpm.idMonitoring = " + idMonitoring + " and " +
+				"bp.createdTime >= " + startDate +" and " +
+				"bp.createdTime <= " + endDate +" and " +
+				"bpm.garbage='F' ";
+				
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("null") || q.equals("Q")) {
+					sql += " bpm.qualification is null or";
+				} else {
+					sql += " bpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(!notIn.isEmpty()) {
+			
+			sql += " and bpm.idblogpost not in (";
+			
+			for(String postId : notIn) {
+				sql += postId + ",";
+			}
+			
+			sql = sql.substring(0,sql.lastIndexOf(","));
+			
+			sql += ")";
+		}
+		
+		sql += " order by random(), createdtime desc limit " + sample;
+		
+		query = em.createNativeQuery(sql, BlogPostMonitoring.class);
+		
+		List<BlogPostMonitoring> blogPostMonitorings = (List<BlogPostMonitoring>) query.getResultList(); 
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			List<BlogPostMonitoring> blogPostsMonitoringToExclude = new ArrayList<BlogPostMonitoring>();
+			
+			for(BlogPostMonitoring blogPostMonitoring : blogPostMonitorings) {
+				
+				try {
+					
+					MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote) 
+							new InitialContext().lookup("global/OpSocialBack/MaintenanceMonitoringPostTagBean!br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote");
+					
+					if(!monitoringPostTagRemote.thereIsMonitoringTag(String.valueOf(blogPostMonitoring.getBlogPost().getIdBlogPost()), 
+							blogPostMonitoring.getMonitoring().getIdMonitoring(), blogPostMonitoring.getTerm(), 
+							Profile.BLOGS, monitoringTags)) {
+						blogPostsMonitoringToExclude.add(blogPostMonitoring);
+					}
+					
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			blogPostMonitorings.removeAll(blogPostsMonitoringToExclude);
+		}
+		
+		return blogPostMonitorings;
+	}
+
+}

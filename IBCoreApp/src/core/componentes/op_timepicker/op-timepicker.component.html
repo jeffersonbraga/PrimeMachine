@@ -1,0 +1,7 @@
+<div class="col-md-12 no-padding" #opTimepickerContainer idModal="optimepicker-pop" name="optimepicker-pop" id="optimepicker-pop" style="z-index: 1000;">
+    <div class="input-group bootstrap-timepicker" (click)="adjustPosition($event)">
+        <span class="input-group-addon" style="z-index:10;"><i class="pg-clock"></i></span>
+        <input #txtTimePicker class="form-control p-r-0" type="text" readonly value="{{getSelectedValue()}}" style="min-width: 160px;color: rgba(98, 98, 98, 1);z-index:10;">
+    </div>
+    <timepicker id="timepicker-compose" #optimerPicker class="modal-timepicker" [hidden]="isClassVisible" (click)="verifyTimeSelected()" (onHidden)="hide($event)" style="z-index:20;"></timepicker>
+</div>

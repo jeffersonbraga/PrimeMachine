@@ -1,0 +1,424 @@
+package br.com.opsocial.client.entity.mount;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.application.UsersDTO;
+import br.com.opsocial.client.entity.blogs.BlogPostMonitoringDTO;
+import br.com.opsocial.client.entity.facebook.FacePostMonitoringDTO;
+import br.com.opsocial.client.entity.googleplus.GooglePlusPostMonitoringDTO;
+import br.com.opsocial.client.entity.instagram.InstagramPostDTO;
+import br.com.opsocial.client.entity.instagram.InstagramPostMonitoringDTO;
+import br.com.opsocial.client.entity.mailbox.ConversationDTO;
+import br.com.opsocial.client.entity.mailbox.MessageDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringInfluentialUserDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringPostTagDTO;
+import br.com.opsocial.client.entity.monitoring.MonitoringTagDTO;
+import br.com.opsocial.client.entity.monitoring.SampleDTO;
+import br.com.opsocial.client.entity.monitoring.TwitterPostMonitoringDTO;
+import br.com.opsocial.client.entity.news.NewsPostMonitoringDTO;
+import br.com.opsocial.client.entity.reclameaqui.ReclameAquiPostMonitoringDTO;
+import br.com.opsocial.client.entity.report.ReportLogoDTO;
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostCommentDTO;
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+import br.com.opsocial.client.entity.report.facebook.FacebookInfluentialUserDTO;
+import br.com.opsocial.client.entity.report.facebook.FanPageGrowth;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookCityDTO;
+import br.com.opsocial.client.entity.report.instagram.FilterLikesCommentsDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramEngagedFollowerDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramReportPostDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramTopPostTagDTO;
+import br.com.opsocial.client.entity.report.twitter.TwitterFollowerDTO;
+import br.com.opsocial.client.entity.report.twitter.TwitterReportDTO;
+import br.com.opsocial.client.entity.report.twitter.TwitterReportStatusDTO;
+import br.com.opsocial.client.entity.twitter.TrendingTopicDTO;
+import br.com.opsocial.client.entity.youtube.YoutubePostMonitoringDTO;
+import br.com.opsocial.ejb.das.MaintenanceTwitterStatusRemote;
+import br.com.opsocial.ejb.entity.application.Anniversarie;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.blogs.BlogPostMonitoring;
+import br.com.opsocial.ejb.entity.facebook.FacePostMonitoring;
+import br.com.opsocial.ejb.entity.google.GooglePlusPostMonitoring;
+import br.com.opsocial.ejb.entity.instagram.InstagramEngagedFollower;
+import br.com.opsocial.ejb.entity.instagram.InstagramPost;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostMonitoring;
+import br.com.opsocial.ejb.entity.instagram.InstagramReportPost;
+import br.com.opsocial.ejb.entity.instagram.InstagramTopPostTag;
+import br.com.opsocial.ejb.entity.mailbox.Conversation;
+import br.com.opsocial.ejb.entity.mailbox.Message;
+import br.com.opsocial.ejb.entity.monitoring.ColorTag;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringInfluentialUser;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostLocation;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostTag;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringTag;
+import br.com.opsocial.ejb.entity.monitoring.Sample;
+import br.com.opsocial.ejb.entity.news.NewsPostMonitoring;
+import br.com.opsocial.ejb.entity.reclameaqui.ReclameAquiPostMonitoring;
+import br.com.opsocial.ejb.entity.report.AgeGroup;
+import br.com.opsocial.ejb.entity.report.FaceReportPost;
+import br.com.opsocial.ejb.entity.report.FaceReportPostComment;
+import br.com.opsocial.ejb.entity.report.FacebookInfluentialUser;
+import br.com.opsocial.ejb.entity.report.FilterLikesComments;
+import br.com.opsocial.ejb.entity.report.PostEngagementStats;
+import br.com.opsocial.ejb.entity.report.ReportFacebookLocation;
+import br.com.opsocial.ejb.entity.report.ReportLogo;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+import br.com.opsocial.ejb.entity.report.TwitterFollower;
+import br.com.opsocial.ejb.entity.report.TwitterReport;
+import br.com.opsocial.ejb.entity.report.TwitterStatus;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.Sets;
+import br.com.opsocial.ejb.entity.twitter.TrendingTopic;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring;
+import br.com.opsocial.ejb.entity.youtube.YoutubePostMonitoring;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.MediaEntity;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+
+public class MountDTO {
+
+	public static Object mountSet(Sets setDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Post mountPost(Sets setDTO, Post post) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Post mountPost(Post postDTO, Object mountSet) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static MonitoringInfluentialUserDTO mountMonitoringInfluentialUser(
+			MonitoringInfluentialUser monitoringPositiveUserNew) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static TwitterReportDTO mountTwitterReport(TwitterReport twitterReport) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<TwitterFollowerDTO> mountTwitterFollower(List<TwitterFollower> mostInfluentialFollowers) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<TwitterReportStatusDTO> mountTwitterReportStatus(List<TwitterStatus> twitterStatus, Profile profile) {
+		
+		MaintenanceTwitterStatusRemote twitterStatusRemote = (MaintenanceTwitterStatusRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatus");
+		
+		TwitterIntegration twitterIntegration = new TwitterIntegration();
+		Twitter twitter = twitterIntegration.getTwitter(profile.getToken(), profile.getTokenSecret());
+		
+		List<TwitterReportStatusDTO> twitterReportStatusDTOs = new ArrayList<TwitterReportStatusDTO>();
+		
+		for(TwitterStatus status : twitterStatus) {
+			
+			TwitterReportStatusDTO twitterReportStatusDTO = new TwitterReportStatusDTO();
+			twitterReportStatusDTO.setIdProfile(status.getIdProfile());
+			twitterReportStatusDTO.setIdStatus(status.getIdStatus());
+			twitterReportStatusDTO.setCreatedAt(new Date(status.getCreatedAt() * 1000L));
+			
+			if(status.getText().equals("")) {
+				
+				try {
+					
+					status.setText(twitter.showStatus(Long.valueOf(status.getIdStatus())).getText());
+					
+					twitterStatusRemote.save(status);
+					
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (TwitterException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+			if(status.getMediaUrl() == null) {
+				
+				try {
+					
+					MediaEntity[] mediaEntities = twitter.showStatus(Long.valueOf(status.getIdStatus())).getMediaEntities(); 
+					
+					for (MediaEntity mediaEntity : mediaEntities) {
+						if(mediaEntity.getType().equals("photo")) {
+							
+							status.setMediaUrl(mediaEntity.getMediaURLHttps());
+							
+							twitterStatusRemote.save(status);
+							
+							break;
+						}	
+					}
+					
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (TwitterException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+			twitterReportStatusDTO.setText(status.getText());
+			twitterReportStatusDTO.setStatusUrl("https://twitter.com/" + profile.getScreenName() + "/status/" + status.getIdStatus());
+			twitterReportStatusDTO.setVersion(status.getVersion());
+			twitterReportStatusDTO.setMediaUrl(status.getMediaUrl());
+			
+			twitterReportStatusDTOs.add(twitterReportStatusDTO);
+		}
+		
+		return twitterReportStatusDTOs;
+	}
+
+	public static List<FaceReportPostCommentDTO> mountFaceReportPostComment(List<FaceReportPostComment> comments) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static FaceReportPostDTO mountFaceReportPost(FaceReportPost faceReportPost) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static SumByDate mountSumByDate(SumByDate sumByDate) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Object mountPostEngagementStats(PostEngagementStats engagementStats) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static FanPageGrowth mountFanPageGrowth(FanPageGrowth pageGrowth) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static AgeGroup mountAgeGroup(AgeGroup majorAgeGroupReachedUsers) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static ReportFacebookCityDTO mountReportFacebookCity(ReportFacebookLocation reportFacebookCity) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static FacebookInfluentialUserDTO mountFacebookInfluentialUser(FacebookInfluentialUser facebookInfluentialUser) {
+		
+		FacebookInfluentialUserDTO facebookInfluentialUserDTO = new FacebookInfluentialUserDTO();
+		
+		facebookInfluentialUserDTO.setComments(facebookInfluentialUser.getComments());
+		facebookInfluentialUserDTO.setImageProfile(FacebookIntegration.GRAPH_API_V2_6 + facebookInfluentialUser.getUserId() + "/picture");
+		facebookInfluentialUserDTO.setLikes(facebookInfluentialUser.getLikes());
+		facebookInfluentialUserDTO.setName(facebookInfluentialUser.getName());
+		facebookInfluentialUserDTO.setPageId(facebookInfluentialUser.getPageId());
+		facebookInfluentialUserDTO.setUserId(facebookInfluentialUser.getUserId());
+		facebookInfluentialUserDTO.setVersion(facebookInfluentialUser.getVersion());
+		facebookInfluentialUserDTO.setProfileUrl(UtilFunctions.FACEBOOK_URL + facebookInfluentialUser.getUserId());
+		
+		return facebookInfluentialUserDTO;
+	}
+
+	public static List<InstagramTopPostTagDTO> mountInstagramTopPostTag(List<InstagramTopPostTag> instagramTopPostTags,
+			long l) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<FilterLikesCommentsDTO> mountFilterLikesComments(List<FilterLikesComments> filterLikesComments) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<InstagramReportPostDTO> mountInstagramReportPost(List<InstagramReportPost> postsWithMoreLikes) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<InstagramEngagedFollowerDTO> mountInstagramEngagedFollower(
+			List<InstagramEngagedFollower> updateInstagramEngagedFollowers) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<TwitterReportStatusDTO> mountTwitterReportStatus(List<TwitterStatus> twitterStatusMostEngaged) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Object mountReportLogo(ReportLogo reportLogo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static ReportLogo mountReportLogo(ReportLogoDTO reportLogoDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static MonitoringDTO mountMonitoring(Monitoring monitoring) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<MonitoringTagDTO> mountMonitoringTag(List<MonitoringTag> listByMonitoring) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static FacePostMonitoringDTO mountFacePostMonitoring(FacePostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<MonitoringPostTag> mountMonitoringPostTag(List<MonitoringPostTag> listByMonitoringPost) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static TwitterPostMonitoringDTO mountTwitterPostMonitoring(TwitterPostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static GooglePlusPostMonitoringDTO mountGooglePlusPostMonitoring(GooglePlusPostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static BlogPostMonitoringDTO mountBlogPostMonitoring(BlogPostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static NewsPostMonitoringDTO mountNewsPostMonitoring(NewsPostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static ReclameAquiPostMonitoringDTO mountReclameAquiPostMonitoring(ReclameAquiPostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static InstagramPostMonitoringDTO mountInstagramPostMonitoring(InstagramPostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static YoutubePostMonitoringDTO mountYoutubePostMonitoring(YoutubePostMonitoring byComposedId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Sample mountSample(SampleDTO sampleDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Monitoring mountMonitoring(MonitoringDTO monitoringDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Profile mountProfile(Profile group) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static MonitoringPostLocation mountMonitoringPostLocation(MonitoringPostLocation monitoringPostLocation) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Object mountColorTag(List<ColorTag> colorTags) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static MonitoringTag mountMonitoringTag(MonitoringTagDTO monitoringTagDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Object mountMonitoringPostTag(MonitoringPostTag monitoringPostTag) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static MonitoringPostTag mountMonitoringPostTag(MonitoringPostTagDTO monitoringPostTagDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Object mountMonitoringTag(MonitoringTag monitoringTag) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static ConversationDTO mountConversation(Conversation notread) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static MessageDTO mountMessage(Message message) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Conversation mountConversation(ConversationDTO conversationDTO) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static InstagramPostDTO mountInstagramPost(InstagramPost updateFeed) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<Profile> mountProfile(List<Profile> profiles) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Anniversarie mountAnniversarie(Anniversarie anniversarie) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static List<TrendingTopicDTO> mountTrendingTopic(List<TrendingTopic> mostRecentTrendingTopics) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static UsersDTO mountUser(User byId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+

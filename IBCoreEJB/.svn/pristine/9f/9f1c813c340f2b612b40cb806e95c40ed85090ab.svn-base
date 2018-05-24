@@ -1,0 +1,80 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.linkedin.LinkedinPost;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+
+@Stateless
+public class LinkedinPostDAOImpl extends AbstractDAOImpl<LinkedinPost> implements LinkedinPostDAO {
+
+	@Override
+	public Integer countLinkedinPosts(String networkId) {
+		
+		sql = "SELECT COUNT(lp) FROM LinkedinPost lp WHERE lp.networkId = :networkId";
+
+		query = em.createQuery(sql);
+		query.setParameter("networkId", networkId);
+
+		return (int) (long) query.getSingleResult();	
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<LinkedinPost> getLinkedinPosts(String networkId) {
+		
+		sql = "SELECT lp FROM LinkedinPost lp WHERE lp.networkId = :networkId";
+
+		query = em.createQuery(sql);
+		query.setParameter("networkId", networkId);
+
+		return query.getResultList();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<LinkedinPost> getLinkedinPostsOnPeriod(String networkId, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT lp FROM LinkedinPost lp WHERE lp.networkId = :networkId AND (lp.postTime >= " + dateFrom + " AND lp.postTime <= " + dateUntil + ")";
+
+		query = em.createQuery(sql);
+		query.setParameter("networkId", networkId);
+
+		return query.getResultList();
+	}
+
+	@Override
+	public List<SumByDate> getLinkedinPostsCountByDay(String networkId, Long dateFrom, Long dateUntil) {
+
+		sql = "SELECT CAST(date_part('year', TO_TIMESTAMP(lp.posttime/1000)::timestamp with time zone) as integer) AS year, " +
+				"CAST(date_part('month', TO_TIMESTAMP(lp.posttime/1000)::timestamp with time zone) as integer) AS month, " +
+				"CAST(date_part('day', TO_TIMESTAMP(lp.posttime/1000)::timestamp with time zone) as integer) AS day, " +
+				"CAST(COUNT(lp) AS bigint) AS sumreach FROM opsocial.linkedinposts AS lp " +
+				"WHERE networkId = '" + networkId + "' AND (posttime >= " + dateFrom + " AND posttime <= " + dateUntil + ") " +
+				"GROUP BY year, month, day " +
+				"ORDER BY year, month, day";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+
+		List<SumByDate> sumByDates = new ArrayList<SumByDate>();	
+		
+		for (Object[] object : result) {
+
+			SumByDate sumByDate = new SumByDate();
+			sumByDate.setYear((Integer) object[0]);
+			sumByDate.setMonth((Integer) object[1]);
+			sumByDate.setDay((Integer) object[2]);
+			sumByDate.setSum((Long) object[3]);
+
+			sumByDates.add(sumByDate);
+		}
+
+		return sumByDates;
+	}
+}

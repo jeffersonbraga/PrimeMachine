@@ -1,0 +1,800 @@
+package br.com.opsocial.server.utils.monitorings;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.socialnetworks.youtube.SnippetDTO;
+import br.com.opsocial.client.entity.youtube.YoutubePostDTO;
+import br.com.opsocial.server.utils.GenericImageAdapt;
+import br.com.opsocial.server.utils.LanguageIdentifier;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.networksintegrations.GoogleIntegration;
+import br.com.opsocial.server.utils.tasks.MonitoringController;
+
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
+import com.google.api.client.http.HttpHeaders;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.Channel;
+import com.google.api.services.youtube.model.ChannelListResponse;
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.services.youtube.model.SearchResultSnippet;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
+
+import br.com.opsocial.ejb.das.MaintenanceGooglePagingRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringHashTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringInfluentialUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLinkRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringSearchRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceYoutubePostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceYoutubePostRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringSearchId;
+import br.com.opsocial.ejb.entity.application.idclass.YoutubePostMonitoringId;
+import br.com.opsocial.ejb.entity.google.GooglePaging;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringHashTag;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringInfluentialUser;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLink;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringSearch;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUser;
+import br.com.opsocial.ejb.entity.youtube.YoutubePost;
+import br.com.opsocial.ejb.entity.youtube.YoutubePostMonitoring;
+
+public class MonitoringYoutube {
+
+	private Monitoring monitoring;
+	
+	private MaintenanceYoutubePostRemote youtubePostRemote;
+	private MaintenanceYoutubePostMonitoringRemote youtubePostMonitoringRemote;
+	
+	private MaintenanceMonitoringUserRemote monitoringUserRemote;
+	private MaintenanceMonitoringInfluentialUserRemote monitoringInfluentialUserRemote;
+	
+	private String channelsIds;
+	private String videosIds;
+	private Map<String, Long> channelsMonInfluentialUsers;
+	
+	private MaintenanceMonitoringHashTagRemote monitoringHashTagRemote;
+	private MaintenanceMonitoringLinkRemote monitoringLinkRemote;
+	
+	private MaintenanceGooglePagingRemote googlePagingRemote;
+	private MaintenanceMonitoringSearchRemote monitoringSearchRemote;
+	
+	private Long generateDay;
+	
+	public static final String REGION_CODE_BR = "BR";
+	
+	public MonitoringYoutube() {
+	}
+	
+	public MonitoringYoutube(Monitoring monitoring) {
+		
+		this.monitoring = monitoring;
+		this.channelsMonInfluentialUsers = new HashMap<String, Long>();
+		this.channelsIds = "";
+		this.videosIds = "";
+		
+		this.generateDay = UtilFunctions.getMidnightDateNoDaylightTime(new Date());
+	
+		youtubePostRemote = (MaintenanceYoutubePostRemote) RecoverMaintenance.recoverMaintenance("YoutubePost");
+		youtubePostMonitoringRemote = (MaintenanceYoutubePostMonitoringRemote) RecoverMaintenance.recoverMaintenance("YoutubePostMonitoring");
+		
+		monitoringUserRemote = (MaintenanceMonitoringUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringUser");
+		monitoringInfluentialUserRemote = (MaintenanceMonitoringInfluentialUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringInfluentialUser");
+		
+		monitoringHashTagRemote = (MaintenanceMonitoringHashTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringHashTag");
+		monitoringLinkRemote = (MaintenanceMonitoringLinkRemote) RecoverMaintenance.recoverMaintenance("MonitoringLink");
+	}
+	
+	public void getCurrentPosts(String term) {
+
+		try {
+			
+			GooglePaging googlePaging = getGooglePaging(term);
+			
+			YouTube.Search.List searchYoutube = new GoogleIntegration().getYoutube().search().list("id,snippet");
+			searchYoutube.setQ(term);
+			searchYoutube.setType("video");
+			searchYoutube.setOrder("date");
+			searchYoutube.setRegionCode(REGION_CODE_BR);
+			searchYoutube.setMaxResults(googlePaging.getCount());
+			searchYoutube.setFields(YoutubePostDTO.FIELDS_SEARCH);
+			searchYoutube.setKey(GoogleIntegration.API_KEY);
+			
+			if(googlePaging.getEtag() != null) {
+				
+				HttpHeaders headers = new HttpHeaders();
+				headers.setIfNoneMatch(googlePaging.getEtag());
+				
+				searchYoutube.setRequestHeaders(headers);
+			}
+			
+			SearchListResponse searchResponse = searchYoutube.execute();
+			List<SearchResult> searchResultList = searchResponse.getItems();
+			
+			Long searchedDate = new Date().getTime() / 1000L;
+			
+			Integer returnedPosts = saveYoutubePosts(searchResultList, term);
+			
+			googlePaging = googlePagingRemote.getById(googlePaging.getIdGooglePaging());
+
+			if(googlePaging.getEtag() == null) {
+				googlePaging.setNextPageToken(searchResponse.getNextPageToken());
+			}
+			googlePaging.setEtag(searchResponse.getEtag());
+			
+			googlePagingRemote.save(googlePaging);
+			
+			MonitoringSearch monitoringSearch = getMonitoringSearch(term);
+			
+			if(returnedPosts > 0) {
+				monitoringSearch.setLastDateSearchedWithResults(searchedDate);
+				monitoringSearch.setSearchesWithResults(monitoringSearch.getSearchesWithResults() + 1L);
+			}
+			
+			Long cycles = monitoringSearch.getCycles(); 
+			
+			if((monitoringSearch.getReturnedPosts() == 0 && monitoringSearch.getReturnedPosts().equals(returnedPosts)) 
+					|| monitoringSearch.getReturnedPosts() > 0 && returnedPosts > 0) {
+				cycles++;
+			} else {
+				cycles = 1L;
+			}
+			
+			monitoringSearch.setCycles(cycles);
+			monitoringSearch.setLastDateSearched(searchedDate);
+			monitoringSearch.setExpectedPosts(MonitoringController.LIMIT_PER_CALL);
+			monitoringSearch.setSearches(monitoringSearch.getSearches() + 1L);
+			monitoringSearch.setReturnedPosts(returnedPosts);
+			
+			monitoringSearchRemote.save(monitoringSearch);
+			
+		} catch (GoogleJsonResponseException e) {
+			if(e.getStatusCode() != 304) {
+				e.printStackTrace();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void updateVideosStatistics() {
+		
+		try {
+			
+			if(!videosIds.isEmpty()) {
+				
+				videosIds = videosIds.substring(0, videosIds.length() - 1);
+				
+				try {
+					
+					YouTube.Videos.List listActivity = new GoogleIntegration().getYoutube().videos().
+							list("statistics").setFields(YoutubePostDTO.PART_VIDEOS_STATISTICS).setId(videosIds);
+					listActivity.setKey(GoogleIntegration.API_KEY);
+					
+					VideoListResponse listResponse = listActivity.execute();
+					List<Video> videos = listResponse.getItems();
+					
+					for (Video video : videos) {
+						
+						try {
+
+							YoutubePost youtubePost = youtubePostRemote.getById(video.getId());
+							youtubePost.setLikes(video.getStatistics().getLikeCount() != null ? video.getStatistics().getLikeCount().longValue() : 0L);
+							youtubePost.setDislikes(video.getStatistics().getDislikeCount() != null ? video.getStatistics().getDislikeCount().longValue() : 0L);
+							youtubePost.setViews(video.getStatistics().getViewCount() != null ? video.getStatistics().getViewCount().longValue() : 0L);
+							youtubePost.setFavorites(video.getStatistics().getFavoriteCount() != null ? video.getStatistics().getFavoriteCount().longValue() : 0L);
+							youtubePost.setComments(video.getStatistics().getCommentCount() != null ? video.getStatistics().getCommentCount().longValue() : 0L);
+
+							youtubePostRemote.save(youtubePost);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							System.out.println("Statistics..: " + video.getStatistics());
+							System.out.println("Likes..: " + video.getStatistics().getLikeCount());
+							System.out.println("Dislikes..: " + video.getStatistics().getDislikeCount());
+							System.out.println("Views..: " + video.getStatistics().getViewCount());
+							System.out.println("Favorites..: " + video.getStatistics().getFavoriteCount());
+							System.out.println("Comments..: " + video.getStatistics().getCommentCount());
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void updateInfluentialUsersSubscribers() {
+		
+		try {
+			
+			if(!channelsIds.isEmpty()) {
+				
+				channelsIds = channelsIds.substring(0, channelsIds.length() - 1);
+				
+				try {
+					
+					YouTube.Channels.List listChannels = new GoogleIntegration().getYoutube().channels().
+							list("statistics").setFields(YoutubePostDTO.PART_CHANNELS_SUBSCRIBERS).setId(channelsIds);
+					listChannels.setKey(GoogleIntegration.API_KEY);
+					
+					ChannelListResponse listResponse = listChannels.execute();
+					List<Channel> channels = listResponse.getItems();
+					
+					for (Channel channel : channels) {
+						
+						if(channelsMonInfluentialUsers.containsKey(channel.getId())) {
+							
+							MonitoringInfluentialUser monitoringInfluentialUser = 
+									monitoringInfluentialUserRemote.getById(channelsMonInfluentialUsers.get(channel.getId()));
+							monitoringInfluentialUser.setFollowers(channel.getStatistics().getSubscriberCount().longValue());
+							
+							try {
+								
+								monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+								
+							} catch (IllegalArgumentException e) {
+								e.printStackTrace();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+							
+						}
+						
+					}
+					
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public String getChannelAvatar(String channelId) throws IOException {
+		
+		YouTube.Channels.List listChannel = new GoogleIntegration().getYoutube().channels().list("snippet");
+		listChannel.setId(channelId);
+		listChannel.setKey(GoogleIntegration.API_KEY);
+		
+		ChannelListResponse listResponse = listChannel.execute();
+		List<Channel> channel  = listResponse.getItems();
+
+		return channel.get(0).getSnippet().getThumbnails().getDefault().getUrl();
+	}
+	
+	private Integer saveYoutubePosts(List<SearchResult> searchResults, String term) {
+
+		Long retrievedDate = new Date().getTime() / 1000L;
+		
+		LanguageIdentifier languageIdentifier = new LanguageIdentifier();
+		String auxToVerifyLanguage = "";
+		
+		Integer newPostsCount = 0;
+		
+		for(SearchResult searchResult : searchResults) {
+			
+			if(validateIgnore(searchResult)) {
+			
+				YoutubePost youtubePost = youtubePostRemote.getById(searchResult.getId().getVideoId());
+				
+				if(youtubePost == null) {
+					
+					youtubePost = new YoutubePost();
+				
+					youtubePost.setVideoId(searchResult.getId().getVideoId());
+					youtubePost.setKind(searchResult.getId().getKind());
+					
+					youtubePost.setDescription(searchResult.getSnippet().getDescription());
+					
+					youtubePost.setPublishedAt(searchResult.getSnippet().getPublishedAt().getValue() / 1000L);
+					
+					youtubePost.setTitle(searchResult.getSnippet().getTitle());
+					
+					youtubePost.setChannelId(searchResult.getSnippet().getChannelId());
+					youtubePost.setChanneltitle(searchResult.getSnippet().getChannelTitle());
+					
+					youtubePost.setThumbnailUrl(searchResult.getSnippet().getThumbnails().getDefault().getUrl());
+					youtubePost.setThumbnailHeight(searchResult.getSnippet().getThumbnails().getDefault().getHeight() == null ? null : searchResult.getSnippet().getThumbnails().getDefault().getHeight().intValue());
+					youtubePost.setThumbnailwidth(searchResult.getSnippet().getThumbnails().getDefault().getWidth() == null ? null : searchResult.getSnippet().getThumbnails().getDefault().getWidth().intValue());
+					
+					if(searchResult.getSnippet().getThumbnails().get("default") != null) {
+						
+						try {
+							
+							GenericImageAdapt image = UtilFunctions.getImageSize(searchResult.getSnippet().getThumbnails().getDefault().getUrl());
+							
+							youtubePost.setThumbnailHeight(image.getHeight());
+							youtubePost.setThumbnailwidth(image.getWidth());
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+					try {
+						youtubePost.setChannelPicture(getChannelAvatar(youtubePost.getChannelId()));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					
+					try {
+						
+						youtubePost = youtubePostRemote.save(youtubePost);
+						
+						videosIds += youtubePost.getVideoId() + ",";
+						
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+				auxToVerifyLanguage += youtubePost.getDescription() + " ";
+				auxToVerifyLanguage += youtubePost.getTitle() + " ";
+
+				if(youtubePostMonitoringRemote.getByComposedId(monitoring.getIdMonitoring(), youtubePost.getVideoId().toString()) == null) { 
+				
+					try {
+						
+						YoutubePostMonitoringId youtubePostMonitoringId = new YoutubePostMonitoringId();
+						youtubePostMonitoringId.setYoutubePost(youtubePost.getVideoId());
+						youtubePostMonitoringId.setMonitoring(monitoring.getIdMonitoring());
+						youtubePostMonitoringId.setTerm(term);
+						
+						if(youtubePostMonitoringRemote.getById(youtubePostMonitoringId) == null) {
+							
+							newPostsCount++;
+							
+							YoutubePostMonitoring youtubePostMonitoring = new YoutubePostMonitoring();
+							youtubePostMonitoring.setYoutubePost(youtubePost);
+							youtubePostMonitoring.setMonitoring(monitoring);
+							youtubePostMonitoring.setTerm(term);
+							youtubePostMonitoring.setVisible('T');
+							youtubePostMonitoring.setRetrievedDate(retrievedDate);
+							youtubePostMonitoring.setCreatedTime(youtubePost.getPublishedAt());
+							youtubePostMonitoring.setHasHashTags(false);
+							youtubePostMonitoring.setHasLinks(false);
+							
+							String response = languageIdentifier.recoverLanguage(auxToVerifyLanguage);
+							
+							if(response == null || response.equals("\"pt\"") || response.isEmpty() || response.equals("[]")) {
+								youtubePostMonitoring.setGarbage('F');
+							} else {
+								youtubePostMonitoring.setGarbage('T');
+							}
+							
+							executeAutomaticNeuterQualification(searchResult, youtubePostMonitoring);
+							executeAutomaticNegativeQualification(searchResult, youtubePostMonitoring);
+							executeAutomaticPositiveQualification(searchResult, youtubePostMonitoring);
+		
+							youtubePostMonitoring = youtubePostMonitoringRemote.save(youtubePostMonitoring);
+							
+							if(youtubePostMonitoring.getGarbage().equals('F')) {
+								youtubePostMonitoring = saveMonitoringLinks(youtubePostMonitoring);
+								youtubePostMonitoring = saveMonitoringHashTags(youtubePostMonitoring);
+								saveMonitoringInfluentialUserStats(searchResult.getSnippet(), youtubePost.getChannelPicture());
+							}
+						}
+						
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}				
+				}
+			}
+		}
+		
+		updateInfluentialUsersSubscribers();
+		updateVideosStatistics();
+		
+		return newPostsCount;
+	}
+	
+	private boolean validateIgnore(SearchResult searchResult) {
+
+		if(monitoring.getIgnoreTerms() == null) {
+			return true;
+		} else {
+			String[] ignoreTerms = monitoring.getIgnoreTerms().split(";");
+			
+			if(searchResult.getSnippet().getDescription() != null) {
+				for(String ignoreTerm : ignoreTerms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getDescription()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						return false;
+					}
+				}
+			}
+			
+			if(searchResult.getSnippet().getTitle() != null){
+				for(String ignoreTerm : ignoreTerms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getTitle()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						return false;
+					}
+				}
+			}
+		}
+		
+		return true;
+	}
+	
+	private YoutubePostMonitoring executeAutomaticPositiveQualification(SearchResult searchResult, YoutubePostMonitoring youtubePostMonitoring) {
+		
+		if(monitoring.getAutoPositiveTerms() != null) {
+			
+			String[] terms = monitoring.getAutoPositiveTerms().split(";");
+			
+			if(searchResult.getSnippet().getDescription() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getDescription()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						youtubePostMonitoring.setQualification(PostMonitoringDTO.POSITIVE);
+						return youtubePostMonitoring;
+					}
+				}
+			}
+			
+			if(searchResult.getSnippet().getTitle() != null){
+				for(String ignoreTerm : terms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getTitle()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						youtubePostMonitoring.setQualification(PostMonitoringDTO.POSITIVE);
+						return youtubePostMonitoring;
+					}
+				}
+			}
+		}
+		
+		return youtubePostMonitoring;
+	}
+	
+	private YoutubePostMonitoring executeAutomaticNegativeQualification(SearchResult searchResult, YoutubePostMonitoring youtubePostMonitoring) {
+		
+		if(monitoring.getAutoNegativeTerms() != null) {
+			
+			String[] terms = monitoring.getAutoNegativeTerms().split(";");
+			
+			if(searchResult.getSnippet().getDescription() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getDescription()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						youtubePostMonitoring.setQualification(PostMonitoringDTO.NEGATIVE);
+						return youtubePostMonitoring;
+					}
+				}
+			}
+			
+			if(searchResult.getSnippet().getTitle() != null){
+				for(String ignoreTerm : terms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getTitle()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						youtubePostMonitoring.setQualification(PostMonitoringDTO.NEGATIVE);
+						return youtubePostMonitoring;
+					}
+				}
+			}
+		}
+		
+		return youtubePostMonitoring;
+	}
+
+	private YoutubePostMonitoring executeAutomaticNeuterQualification(SearchResult searchResult, YoutubePostMonitoring youtubePostMonitoring) {
+	
+		if(monitoring.getAutoNeuterTerms() != null) {
+			
+			String[] terms = monitoring.getAutoNeuterTerms().split(";");
+			
+			if(searchResult.getSnippet().getDescription() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getDescription()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						youtubePostMonitoring.setQualification(PostMonitoringDTO.NEUTER);
+						return youtubePostMonitoring;
+					}
+				}
+			}
+			
+			if(searchResult.getSnippet().getTitle() != null) {
+				for(String ignoreTerm : terms) {
+					if(removeLetterSpecialCharacter(searchResult.getSnippet().getTitle()).toLowerCase()
+						.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						youtubePostMonitoring.setQualification(PostMonitoringDTO.NEUTER);
+						return youtubePostMonitoring;
+					}
+				}
+			}
+		}
+		
+		return youtubePostMonitoring;
+	}
+	
+	public String removeLetterSpecialCharacter(String value) {
+		
+		value = value.replaceAll("[ÂÀÁÄÃ]", "A");
+		value = value.replaceAll("[âãàáä]", "a");
+		value = value.replaceAll("[ÊÈÉË]", "E");
+		value = value.replaceAll("[êèéë]", "e");
+		value = value.replaceAll("ÎÍÌÏ", "I");
+		value = value.replaceAll("îíìï", "i");
+		value = value.replaceAll("[ÔÕÒÓÖ]", "O");
+		value = value.replaceAll("[ôõòóö]", "o");
+		value = value.replaceAll("[ÛÙÚÜ]", "U");
+		value = value.replaceAll("[ûúùü]", "u");
+		value = value.replaceAll("Ç", "C");
+		value = value.replaceAll("ç", "c");
+		
+		return value;
+	}
+	
+	private YoutubePostMonitoring saveMonitoringLinks(YoutubePostMonitoring youtubePostMonitoring) {
+		
+		List<URL> links = new ArrayList<URL>();
+		
+		try {
+			
+			if(youtubePostMonitoring.getYoutubePost().getDescription() != null) {
+				links.addAll(UtilFunctions.getHiperLinks(youtubePostMonitoring.getYoutubePost().getDescription()));
+			} 
+			if(youtubePostMonitoring.getYoutubePost().getTitle() != null) {
+				links.addAll(UtilFunctions.getHiperLinks(youtubePostMonitoring.getYoutubePost().getTitle()));
+			}
+		
+			for(URL link : links) {
+				
+				try {
+					
+					if(monitoringLinkRemote.hasEntity(link.toString(), youtubePostMonitoring.getMonitoring().getIdMonitoring(), 
+							Profile.YOUTUBE, generateDay)) {
+						
+						MonitoringLink monitoringLink = monitoringLinkRemote.getEntity(link.toString(), 
+								youtubePostMonitoring.getMonitoring().getIdMonitoring(), Profile.YOUTUBE, generateDay);
+						
+						monitoringLink.setLinksCount(monitoringLink.getLinksCount() + 1L);
+						
+						try {
+							
+							monitoringLinkRemote.save(monitoringLink);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+					} else {
+						
+						MonitoringLink monitoringLink = new MonitoringLink();
+						monitoringLink.setLink(link.toString());
+						monitoringLink.setMonitoring(monitoring);
+						monitoringLink.setNetworkType(Profile.YOUTUBE);
+						monitoringLink.setLinksCount(1L);
+						monitoringLink.setDate(generateDay);
+						
+						try {
+							
+							monitoringLinkRemote.save(monitoringLink);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			if(!links.isEmpty()) {
+				
+				youtubePostMonitoring.setHasLinks(true);
+				youtubePostMonitoring = youtubePostMonitoringRemote.merge(youtubePostMonitoring);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return youtubePostMonitoring;
+	}
+	
+	private YoutubePostMonitoring saveMonitoringHashTags(YoutubePostMonitoring youtubePostMonitoring) {
+		
+		List<String> hashTags = new ArrayList<String>();
+		
+		try {
+			
+			if(youtubePostMonitoring.getYoutubePost().getDescription() != null) {
+				hashTags.addAll(UtilFunctions.getHashTags(youtubePostMonitoring.getYoutubePost().getDescription()));
+			} 
+			if(youtubePostMonitoring.getYoutubePost().getTitle() != null) {
+				hashTags.addAll(UtilFunctions.getHashTags(youtubePostMonitoring.getYoutubePost().getTitle()));
+			}
+			
+			for(String hashTag : hashTags) {
+				
+				try {
+					
+					if(monitoringHashTagRemote.hasEntity(hashTag, youtubePostMonitoring.getMonitoring().getIdMonitoring(), 
+							Profile.YOUTUBE, generateDay)) {
+						
+						MonitoringHashTag monitoringHashTag = monitoringHashTagRemote.getEntity(hashTag, 
+								youtubePostMonitoring.getMonitoring().getIdMonitoring(), Profile.YOUTUBE, generateDay);
+						
+						monitoringHashTag.setHashTagsCount(monitoringHashTag.getHashTagsCount() + 1L);
+						
+						try {
+							
+							monitoringHashTagRemote.save(monitoringHashTag);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+					} else {
+						
+						MonitoringHashTag monitoringHashTag = new MonitoringHashTag();
+						monitoringHashTag.setHashTag(hashTag);
+						monitoringHashTag.setMonitoring(monitoring);
+						monitoringHashTag.setNetworkType(Profile.YOUTUBE);
+						monitoringHashTag.setHashTagsCount(1L);
+						monitoringHashTag.setDate(generateDay);
+						
+						try {
+							
+							monitoringHashTagRemote.save(monitoringHashTag);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			if(!hashTags.isEmpty()) {
+				
+				youtubePostMonitoring.setHasHashTags(true);
+				youtubePostMonitoring = youtubePostMonitoringRemote.merge(youtubePostMonitoring);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return youtubePostMonitoring;
+	}
+	
+	private void saveMonitoringInfluentialUserStats(SearchResultSnippet snippet, String ChannelPicture) {
+		
+		MonitoringInfluentialUser monitoringInfluentialUser;
+		
+		try {
+			
+			if(monitoringInfluentialUserRemote.hasEntity(snippet.getChannelId(), monitoring.getIdMonitoring(), Profile.YOUTUBE, generateDay)) {
+				
+				monitoringInfluentialUser = monitoringInfluentialUserRemote.getEntity(snippet.getChannelId(), monitoring.getIdMonitoring(), Profile.YOUTUBE, generateDay);
+				
+				monitoringInfluentialUser.setPostsCount(monitoringInfluentialUser.getPostsCount() + 1L);
+				
+				try {
+					
+					monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			} else {
+				
+				try {
+
+					MonitoringUser monitoringUser = new MonitoringUser();
+					monitoringUser.setIdUser(snippet.getChannelId());
+					monitoringUser.setName(snippet.getChannelTitle());
+					monitoringUser.setNetworkType(Profile.YOUTUBE);
+					monitoringUser.setProfileUrl(SnippetDTO.CHANNEL_URL + snippet.getChannelTitle());
+					monitoringUser.setProfileImageUrl(ChannelPicture);
+
+					monitoringUser = monitoringUserRemote.save(monitoringUser);
+
+					monitoringInfluentialUser = new MonitoringInfluentialUser();
+					monitoringInfluentialUser.setMonitoring(monitoring);
+					monitoringInfluentialUser.setMonitoringUser(monitoringUser);
+					monitoringInfluentialUser.setPostsCount(1L);
+					monitoringInfluentialUser.setDate(generateDay);
+
+					monitoringInfluentialUser = monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+					
+					channelsIds += snippet.getChannelId() + ",";
+					channelsMonInfluentialUsers.put(snippet.getChannelId(), monitoringInfluentialUser.getIdMonitoringInfluentialUser());
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}	
+	}
+	
+	private GooglePaging getGooglePaging(String term) {
+		
+		googlePagingRemote = (MaintenanceGooglePagingRemote)
+				RecoverMaintenance.recoverMaintenance("GooglePaging");
+		
+		GooglePaging googlePaging = googlePagingRemote.getEntity(monitoring.getIdMonitoring(), term, GooglePaging.YOUTUBE);
+		
+		if(googlePaging == null) {
+			
+			googlePaging = new GooglePaging();
+			googlePaging.setMonitoring(monitoring);
+			googlePaging.setTerm(term);
+			googlePaging.setNetwork(GooglePaging.YOUTUBE);
+			googlePaging.setCount(MonitoringController.LIMIT_PER_CALL.longValue());
+			
+			try {
+				
+				googlePaging = googlePagingRemote.save(googlePaging);
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return googlePaging;
+	}
+	
+	private MonitoringSearch getMonitoringSearch(String term) {
+		
+		monitoringSearchRemote = (MaintenanceMonitoringSearchRemote) RecoverMaintenance.recoverMaintenance("MonitoringSearch");
+		
+		MonitoringSearchId monitoringSearchId = new MonitoringSearchId();
+		monitoringSearchId.setMonitoring(monitoring.getIdMonitoring());
+		monitoringSearchId.setTerm(term);
+		monitoringSearchId.setNetwork(Profile.YOUTUBE);
+		
+		return monitoringSearchRemote.getById(monitoringSearchId);
+	}
+}

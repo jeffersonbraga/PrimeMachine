@@ -1,0 +1,69 @@
+<div *ngIf="messages">
+    <div class="header">
+        <div class="row m-l-0 m-r-0">
+            <div class="icon-back-container" (click)="toggleInbox()">
+                <i class="fa fa-angle-left icon-back" aria-hidden="true"></i>
+                <span> Back</span>
+            </div>
+            <div class="header-inbox-message">
+                <span class="thumbnail-wrapper d32 circular bg-success">
+                    <img width="34" height="34" [src]="conversation.userAvatar" class="col-top">
+                </span>
+                <p class="p-l-10 inbox-header">
+                    <span class="text-master all-caps"><strong>{{ conversation.userName }}</strong></span>
+                </p>
+            </div>
+        </div>
+    </div>
+        
+    <section>
+        <article class="chat-view">
+            <!-- <div class="overlay-mask" *ngIf="loadingMessages" >
+				<div>
+					<div class="sending-comment" data-color="complete"></div>
+				</div>
+			</div> -->
+
+            <div class="chat-inner scroll-op scroll-hover" #chatInner (scroll)="scrollTop()">
+                <div class="message clearfix" *ngFor="let message of messages" [hidden]="!message.message && !message.share">
+                    <div *ngIf="message.message">
+                        <div class="profile-img-wrapper m-t-5 inline" *ngIf="message.userName == conversation.userName">
+                            <img class="col-top" width="30" height="30" [src]="conversation.userAvatar">
+                        </div>
+                        <div class="chat-bubble word-break" data-toggle="tooltip" data-placement="top" [title]="message.createdTime * 1000 | date:'MM/dd/yyyy - hh:mm:ss'" [ngClass]="{
+                                'from-them': message.userName == conversation.userName,
+                                'from-me': message.userName != conversation.userName
+                            }" [innerHtml]="message.message | urlfy">
+                        </div>
+                    </div>
+                    <div *ngIf="message.share">
+                        <img [src]="message.share.link" class="chat-bubble" [ngClass]="{
+                                'sm-text-left': message.userName == conversation.userName,
+                                'sm-text-right': message.userName != conversation.userName
+                            }" width="70" *ngIf="!message.share.name">
+                        <a [href]="message.share.link" target="_blank">
+                            <div class="chat-bubble share-link" [ngClass]="{
+                                'from-them': message.userName == conversation.userName,
+                                'from-me': message.userName != conversation.userName
+                            }" *ngIf="message.share.name">
+                                <div class="pull-left link-icon">
+                                    <i class="fa fa-link" aria-hidden="true"></i>
+                                </div>
+                                <div class="pull-right">
+                                    <span>{{ message.share.name }}</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <footer>
+            <textarea #textarea class="form-control textarea-comment" placeholder="Write a comment" (keydown)="sendReply($event, textarea)"
+                (keyup)="resizeTextarea(textarea)" #textareaEdit getCursorPosition></textarea>
+            <i class="fa fa-thumbs-up cursor" aria-hidden="true" (click)="sendLike()"></i>
+            <i class="fa fa-smile-o cursor" aria-hidden="true" #emojiTrigger (click)="showEmojiEdit(emojiTrigger)" data-toggle-element="emoji"></i>
+        </footer>
+    </section>
+</div>

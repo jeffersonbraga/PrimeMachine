@@ -1,0 +1,72 @@
+package br.com.opsocial.server.actions.mailbox;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("woopsocial")
+public class ShowMailboxAction extends ServerAction {
+	
+	@RequestMapping(value = "/show_mailbox",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction(HttpSession session) throws Exception, OptimisticLockException {
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		User user = SecurityUtils.getCurrentUser();
+		
+		setParameters(new HashMap<String, Object>());
+		
+		// Facebook profiles
+		
+		List<Character> profileTypes = new ArrayList<Character>();
+		profileTypes.add(Profile.FACEBOOK_PAGE);
+		
+		List<Profile> facebookProfiles = remote.getEntityByNetworkType(profileTypes, user.getAccount().getIdAccount());
+		
+		List<Profile> facebookProfilesDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : facebookProfiles) {
+			facebookProfilesDTOs.add(MountDTO.mountProfile(profile));
+		}
+		
+		getParameters().put("facebookprofiles", facebookProfilesDTOs);
+		
+		// Twitter profiles
+		
+		profileTypes = new ArrayList<Character>();
+		profileTypes.add(Profile.TWITTER);
+		
+		List<Profile> twitterProfiles = remote.getEntityByNetworkType(profileTypes, user.getAccount().getIdAccount());
+		
+		List<Profile> twitterProfilesDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : twitterProfiles) {
+			twitterProfilesDTOs.add(MountDTO.mountProfile(profile));
+		}
+		
+		getParameters().put("twitterprofiles", twitterProfilesDTOs);
+		
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {}
+}

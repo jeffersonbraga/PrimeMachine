@@ -1,0 +1,26 @@
+package br.com.opsocial.ejb.entity.groups;
+
+import java.io.Serializable;
+
+import br.com.opsocial.ejb.entity.rssfeed.RssFeed;
+
+public class GroupRssFeedsHelper implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
+	
+	private RssFeed rssFeed;
+	private Groups group;
+	
+	public RssFeed getRssFeed() {
+		return rssFeed;
+	}
+	public void setRssFeed(RssFeed rssFeed) {
+		this.rssFeed = rssFeed;
+	}
+	public Groups getGroup() {
+		return group;
+	}
+	public void setGroup(Groups group) {
+		this.group = group;
+	}
+}

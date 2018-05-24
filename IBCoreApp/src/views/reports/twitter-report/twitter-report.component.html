@@ -1,0 +1,409 @@
+<div class="col-sm-12 text-center" *ngIf="isLoading" >
+	<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+</div>
+
+<div class="col-sm-12 text-center m-t-45" *ngIf="!isLoading && reportState == 'G'" >
+	<p class="small hint-text">Twitter reports are generated 24 hours after the profile has been added.</p>
+	<!-- <p class="small hint-text">Os relatórios de perfis do twitter são gerados a partir da meia-noite do primeiro dia de uso.</p> -->
+</div>
+				
+<div class="panel panel-opsocial panel-transparent" *ngIf="!isLoading && reportState == 'F'">
+	<ul class="nav nav-tabs nav-tabs-opsocial hidden-print" data-init-reponsive-tabs="dropdownfx">
+		<li class="active">
+			<a data-toggle="tab" href="#overview" aria-expanded="true"><span> Visão Geral</span></a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane slide-left active" id="overview">
+			<h6 class="fs-14">
+				<i class="fa fa-twitter-square m-r-5 v-align-middle"></i>
+				<span class="v-align-middle"><strong>{{ profile.screenName }} • Overview • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+				<!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Visão Geral • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+			</h6>
+			<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+				<button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+				<button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+			</nav>
+			<div class="hidden-print">
+				<div class="row">
+					<div class="col-md-12 col-lg-6 report-full">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Saldo de seguidores no período</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<column-chart rotateLabels="-45" [data]="followersByDayData" heigth="250" [reduceXTicks]="true" [legends]="legendsType1"></column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-text-icon [data]="totalFollowersAside"></aside-text-icon>
+										<aside-text-icon [data]="bestAmoutOfFollowersAside"></aside-text-icon>
+										<aside-text-icon [data]="growthRateAside"></aside-text-icon>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12 col-lg-6 report-full">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets enviados no período</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<stacked-column-chart rotateLabels="-45" [data]="twittesTypeData" heigth="250" [reduceXTicks]="true" [legends]="legendsType2"></stacked-column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-text-icon [data]="averageTweetsAside"></aside-text-icon>
+										<aside-pie-chart [data]="perTypeOfTweetAsidePie"></aside-pie-chart>
+									</div>
+								</div>	
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12 col-lg-7 report-full">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets publicados divididos por horário</div>
+							</div>
+							<div class="panel-body">
+								<column-chart [data]="tweetsPerHourData" heigth="250" [reduceXTicks]="true" [legends]="legendsType3" rotateLabels="-45"></column-chart>
+								<footer-text-icon [data]="tweetsPeakHourFooter"></footer-text-icon>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12 col-lg-5 report-full">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets por dia da semana</div>
+							</div>
+							<div class="panel-body">
+								<column-chart [data]="tweetsPerWeekDayData" heigth="250" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+								<footer-text-icon [data]="tweetsPeakDayFooter"></footer-text-icon>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Envolvimento do público com os Tweets</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-md-12 col-lg-6">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Curtir</h5>
+										<area-chart [data]="favoritesByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative [data]="favoritesFooter"></footer-text-icon-alternative>
+									</div>
+									<div class="col-md-12 col-lg-6">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Retweets</h5>
+										<area-chart [data]="retweetsByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative [data]="retweetsFooter"></footer-text-icon-alternative>
+									</div>
+									<div class="col-md-12 col-lg-6">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Respostas</h5>
+										<area-chart [data]="repliesByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative [data]="repliesFooter"></footer-text-icon-alternative>
+									</div>
+									<div class="col-md-12 col-lg-6">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Menções</h5>
+										<area-chart [data]="mentionsByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative [data]="mentionsFooter"></footer-text-icon-alternative>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12 col-lg-6 report-full">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Sobre os seguidores e público em potencial</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<column-chart [data]="followersOfFollowersData" rotateLabels="-45" heigth="250" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-pie-chart [data]="perSexAsidePie"></aside-pie-chart>
+										<aside-text-icon [data]="averageFollowersOfFollowersAside"></aside-text-icon>
+										<aside-text-icon [data]="potentialReachAside"></aside-text-icon>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12 col-lg-6 report-full">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Atividade dos seus seguidores</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<column-chart [data]="followersActivityData" rotateLabels="-45" heigth="250" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-text-icon [data]="followersEngagementAside"></aside-text-icon>
+										<aside-text-icon [data]="followersActivityBiggerPeriodAside"></aside-text-icon>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12 col-lg-4">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Top cidades</div>
+							</div>
+							<div class="panel-body">
+								<div class="row p-l-15 p-r-15">
+									<div class="col-md-12">
+										<table-chart [data]='citiesWithMoreFollowersData'></table-chart>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12 col-lg-8">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Usuários com mais seguidores</div>
+							</div>
+							<div class="panel-body">
+								<div class="row p-l-15 p-r-15">
+									<div [ngClass]="{
+										'col-md-12 col-lg-6': mostInfluentialFollowersData2.rows,
+										'col-md-12': !mostInfluentialFollowersData2.rows
+									}">
+										<table-chart [data]='mostInfluentialFollowersData1'></table-chart>
+									</div>
+									<div [ngClass]="{
+										'col-md-12 col-lg-6': mostInfluentialFollowersData2.rows,
+										'hidden': !mostInfluentialFollowersData2.rows
+									}">
+										<table-chart [data]='mostInfluentialFollowersData2'></table-chart>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row hidden-xs hidden-sm">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets com mais engajamento</div>
+							</div>
+							<div class="panel-body">
+								<table-chart isDataTable="true" [data]='twitterReportStatusData'></table-chart>
+								<div class="text-center p-t-10" *ngIf="loadMorePosts">
+									<button class="btn btn-xs btn-success" (click)="getMorePosts()" [disabled]="(loadingMorePosts)">
+										<span class="bold">LOAD MORE</span>
+										<i class="{{(loadingMorePosts)?'fa fa-spinner fa-spin':''}}"></i>
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="content-pdf">
+				<div class="row">
+					<div class="col-xs-12" id="followersByDayContent">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Saldo de seguidores no período</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<column-chart rotateLabels="-45" id="followersByDayPdf" [reduceXTicks]="true" [data]="followersByDayData" heigth="250" [legends]="legendsType1"></column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-text-icon id="totalFollowersPdf" [data]="totalFollowersAside"></aside-text-icon>
+										<aside-text-icon id="bestAmoutOfFollowersPdf" [data]="bestAmoutOfFollowersAside"></aside-text-icon>
+										<aside-text-icon id="growthRatePdf" [data]="growthRateAside"></aside-text-icon>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets enviados no período</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<stacked-column-chart rotateLabels="-45" id="twittesTypePdf" [data]="twittesTypeData" heigth="250" [reduceXTicks]="true" [legends]="legendsType2"></stacked-column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-text-icon id="averageTweetsPdf" [data]="averageTweetsAside"></aside-text-icon>
+										<aside-pie-chart id="perTypeOfTweetPdf" [data]="perTypeOfTweetAsidePie"></aside-pie-chart>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row page-break">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets publicados divididos por horário</div>
+							</div>
+							<div class="panel-body">
+								<column-chart id="tweetsPerHourPdf" [data]="tweetsPerHourData" heigth="250" [reduceXTicks]="true" [legends]="legendsType3" rotateLabels="-45"></column-chart>
+								<footer-text-icon id="tweetsPeakHourPdf" [data]="tweetsPeakHourFooter"></footer-text-icon>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets por dia da semana</div>
+							</div>
+							<div class="panel-body">
+								<column-chart id="tweetsPerWeekDayPdf" [data]="tweetsPerWeekDayData" heigth="250" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+								<footer-text-icon id="tweetsPeakDayPdf" [data]="tweetsPeakDayFooter"></footer-text-icon>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row page-break">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Envolvimento do público com os Tweets</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-12">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Curtir</h5>
+										<area-chart id="favoritesByDayPdf" [data]="favoritesByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative id="favoritesPdf" [data]="favoritesFooter"></footer-text-icon-alternative>
+									</div>
+									<div class="col-xs-12">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Retweets</h5>
+										<area-chart id="retweetsByDayPdf" [data]="retweetsByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative id="retweetsPdf" [data]="retweetsFooter"></footer-text-icon-alternative>
+									</div>
+									<div class="col-xs-12">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Respostas</h5>
+										<area-chart id="repliesByDayPdf" [data]="repliesByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative id="repliesPdf" [data]="repliesFooter"></footer-text-icon-alternative>
+									</div>
+									<div class="col-xs-12">
+										<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-35 p-l-15">Menções</h5>
+										<area-chart id="mentionsByDayPdf" [data]="mentionsByDayData" heigth="250" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+										<footer-text-icon-alternative id="mentionsPdf" [data]="mentionsFooter"></footer-text-icon-alternative>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Sobre os seguidores e público em potencial</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<column-chart [data]="followersOfFollowersData" rotateLabels="-45" heigth="250" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-pie-chart [data]="perSexAsidePie"></aside-pie-chart>
+										<aside-text-icon [data]="averageFollowersOfFollowersAside"></aside-text-icon>
+										<aside-text-icon [data]="potentialReachAside"></aside-text-icon>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Atividade dos seus seguidores</div>
+							</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-xs-8 p-r-0">
+										<column-chart [data]="followersActivityData" rotateLabels="-45" heigth="250" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+									</div>
+									<div class="col-xs-4 p-l-0">
+										<aside-text-icon [data]="followersEngagementAside"></aside-text-icon>
+										<aside-text-icon [data]="followersActivityBiggerPeriodAside"></aside-text-icon>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Top cidades</div>
+							</div>
+							<div class="panel-body">
+								<div class="row p-l-15 p-r-15">
+									<div class="col-md-12">
+										<table-chart [data]='citiesWithMoreFollowersData'></table-chart>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Usuários com mais seguidores</div>
+							</div>
+							<div class="panel-body">
+								<div class="row p-l-15 p-r-15">
+									<div class="col-xs-12">
+										<table-chart [data]='mostInfluentialFollowersData1'></table-chart>
+									</div>
+									<div [ngClass]="{
+										'col-xs-12': mostInfluentialFollowersData2.rows,
+										'hidden': !mostInfluentialFollowersData2.rows
+									}">
+										<table-chart [data]='mostInfluentialFollowersData2'></table-chart>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<div class="panel-title">Tweets com mais engajamento</div>
+							</div>
+							<div class="panel-body">
+								<table-chart isDataTable="true" [data]='twitterReportStatusData'></table-chart>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

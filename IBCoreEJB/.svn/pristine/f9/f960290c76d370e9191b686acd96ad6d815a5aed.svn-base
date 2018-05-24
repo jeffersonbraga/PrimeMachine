@@ -1,0 +1,61 @@
+package br.com.opsocial.ejb.das;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.TwitterFollowerReportDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.report.TwitterFollowerReport;
+
+@Stateless
+public class MaintenanceTwitterFollowerReportBean extends AbstractDASImpl<TwitterFollowerReport> implements MaintenanceTwitterFollowerReportRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	TwitterFollowerReportDAO dao;
+
+	@Override
+	public void setDao(AbstractDAO<TwitterFollowerReport> dao) {
+		this.dao = (TwitterFollowerReportDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<TwitterFollowerReport> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public TwitterFollowerReport getEntity(Long idProfile, Long followerId, String property, Long date) {
+		return dao.getEntity(idProfile, followerId, property, date);
+	}
+
+	@Override
+	public Long getFollowersEngagedCount(Long idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getFollowersEngagedCount(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getFollowersEngagement(Long idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getFollowersEngagement(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

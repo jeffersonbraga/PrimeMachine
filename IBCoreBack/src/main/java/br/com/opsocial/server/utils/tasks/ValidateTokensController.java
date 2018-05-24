@@ -1,0 +1,303 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.entity.users.basicinfo.UserInfoData;
+import org.jinstagram.exceptions.InstagramBadRequestException;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.linkedin.LinkedInApi;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import facebook4j.Facebook;
+import facebook4j.auth.AccessToken;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+
+public class ValidateTokensController {
+
+	public ValidateTokensController() {
+
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH));																																				
+		taskDate.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+		taskDate.set(Calendar.AM_PM, Calendar.AM);
+		taskDate.set(Calendar.HOUR_OF_DAY, 7);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+
+		Date taskTime = taskDate.getTime();
+
+		Timer timer = new Timer();
+
+		timer.schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+
+				MaintenanceAccountRemote accountRemote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+
+				List<Account> accounts = accountRemote.getAllActive(); 
+				
+				for(Account account : accounts) {
+					validatingTokens(account);
+					validatingAdminPages(account);
+				}
+			}
+		}, taskTime, 86400 * 1000L);
+	}
+
+	public static void validatingTokens(Account account) {
+
+		try {
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+			List<Profile> profiles = profileRemote.listProfilesByAccount(account.getIdAccount());
+
+			FacebookAPI facebookAPI = new FacebookAPI();
+			LinkedInApi linkedInApi = new LinkedInApi();
+
+			for(Profile profile : profiles) {
+
+				if(profile.getType().equals(Profile.FACEBOOK)) {
+
+					Boolean validate = facebookAPI.verifyAccessToken(profile.getToken());
+
+					if(!validate) {
+
+						profile.setActive('F');
+						profile.setTurn('F');
+						profile.setIsTokenValid(Profile.INVALID_TOKEN);
+						
+						try {
+							profileRemote.save(profile);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+						ReportGenerateVerification.setRefreshTokenState(profile, false);
+					}					
+
+				} else if(profile.getType().equals(Profile.FACEBOOK_PAGE)) {
+
+					Boolean validate = facebookAPI.verifyAccessToken(profile.getToken());	
+
+					// Verifica se o perfil que adicionou essa página está autenticado, senão estiver então ele continua 
+					// sendo administrador e apenas teve o token revogado.
+					if(!validate && !hasProfileAuthenticated(profile, account)) {
+						
+						profile.setActive('F');
+						profile.setTurn('F');
+						profile.setIsTokenValid(Profile.INVALID_TOKEN);
+
+						try {
+							profileRemote.save(profile);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+						ReportGenerateVerification.setRefreshTokenState(profile, false);
+					}
+					
+				} else if(profile.getType().equals(Profile.TWITTER)) {
+
+					TwitterIntegration twitterIntegration = new TwitterIntegration();
+
+					Twitter twitter = twitterIntegration.getTwitter(profile.getToken(), profile.getTokenSecret());
+
+					try {
+
+						twitter.verifyCredentials();
+						profile.setActive('T');
+
+						try {
+							profileRemote.save(profile);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+					} catch (TwitterException e) {
+
+						if(e.getStatusCode() == TwitterException.UNAUTHORIZED) {
+
+							profile.setActive('F');
+							profile.setTurn('F');
+							profile.setIsTokenValid(Profile.INVALID_TOKEN);
+							
+							try {
+								profileRemote.save(profile);
+							} catch (Exception exception) {
+								e.printStackTrace();
+							}
+							
+							e.printStackTrace();
+						}
+					}
+				} else if(profile.getType().equals(Profile.INSTAGRAM)) {
+
+					if(profile.getInstagramBusinessId() != null) {
+						
+						Boolean validate = facebookAPI.verifyAccessToken(profile.getToken());	
+
+						if(!validate) {
+							
+							profile.setActive('F');
+							profile.setTurn('F');
+							profile.setIsTokenValid(Profile.INVALID_TOKEN);
+
+							try {
+								profileRemote.save(profile);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+							
+							ReportGenerateVerification.setRefreshTokenState(profile, false);
+						}
+					}
+					
+				} else if(profile.getType().equals(Profile.LINKEDIN)) {
+					
+					Boolean validate = linkedInApi.verifyAccessToken(profile.getToken());
+
+					if(!validate) {
+
+						profile.setActive('F');
+						profile.setTurn('F');
+						profile.setIsTokenValid(Profile.INVALID_TOKEN);
+						
+						try {
+							profileRemote.save(profile);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}	
+					
+				} else if(profile.getType().equals(Profile.LINKEDIN_PAGE)) {
+
+					Boolean validate = facebookAPI.verifyAccessToken(profile.getToken());	
+
+					// Verifica se o perfil que adicionou essa página está autenticado, senão estiver então ele continua 
+					// sendo administrador e apenas teve o token revogado.
+					if(!validate && !hasLinkedinProfileAuthenticated(profile)) {
+						
+						profile.setActive('F');
+						profile.setTurn('F');
+						profile.setIsTokenValid(Profile.INVALID_TOKEN);
+
+						try {
+							profileRemote.save(profile);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static void validatingAdminPages(Account account) {
+
+		try {
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			
+			List<Profile> facebookPages = profileRemote.getEntityByNetworkType(Profile.FACEBOOK_PAGE, account.getIdAccount());
+
+			for(Profile facebookPage : facebookPages) {
+				
+				try {
+			
+					if(!facebookPage.getIsTokenValid().equals(Profile.INVALID_TOKEN) && !hasAdminProfile(facebookPage)) {
+
+						facebookPage.setActive('F');
+						facebookPage.setTurn('F');
+						facebookPage.setIsTokenValid(Profile.INVALID_TOKEN_NO_ADMIN);
+						
+						try {
+							profileRemote.save(facebookPage);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+						ReportGenerateVerification.setRefreshTokenState(facebookPage, true);
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static boolean hasAdminProfile(Profile profile) {
+		
+		boolean hasAdmin = false;
+		
+		try {
+			
+			AccessToken accessToken;
+			Facebook facebook;
+
+			Profile parentProfile;
+
+			if(profile.getParentProfile() != null) {
+
+				accessToken = new AccessToken(profile.getParentProfile().getToken(), null);
+				parentProfile = profile.getParentProfile();
+
+			} else {
+
+				accessToken = new AccessToken(profile.getTokenSecret(), null);
+
+				parentProfile = new Profile();
+				parentProfile.setNetworkId(profile.getProfileInformation().split("♪")[0]);
+				parentProfile.setToken(profile.getTokenSecret());
+			}
+
+			facebook = new FacebookIntegration().getFacebook(accessToken);
+
+			List<facebook4j.Account> accounts = new FacebookAPI().getAccounts(facebook);
+
+			for(facebook4j.Account facebookAccount : accounts) {
+				if(facebookAccount.getId().equals(profile.getNetworkId())) {
+					hasAdmin = true;
+					break;
+				}
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			hasAdmin = true;
+		}
+		
+		return hasAdmin;
+	}
+	
+	public static boolean hasProfileAuthenticated(Profile facebookPage, Account account) {
+		return new FacebookAPI().verifyAccessToken(facebookPage.getTokenSecret());
+	}
+
+	private static boolean hasLinkedinProfileAuthenticated(Profile linkedinPage) {
+		return new LinkedInApi().verifyAccessToken(linkedinPage.getToken());
+	}
+}

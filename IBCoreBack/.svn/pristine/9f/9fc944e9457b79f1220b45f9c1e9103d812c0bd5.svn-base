@@ -1,0 +1,31 @@
+package br.com.opsocial.server.actions.config;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import das.MaintenanceUserRemote;
+import entity.application.User;
+
+@RestController
+@RequestMapping("opsocial")
+public class DeleteUserAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/delete_user",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		User user = (User) getParameters().get("deleteuser");
+	
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		remote.delete(user);
+	}
+}

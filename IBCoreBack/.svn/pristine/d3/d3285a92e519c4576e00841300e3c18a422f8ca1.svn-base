@@ -1,0 +1,29 @@
+package br.com.opsocial.client.entity.primitive;
+
+import java.util.List;
+
+import entity.generic.Persistent;
+
+
+public class StringList extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	private List<java.lang.String> value;
+	
+	public StringList() {
+	}
+	
+	public StringList(List<String> value) {
+		this.value = value;
+	}
+
+	public List<java.lang.String> getValue() {
+		return value;
+	}
+
+	public void setValue(List<java.lang.String> persistentFields) {
+		this.value = persistentFields;
+	}
+
+}

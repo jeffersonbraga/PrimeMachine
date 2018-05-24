@@ -1,0 +1,126 @@
+<!-- BEGIN SIDEBAR -->
+<div class="page-sidebar p-t-0" data-pages="sidebar" pg-sidebar id="sidebar" style="z-index: 81000;">
+    <div id="appMenu" class="sidebar-overlay-slide from-top">
+    </div>
+    <!-- BEGIN SIDEBAR HEADER -->
+    <div class="sidebar-header">
+        <div class="p-t-3 pull-left">
+            <img src="assets/img/logo-svg-fundo-roxo.svg" alt="logo" data-src="assets/img/logo-svg-fundo-roxo.svg" data-src-retina="assets/img/logo-svg-fundo-roxo.svg"
+                width="78" height="28">
+        </div>
+        <div class="sidebar-header-controls">
+            <!--<button data-pages-toggle="#appMenu" class="btn btn-xs sidebar-slide-toggle btn-link m-l-20" type="button"></button>-->
+            <button data-toggle-pin="sidebar" class="btn btn-link visible-lg-inline p-l-74" type="button" (click)="toggleSidebar()">
+                <i class="fa fs-12"></i>
+            </button>
+        </div>
+    </div>
+    <!-- END SIDEBAR HEADER -->
+    <!-- BEGIN SIDEBAR MENU -->
+    <div class="sidebar-menu p-t-6">
+        <ul class="menu-items">
+            <li class="hidden-sm hidden-xs">
+                <a class="full-width" [routerLink]="['stream']" (click)="changeRouteSelected($event)">
+                    <span class="title">Social Streams</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='stream'||route_selected==''}" class="icon-thumbnail pull-right">
+                        <i class="pg-home"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" [routerLink]="['compose']" (click)="changeRouteSelected($event)">
+                    <span class="title">New Post</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='compose'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-edit"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="hidden-sm hidden-xs">
+                <a class="full-width" [routerLink]="['schedule']" (click)="changeRouteSelected($event)">
+                    <span class="title">Scheduled Posts</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='schedule'}" class="icon-thumbnail pull-right">
+                        <i class="pg-calender"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" [routerLink]="['report']" (click)="changeRouteSelected($event)">
+                    <span class="title">Analytics</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='report'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-area-chart"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="hidden-sm hidden-xs">
+                <a class="full-width" [routerLink]="['rssfeed']" (click)="changeRouteSelected($event)">
+                    <span class="title">RSS Feeds</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='rssfeed'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-rss"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="cursor">
+                <a class="full-width" (click)="openModal();">
+                    <span class="title">Connect Channels</span>
+                    <span class="icon-thumbnail pull-right">
+                        <i class="fa fa-at"></i>
+                    </span>
+                </a>
+            </li><li class="">
+                <a class="full-width" [routerLink]="['cadastrar']" (click)="changeRouteSelected($event)">
+                    <span class="title">Cadastrar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='cadastrar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-edit"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" [routerLink]="['agendar']" (click)="changeRouteSelected($event)">
+                    <span class="title">Agendar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='agendar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-calendar"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" [routerLink]="['realizar']" (click)="changeRouteSelected($event)">
+                    <span class="title">Realizar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='realizar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-medkit"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" [routerLink]="['laudar']" (click)="changeRouteSelected($event)">
+                    <span class="title">Laudo</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='laudar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-search-plus"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" [routerLink]="['disponibilizar']" (click)="changeRouteSelected($event)">
+                    <span class="title">Disponibilizar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='disponibilizar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-folder"></i>
+                    </span>
+                </a>
+            </li>
+        </ul>
+        <div class="clearfix"></div>
+    </div>
+    <div class="sidebar-footer" *ngIf="account?.planType === 0">
+        <div class="text-center">
+            <a href="https://woopsocial.com/plans" target="_blank">
+                <button class="btn btn-danger btn-lg m-b-10">
+                    <strong>UPGRADE NOW</strong>
+                </button>
+            </a>
+            <p class="m-b-10 p-l-15 p-r-15">Unlock the advanced analytics and have more social channels. 
+                Plans starting at $10/month.</p>
+        </div>
+    </div>
+    <!-- END SIDEBAR MENU -->
+</div>
+<!-- END SIDEBAR -->
+

@@ -1,0 +1,99 @@
+package br.com.opsocial.server.actions.reports.instagram;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.Date;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramOverviewDTO;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+public class ReportInstagramOverviewAction extends ServerAction {
+
+	private Profile profile;
+	private Integer period;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceReportGenerateRemote reportGenerateRemote = (MaintenanceReportGenerateRemote)
+				RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		
+		profile = (Profile) getParameters().get("profile");
+		
+		if(getParameters().containsKey("period")) {
+			
+            period = (Integer) getParameters().get("period");
+            getDatesByPeriod(period);
+            
+        } else {
+
+        	Date dateFrom = (Date) getParameters().get("dateFrom");
+            Date dateUntil = (Date) getParameters().get("dateUntil");
+
+            genericDateInterval = new GenericDateInterval(UtilFunctions.getMidnightDateNoDaylightTime(dateFrom.getValue()), 
+					  UtilFunctions.getMidnightDateNoDaylightTime(dateUntil.getValue()));
+        }
+		
+		if(!reportGenerateRemote.hasEntity(profile.getNetworkId(), profile.getType())) {
+    		
+    		ReportGenerate reportGenerate = new ReportGenerate();
+			reportGenerate.setNetworkId(profile.getNetworkId());
+			reportGenerate.setNetworkType(profile.getType());
+			reportGenerate.setTokenSecret(profile.getToken());
+			reportGenerate.setState(ReportFacebook.GENERATING);
+			reportGenerate.setIsInNewInstaFollowersReports('T');
+			
+			reportGenerate = reportGenerateRemote.save(reportGenerate);
+			
+    		Calendar reportDate = Calendar.getInstance();
+			reportDate.add(Calendar.DATE, -1);
+
+			Long reportDateStamp = UtilFunctions.getMidnightDateNoDaylightTime(reportDate.getTime());
+
+			ReportInstagram reportInstagram = new ReportInstagram(profile, reportDateStamp);
+			reportInstagram.setReportGenerate(reportGenerate);
+			
+			new Thread(reportInstagram).start();
+    	}
+		
+		profile.setReportState(reportGenerateRemote.getEntity(profile.getNetworkId(), Profile.INSTAGRAM).getState());
+		
+		ReportInstagramOverviewDTO reportInstagramOverview;
+		
+		if(profile.getReportState().equals(Profile.REPORT_FINALIZED) || profile.getReportState().equals(Profile.REPORT_REFRESH_TOKEN)) {
+			reportInstagramOverview = UtilReports.mountReportInstagramOverviewDTO(profile, genericDateInterval);
+		} else {
+			reportInstagramOverview = new ReportInstagramOverviewDTO();
+		}
+		
+		getParameters().put("reportInstagramOverview", reportInstagramOverview);
+		getParameters().put("profile", profile);
+	}
+	
+	private void getDatesByPeriod(Integer period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        genericDateInterval = new GenericDateInterval(UtilFunctions.getMidnightDateNoDaylightTime(fromDate.getTime()), 
+        		UtilFunctions.getMidnightDateNoDaylightTime(untilDate.getTime()));
+    }
+	
+}

@@ -1,0 +1,222 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.idclass.InstagramFollowerId;
+import br.com.opsocial.ejb.entity.instagram.InstagramEngagedFollower;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollower;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+
+@Stateless
+public class InstagramFollowerDAOImpl extends AbstractDAOImpl<InstagramFollower> implements InstagramFollowerDAO {
+
+	@Override
+	public InstagramFollower save(InstagramFollower instagramFollower) throws Exception {
+		
+		
+		try {
+			
+			InstagramFollowerId instagramFollowerId = new InstagramFollowerId();
+			instagramFollowerId.setFollowerId(instagramFollower.getFollowerId());
+			instagramFollowerId.setIdProfile(instagramFollower.getIdProfile());
+			
+			InstagramFollower objTmp = getById(instagramFollowerId);
+
+			if(objTmp != null) {
+
+				try {
+					validateVersion(objTmp, instagramFollower);
+				} catch (IllegalStateException ex) {
+					throw new OptimisticLockException();
+				}
+
+				em.merge(instagramFollower);
+
+				this.flush();
+
+			} else {
+
+				em.persist(instagramFollower);
+
+				this.flush();
+			}
+
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+
+		return instagramFollower;	
+	}
+	
+	@Override
+	public List<InstagramEngagedFollower> getMostEngagedFollowers(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT iduser, CAST(SUM(countactions) AS bigint) AS engagement, CAST(SUM(countlikes) AS bigint) AS likes, CAST(SUM(countcomments) AS bigint) AS comments FROM ( " +
+				"SELECT ipl.idinstagramuser AS iduser, COUNT(*) AS countactions, COUNT(*) AS countlikes, 0 AS countcomments FROM opsocial.instagramreportsposts AS irp " + 
+					"INNER JOIN opsocial.instagrampostslikes AS ipl ON " +
+					"ipl.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = " + idInstagramUser + " AND ipl.idinstagramuser " + 
+				"IN (SELECT ifl.followerid FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = " + idInstagramUser + " AND ifl.isstillfollower = 'T')  " +
+				"AND (CAST(ipl.createtime AS bigint) >= " + dateFrom + " AND CAST(ipl.createtime AS bigint) < (" + dateUntil + " + 86400)) " +
+				"GROUP BY iduser " +
+				"UNION ALL " +
+				"SELECT ipc.idinstagramuser AS iduser, COUNT(*) AS countactions, 0 AS countlikes, COUNT(*) AS countcomments FROM opsocial.instagramreportsposts AS irp " + 
+					"INNER JOIN opsocial.instagrampostscomments AS ipc ON " +
+					"ipc.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = " + idInstagramUser + " AND ipc.idinstagramuser " + 
+					"IN (SELECT ifl.followerid FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = " + idInstagramUser + " AND ifl.isstillfollower = 'T') " +
+					"AND (CAST(ipc.createtime AS bigint) >= " + dateFrom + " AND CAST(ipc.createtime AS bigint) < (" + dateUntil + " + 86400)) " +
+					"GROUP BY iduser " +
+				") AS engagedfollowers " +
+			   "GROUP BY iduser " +
+			   "ORDER BY SUM(countactions) DESC " +
+			   "OFFSET 0 LIMIT 100";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+
+		List<InstagramEngagedFollower> mostEngagedFollowers = new ArrayList<InstagramEngagedFollower>();
+		for (Object[] object : result) {
+			
+			InstagramFollower instagramFollower = new InstagramFollower();
+			instagramFollower.setIdProfile(idInstagramUser.toString());
+			instagramFollower.setFollowerId((String) object[0]);
+			
+			InstagramEngagedFollower instagramEngagedFollower = new InstagramEngagedFollower();
+			instagramEngagedFollower.setInstagramFollower(instagramFollower);
+			instagramEngagedFollower.setEngagement((Long) object[1]);
+			instagramEngagedFollower.setLikes((Long) object[2]);
+			instagramEngagedFollower.setComments((Long) object[3]);
+			
+			mostEngagedFollowers.add(instagramEngagedFollower);
+		}
+
+		return mostEngagedFollowers;
+	}
+
+	@Override
+	public List<InstagramFollowerTrend> getInstagramFollowersTrends(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT year, month, day, CAST(SUM(newfollowers) AS bigint) AS countnewfollowers, " +
+				"CAST(SUM(unfollowers) AS bigint) AS countunfollowers, " +
+				"CAST((SUM(newfollowers) - SUM(unfollowers)) AS bigint) AS balancefollowers FROM ( " +
+				"SELECT CAST(date_part('year', TO_TIMESTAMP(ifl.followingdate)::timestamp with time zone) as integer) AS year, " +
+				"CAST(date_part('month', TO_TIMESTAMP(ifl.followingdate)::timestamp with time zone) as integer) AS month, " +
+				"CAST(date_part('day', TO_TIMESTAMP(ifl.followingdate)::timestamp with time zone) as integer) AS day, " +
+				"COUNT(ifl) AS newfollowers, 0 AS unfollowers FROM opsocial.instagramfollowers AS ifl " +
+				"WHERE ifl.idprofile = " + idInstagramUser + " AND isstillfollower = 'T' " +
+				"AND (ifl.followingdate >= " + dateFrom + " AND ifl.followingdate <= " + dateUntil + ") " +
+				"GROUP BY year, month, day " +
+				"UNION ALL " +
+				"SELECT CAST(date_part('year', TO_TIMESTAMP(ifl.unfollowdate)::timestamp with time zone) as integer) AS year, " +
+				"CAST(date_part('month', TO_TIMESTAMP(ifl.unfollowdate)::timestamp with time zone) as integer) AS month, " +
+				"CAST(date_part('day', TO_TIMESTAMP(ifl.unfollowdate)::timestamp with time zone) as integer) AS day, " +
+				"0 AS newfollowers, COUNT(ifl) AS unfollowers FROM opsocial.instagramfollowers AS ifl " +
+				"WHERE ifl.idprofile = " + idInstagramUser + " AND isstillfollower = 'F' " +
+				"AND (ifl.unfollowdate >= " + dateFrom + " AND ifl.unfollowdate <= " + dateUntil + ") " +
+				"GROUP BY year, month, day) AS followersstats " +
+				"GROUP BY year, month, day " + 
+				"ORDER BY year ASC, month ASC, day ASC";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+
+		List<InstagramFollowerTrend> instagramFollowerTrends = new ArrayList<InstagramFollowerTrend>();
+		for (Object[] object : result) {
+			
+			InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+			instagramFollowerTrend.setYear((Integer) object[0]);
+			instagramFollowerTrend.setMonth((Integer) object[1]);
+			instagramFollowerTrend.setDay((Integer) object[2]);
+			instagramFollowerTrend.setNewFollowers((Long) object[3]);
+			instagramFollowerTrend.setUnfollowers((Long) object[4]);
+			instagramFollowerTrend.setBalanceFollowers((Long) object[5]);
+			
+			instagramFollowerTrends.add(instagramFollowerTrend);
+		}
+	
+		return instagramFollowerTrends;
+	}
+
+	@Override
+	public InstagramFollowerTrend getInstagramFollowerTrend(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT CAST(SUM(newfollowers) AS bigint) AS countnewfollowers, " +
+				"CAST(SUM(unfollowers) AS bigint) AS countunfollowers, " +
+				"CAST((SUM(newfollowers) - SUM(unfollowers)) AS bigint) AS balancefollowers FROM ( " +
+				"SELECT COUNT(ifl) AS newfollowers, 0 AS unfollowers FROM opsocial.instagramfollowers AS ifl " +
+				"WHERE ifl.idprofile = " + idInstagramUser + " AND isstillfollower = 'T' " +
+				"AND (ifl.followingdate >= " + dateFrom + " AND ifl.followingdate <= " + dateUntil + ") " +
+				"UNION ALL " +
+				"SELECT 0 AS newfollowers, COUNT(ifl) AS unfollowers FROM opsocial.instagramfollowers AS ifl " +
+				"WHERE ifl.idprofile = " + idInstagramUser + " AND isstillfollower = 'F' " +
+				"AND (ifl.unfollowdate >= " + dateFrom + " AND ifl.unfollowdate <= " + dateUntil + ")) AS followersstats";
+
+		query = em.createNativeQuery(sql);
+
+		Object[] result = null;
+		InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+		try {
+
+			result = (Object[]) query.getSingleResult();
+			
+			instagramFollowerTrend.setNewFollowers((Long) result[0]);
+			instagramFollowerTrend.setUnfollowers((Long) result[1]);
+			instagramFollowerTrend.setBalanceFollowers((Long) result[2]);
+
+		} catch (NoResultException e) {
+
+			instagramFollowerTrend.setNewFollowers(0L);
+			instagramFollowerTrend.setUnfollowers(0L);
+			instagramFollowerTrend.setBalanceFollowers(0L);
+		}
+
+		return instagramFollowerTrend;
+	}
+
+	@Override
+	public List<InstagramFollowerTrend> getInstagramFollowersCount(Long idInstagramUser) {
+		
+		sql = "SELECT reportdate, CAST(SUM(newfollowers) AS bigint) AS countnewfollowers, " +
+				"CAST(SUM(unfollowers) AS bigint) AS countunfollowers, " +
+				"CAST((SUM(newfollowers) - SUM(unfollowers)) AS bigint) AS balancefollowers FROM ( " +
+				"SELECT ifl.followingdate AS reportdate, " +
+				"COUNT(ifl) AS newfollowers, 0 AS unfollowers FROM opsocial.instagramfollowers AS ifl " +
+				"WHERE ifl.idprofile = " + idInstagramUser + " AND isstillfollower = 'T' " +
+				"GROUP BY reportdate " +
+				"UNION ALL " +
+				"SELECT ifl.unfollowdate AS reportdate, " +
+				"0 AS newfollowers, COUNT(ifl) AS unfollowers FROM opsocial.instagramfollowers AS ifl " +
+				"WHERE ifl.idprofile = " + idInstagramUser + " AND isstillfollower = 'F' " +
+				"GROUP BY reportdate) AS followersstats " +
+				"GROUP BY reportdate " + 
+				"ORDER BY reportdate ASC";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+
+		List<InstagramFollowerTrend> instagramFollowerTrends = new ArrayList<InstagramFollowerTrend>();
+		for (Object[] object : result) {
+			
+			InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+			instagramFollowerTrend.setDate((Long) object[0]);
+			instagramFollowerTrend.setNewFollowers((Long) object[1]);
+			instagramFollowerTrend.setUnfollowers((Long) object[2]);
+			instagramFollowerTrend.setBalanceFollowers((Long) object[3]);
+			
+			instagramFollowerTrends.add(instagramFollowerTrend);
+		}
+	
+		return instagramFollowerTrends;
+	}
+
+}

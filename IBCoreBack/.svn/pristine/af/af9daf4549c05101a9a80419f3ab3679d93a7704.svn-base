@@ -1,0 +1,83 @@
+package br.com.opsocial.server.actions.config;
+
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("woopsocial")
+public class ActivateUserAction extends ServerAction{
+	
+	MaintenanceUserRemote userRemote;
+	
+	@CrossOrigin
+	@RequestMapping(value = "/activate_user",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> doAction(@Valid @RequestBody User user) throws Exception, OptimisticLockException {
+
+		userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+		User userDB = userRemote.getByUrlActivation(user.getUrlActivation());
+		String message = verifyUsers(userDB);
+		
+		if(message == null) {
+			if(userDB == null) {
+				message = OpSocialBackApplication.messageByLocaleService.getMessage("user.activation.keyinvalid");
+			}else{
+				String password = user.getPassword();
+				PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+				String hashedPassword = passwordEncoder.encode(password);
+				userDB.setPassword(hashedPassword);
+				userDB.setActive('T');
+				userDB.setName(user.getName());
+				userDB.setEmail(user.getEmail());
+				
+				userRemote.setIdUserSession(userDB.getId());
+				
+				userRemote.save(userDB);
+				
+				message = "OK";
+			}
+		}
+		
+		return new ResponseEntity<>(message, HttpStatus.OK);
+	}
+	
+	private String verifyUsers(User user) {
+		
+		if(user != null) {
+		
+			List<User> users = userRemote.listActiveUsersByAccount(user.getAccount().getIdAccount());
+			Integer activeUsersCount = users.size();
+			
+			if(activeUsersCount >= user.getAccount().getUsers()) {
+				return OpSocialBackApplication.messageByLocaleService.getMessage("user.activation.planlimit", new Object[]{user.getAccount().getUsers()});
+			}
+		}
+		
+		return null;
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {		
+	}
+}

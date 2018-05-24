@@ -1,0 +1,47 @@
+package br.com.opsocial.server.actions.config;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+
+@RestController
+@RequestMapping("opsocial")
+public class DeleteUserAction extends ServerAction {
+	
+	@CrossOrigin
+	@RequestMapping(value = "/delete_user",
+    method = RequestMethod.DELETE,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction(Long idUser, HttpSession session, HttpServletRequest request) throws Exception, OptimisticLockException {
+		
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		//TODO: pegar usuário da sessão
+		session.setAttribute("user", remote.getById(1L));
+		User userSession = (User) request.getSession().getAttribute("user");
+		User user = remote.getById(idUser);
+		
+		if(userSession.getAccount().getIdAccount() == user.getAccount().getIdAccount() && userSession.getType() == 'A'){
+			remote.setIdUserSession(userSession.getId());
+			remote.delete(user);
+		}
+		
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+}

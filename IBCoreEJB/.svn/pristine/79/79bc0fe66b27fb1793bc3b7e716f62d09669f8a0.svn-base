@@ -1,0 +1,74 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Date;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.MonitoringUserReportDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUserReport;
+
+@Stateless
+public class MaintenanceMonitoringUserReportBean extends AbstractDASImpl<MonitoringUserReport> implements MaintenanceMonitoringUserReportRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	MonitoringUserReportDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<MonitoringUserReport> dao) {
+		this.dao = (MonitoringUserReportDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringUserReport> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringUserReport> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public boolean hasEntity(Long idMonitoring, String property, Long date) {
+		return dao.hasEntity(idMonitoring, property, date);
+	}
+
+	@Override
+	public MonitoringUserReport getEntity(Long idMonitoring, String property, Long date) {
+		return dao.getEntity(idMonitoring, property, date);
+	}
+
+	@Override
+	public Map<Date, Long> getPostsUsersPerDayCount(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsUsersPerDayCount(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<String, Long> getPostsUsersGenderCount(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsUsersGenderCount(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getPostsUsersTotal(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsUsersTotal(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

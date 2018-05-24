@@ -1,0 +1,19 @@
+p{
+    font-size: 12px;
+}
+
+header h5{
+    line-height: 14px;
+}
+
+header, h4, h5, p {
+    text-align: center;
+}
+
+small{
+    font-size: 75%;
+}
+
+h4, h5 {
+    line-height: 1
+}

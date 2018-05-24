@@ -1,0 +1,168 @@
+.main{
+    background-color: #fff;
+}
+
+.main-container{
+    padding: 0 10px;
+}
+
+header{
+    position: relative;
+}
+
+header span, header i{
+    color: #fff;
+}
+
+.screenName{
+    top: 3px;
+}
+
+.handle{
+    cursor: all-scroll;
+    padding: 10px 0px 5px 0;
+}
+
+.back-F{
+    background-color: #4267b2;
+}
+
+.back-T{
+    background-color: #17c6ff;
+}
+
+.back-I{
+    background-color: #ff4169;
+}
+
+.back-L{
+    background-color: #0084bf;
+}
+
+.profileInfo{
+    position: relative;
+    height: 30px;
+}
+
+.avatar{
+    position: absolute;
+    top: -24px;
+    left: 10px;
+    border: 5px solid #fff;
+    width: 60px;
+}
+
+.avatar + strong{
+    position: relative;
+    left: 80px;
+    text-transform: uppercase;
+}
+
+ul li{
+    width: 25%;
+}
+
+ul.ul-instagram li{
+    width: 50%;
+}
+
+ul.ul-facebook-profile li{
+    width: 100%;
+}
+
+.dropdown-container{
+    top: 5px;
+    right: 10px;
+    font-size: 18px;
+    position: absolute;
+}
+
+.icon-header{
+    padding-left: 80px;
+}
+
+.stream-post:not(:last-child)::after{
+	content: ' ';
+    display: table;
+    height: 2px;
+    width: calc(100% + 40px);
+    /* margin-top: 20px; */
+    margin-left: -20px;
+    background-color: #eee;
+}
+
+.stream-post:last-child::after{
+	content: ' ';
+    display: table;
+    width: calc(100% + 40px);
+    /* margin-top: 20px; */
+    margin-left: -20px;
+}
+
+.stream-post:not(:first-child){
+    padding-top: 10px;
+    display: table;
+    width: 100%;
+}
+
+.scroll-tab{
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 255px);
+    overflow-y: auto;
+    margin-top: -6px;
+    overflow-x: hidden;
+}
+
+@media (max-width: 1400px) {
+    .scroll-tab{
+        height: calc(100vh - 250px);
+    }
+}
+
+.loading-inbox{
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background-color: rgba(255,255,255,0.8);
+}
+
+.nav-tabs > li > a {
+    padding: 5px 5px;
+}
+
+.nav-tabs > li.active > a {
+    padding-top: 5.990px !important;
+}
+
+.dropdown ul {
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown ul li a,
+.dropdown-menu li a {
+  padding: 0 20px;
+  /*** OPSOCIAL 3.0 ***/
+}
+.dropdown ul li a.dropdown-menu__item,
+.dropdown-menu li a.dropdown-menu__item {
+  line-height: 1.846;
+  opacity: 1;
+  font-family: "Segoe UI";
+  padding: 0 12px;
+}
+.dropdown .dropdown-menu {
+  min-width: 130px !important;
+  border-radius: 2px;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  margin-top: 10px!important;
+  border: 1px solid #E6E6E6;
+}
+.dropdown .dropdown-menu li:first-child {
+  padding-top: 4px;
+}
+.dropdown .dropdown-menu li:last-child {
+  padding-bottom: 4px;
+}

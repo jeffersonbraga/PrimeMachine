@@ -1,0 +1,532 @@
+<!-- LOADER -->
+<div class="col-sm-12 text-center" *ngIf="isLoading" >
+	<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+</div>
+
+<!-- REPORT -->
+<div class="panel panel-opsocial panel-transparent" *ngIf="!isLoading">
+	<ul class="nav nav-tabs nav-tabs-opsocial hidden-print" data-init-reponsive-tabs="dropdownfx">
+		<li class="active">
+			<a data-toggle="tab" href="#overview" aria-expanded="true"><span> Visão Geral</span></a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane slide-left active" id="overview">
+			<h6 class="fs-14">
+				<i class="fa fa-linkedin-square m-r-5 v-align-middle"></i> 
+                <span class="v-align-middle"><strong>{{ profile.screenName }} • Overview • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+                <!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Visão Geral • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+			</h6>
+			<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+				<button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+				<button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+			</nav>
+			<div class="hidden-print">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading row p-t-25 p-b-25">
+                                <div class="col-lg-2 company-stats">
+                                    <h5 class="panel-title"><i class="fa fa-eye m-r-2 color-master"></i>Impressions</h5>
+                                    <p class="analytics_counts">{{companyImpressionsData}}</p>
+                                </div>
+                                <div class="col-lg-2 company-stats">
+                                    <h5 class="panel-title"><i class="fa fa-thumbs-up fa-1 m-r-2 color-master" aria-hidden="true"></i>Likes</h5>
+                                    <p class="analytics_counts">{{companyLikesData}}</p>
+                                </div>
+                                <div class="col-lg-2 company-stats">
+                                    <h5 class="panel-title"><i class="fa fa-comments m-r-2 color-master"></i>Comments</h5>
+                                    <p class="analytics_counts">{{companyCommentsData}}</p>
+                                </div>
+                                <div class="col-lg-2 company-stats">
+                                    <h5 class="panel-title"><i class="fa fa-share m-r-2 color-master"></i>Shares</h5>
+                                    <p class="analytics_counts">{{companySharesData}}</p>
+                                </div>
+                                <div class="col-lg-2 company-stats">
+                                    <h5 class="panel-title"><i class="fa fa-user m-r-2 color-master"></i>Clicks</h5>
+                                    <p class="analytics_counts">{{companyClicksData}}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 col-lg-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">Crescimento de Fãs na Página</h5>
+                            </div>
+                            <div class="panel-body p-l-10 p-b-5">
+                                <div class="row">
+                                    <div class="col-xs-10 p-r-0 p-l-0">
+                                        <stacked-area-chart [data]="followersGrowthByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+                                    </div>
+                                    <div class="col-xs-2 p-r-0 p-l-0">
+                                        <aside-text-icon [data]="followersGrowthAside"></aside-text-icon>
+                                        <aside-text-icon [data]="followersGrowthAside1"></aside-text-icon>
+                                        <aside-text-icon [data]="followersGrowthAside2"></aside-text-icon>
+                                        <aside-text-icon [data]="followersGrowthAside3"></aside-text-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 col-lg-6 report-full p-r-10">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Publicações no Período</div>
+                            </div>
+                            <div class="panel-body">
+                                <column-chart [data]="numPostsByDayData" height="285" [reduceXTicks]="true" [legends]="legendsType3"></column-chart>
+                                <!-- <div class="row">
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="dailyPostAverage"></footer-text-icon>
+                                    </div>
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="interactionsAverageByPost"></footer-text-icon>
+                                    </div>
+                                </div> -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 col-lg-6 report-full p-l-10">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">Impressões das Publicações</h5>
+                            </div>
+                            <div class="panel-body">
+                                <area-chart [data]="impressionsByDayData" height="285" isArea="true" [reduceXTicks]="false" [legends]="legendsType3"></area-chart>
+                                <!-- <div class="row">
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="impressionsByPeriodFooter"></footer-text-icon>
+                                    </div>
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="dailyImpressionAverage"></footer-text-icon>
+                                    </div>
+                                </div> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">Envolvimento do Público por Tipo de Interação</h5>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-md-12 col-lg-4 no-padding">
+                                        <h5 class="font-montserrat text-uppercase hint-text fs-12 bold p-l-20">Likes</h5>
+                                        <area-chart [data]="likesByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+                                        <footer-text-icon [data]="totalLikesByPeriod"></footer-text-icon>
+                                    </div>
+                                    <div class="col-md-12 col-lg-4 no-padding">
+                                        <h5 class="font-montserrat text-uppercase hint-text fs-12 p-l-15 bold">Comments</h5>
+                                        <area-chart [data]="commentsByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+                                        <footer-text-icon [data]="totalCommentsByPeriod"></footer-text-icon>
+                                    </div>
+                                    <div class="col-md-12 col-lg-4 no-padding">
+                                        <h5 class="font-montserrat text-uppercase hint-text fs-12 p-l-15 bold">Shares</h5>
+                                        <area-chart [data]="sharesByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+                                        <footer-text-icon [data]="totalSharesByPeriod"></footer-text-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 col-lg-4 m-b-20 linkedin-table p-r-20">
+                        <div class="panel panel-default linkedin-table">
+                            <div class="panel-heading p-l-20">
+                                <h5 class="panel-title">Posição</h5>
+                            </div>
+                            <div class="panel-body p-l-0 p-r-0">
+                                <div class="col-md-12 col-xs-12 ">
+                                    <div class="panel-heading p-l-15 p-t-5 min-height-25">
+                                        <h5 class="panel-title fs-13">Posição do Usuário</h5>
+                                        <h5 class="panel-title fs-13 pull-right color-master">Usuários</h5>
+                                    </div>
+                                    <table class="table table-condensed no-footer b-t-default">
+                                        <tbody>
+                                            <tr *ngFor="let key of followStatisticsSenioritiesData; let i=index">
+                                                <td *ngIf="i<6" class="p-l-10 p-r-10">
+                                                    <div class="pull-left">{{key.key}}</div>
+                                                    <div class="pull-right">{{key.value}}</div>
+                                                    <div class="clearfix progress m-b-0 m-t-25">
+                                                        <div [ngStyle]="{'width': key.value}" class="progress-bar color-primary"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 col-lg-8 p-l-0 linkedin-table">
+                        <div class="panel panel-default linkedin-table">
+                            <div class="panel-heading p-l-20">
+                                <h5 class="panel-title">Área de Atuação</h5>
+                            </div>
+                            <div class="panel-body p-l-0 p-r-0">
+                                <div class="col-xs-6 p-l-25">
+                                    <div class="panel-heading p-l-10 p-t-5 m-b-7 min-height-25">
+                                        <h5 class="panel-title fs-13 pull-left">Área do Usuário</h5>
+                                        <h5 class="panel-title fs-13 pull-right color-master">Usuários</h5>
+                                    </div>
+                                    <table class="table table-condensed no-footer b-t-default">
+                                        <tbody>
+                                            <tr *ngFor="let key of followStatisticsFunctionsData1; let i=index">
+                                                <td *ngIf="i<6" class="p-l-10 p-r-10">
+                                                    <div class="pull-left">{{key.key}}</div>
+                                                    <div class="pull-right">{{key.value}}</div>
+                                                    <div class="clearfix progress m-b-0 m-t-25">
+                                                        <div [ngStyle]="{'width': key.value}" class="progress-bar color-primary"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-xs-6 p-l-25">
+                                    <div class="panel-heading p-l-10 p-t-5 m-b-7 min-height-25">
+                                        <h5 class="panel-title fs-13 pull-right color-master">Usuários</h5>
+                                    </div>
+                                    <table class="table table-condensed no-footer b-t-default">
+                                        <tbody>
+                                            <tr *ngFor="let key of followStatisticsFunctionsData2; let i=index">
+                                                <td *ngIf="i<6" class="p-l-10 p-r-10">
+                                                    <div class="pull-left">{{key.key}}</div>
+                                                    <div class="pull-right">{{key.value}}</div>
+                                                    <div class="clearfix progress m-b-0 m-t-25">
+                                                        <div [ngStyle]="{'width': key.value}" class="progress-bar color-primary"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+				<div class="row">
+                    <div class="col-md-12 col-lg-5 p-r-10">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Empresas por tamanho</div>
+                            </div>
+                            <column-chart [data]="followStatisticsCompanySizeData" height="348" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+                            <footer-text-icon [data]="companySizeMostFollowersFooter"></footer-text-icon>
+                        </div>
+                    </div>
+                    <div class="col-md-12 col-lg-3 p-r-10 p-l-10">
+                        <div class="panel panel-default m-b-0">
+                            <div class="panel-heading">
+                                <div class="panel-title">Industria</div>
+                            </div>
+                            <div class="row p-l-15 p-r-15">
+                                <div class="col-md-12 min-height-422">
+                                    <table-chart [data]='followStatisticsIndustriesData' height="465"></table-chart>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 col-lg-4 p-l-10">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Top países</div>
+                            </div>
+                            <div class="row p-l-15 p-r-15">
+                                <div class="col-md-12 min-height-422">
+                                    <table-chart [data]='followStatisticsRegionsData'></table-chart>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+				</div>
+				<div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Interações por Publicação</div>
+                            </div>
+                            <table-chart isDataTable="true" [data]='companyUpdates'></table-chart>
+                        </div>
+                    </div>
+				</div>
+			</div>
+            <div id="content-pdf" style="background-color: #fff;">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading row p-t-25 p-b-25">
+                                <div class="row">
+                                    <div class="col-xs-12">
+                                        <h5 class="panel-title fs-10"><i class="fa fa-eye m-r-2 color-master"></i>Impressões</h5>
+                                        <p class="analytics_counts">{{companyImpressionsData}}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 m-l-0">
+                                        <h5 class="panel-title fs-10"><i class="fa fa-thumbs-up fa-1 m-r-2 color-master" aria-hidden="true"></i>Curtir</h5>
+                                        <p class="analytics_counts">{{companyLikesData}}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 m-l-0">
+                                        <h5 class="panel-title fs-10"><i class="fa fa-comments m-r-2 color-master"></i>Comentários</h5>
+                                        <p class="analytics_counts">{{companyCommentsData}}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 m-l-0">
+                                        <h5 class="panel-title fs-10"><i class="fa fa-share m-r-2 color-master"></i>Shares</h5>
+                                        <p class="analytics_counts">{{companySharesData}}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 m-l-0">
+                                        <h5 class="panel-title fs-10"><i class="fa fa-user m-r-2 color-master"></i>Cliques</h5>
+                                        <p class="analytics_counts">{{companyClicksData}}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">Crescimento de Fãs na Página</h5>
+                            </div>
+                            <div class="panel-body p-l-10 p-b-5">
+                                <div class="row">
+                                    <div class="col-xs-12 p-r-0 p-l-0">
+                                        <stacked-area-chart [data]="followersGrowthByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType2"></stacked-area-chart>
+                                    </div>
+                                </div>
+                                <div class="p-l-40 row">
+                                    <div class="col-xs-6 p-r-0 p-l-0">
+                                        <aside-text-icon [data]="followersGrowthAside"></aside-text-icon>
+                                    </div>
+                                    <div class="col-xs-6 p-r-0 p-l-0">
+                                        <aside-text-icon [data]="followersGrowthAside1"></aside-text-icon>
+                                    </div>
+                                </div>
+                                <div class="p-l-40 row">
+                                    <div class="col-xs-6 p-r-0 p-l-0">
+                                        <aside-text-icon [data]="followersGrowthAside2"></aside-text-icon>
+                                    </div>
+                                    <div class="col-xs-6 p-r-0 p-l-0">
+                                        <aside-text-icon [data]="followersGrowthAside3"></aside-text-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row page-break">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Publicações no Período</div>
+                            </div>
+                            <div class="panel-body">
+                                <column-chart [data]="numPostsByDayData" height="285" [reduceXTicks]="true" [legends]="legendsType3"></column-chart>
+                                <div class="row">
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="dailyPostAverage"></footer-text-icon>
+                                    </div>
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="interactionsAverageByPost"></footer-text-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">Impressões das Publicações</h5>
+                            </div>
+                            <div class="panel-body">
+                                <area-chart [data]="impressionsByDayData" height="285" isArea="true" [reduceXTicks]="false" [legends]="legendsType3"></area-chart>
+                                <div class="row">
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="impressionsByPeriodFooter"></footer-text-icon>
+                                    </div>
+                                    <div class="col-xs-6">
+                                        <footer-text-icon [data]="dailyImpressionAverage"></footer-text-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row page-break">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">Envolvimento do Público por Tipo de Interação</h5>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-xs-12 no-padding">
+                                        <h5 class="font-montserrat text-uppercase hint-text fs-12 bold p-l-20">Curtir</h5>
+                                        <area-chart [data]="likesByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+                                        <footer-text-icon [data]="totalLikesByPeriod"></footer-text-icon>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-12 no-padding">
+                                        <h5 class="font-montserrat text-uppercase hint-text fs-12 p-l-15 bold">Comentarios</h5>
+                                        <area-chart [data]="commentsByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+                                        <footer-text-icon [data]="totalCommentsByPeriod"></footer-text-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row page-break">
+                    <div class="col-xs-12 no-padding">
+                        <h5 class="font-montserrat text-uppercase hint-text fs-12 p-l-15 bold">Shares</h5>
+                        <area-chart [data]="sharesByDayData" height="285" isArea="true" [reduceXTicks]="true" [legends]="legendsType3"></area-chart>
+                        <footer-text-icon [data]="totalSharesByPeriod"></footer-text-icon>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 linkedin-table">
+                        <div class="panel panel-default linkedin-table">
+                            <div class="panel-heading p-l-20">
+                                <h5 class="panel-title">Posição</h5>
+                            </div>
+                            <div class="panel-body p-l-0 p-r-0">
+                                <div class="col-md-12 col-xs-12 ">
+                                    <div class="panel-heading p-l-15 p-t-5 min-height-25">
+                                        <h5 class="panel-title fs-13">Posição do Usuário</h5>
+                                        <h5 class="panel-title fs-13 pull-right color-master">Usuários</h5>
+                                    </div>
+                                    <table class="table table-condensed no-footer b-t-default">
+                                        <tbody>
+                                            <tr *ngFor="let key of followStatisticsSenioritiesData; let i=index">
+                                                <td *ngIf="i<6" class="p-l-10 p-r-10">
+                                                    <div class="pull-left">{{key.key}}</div>
+                                                    <div class="pull-right">{{key.value}}</div>
+                                                    <div class="clearfix progress m-b-0 m-t-25">
+                                                        <div [ngStyle]="{'width': key.value}" class="progress-bar color-primary"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-break row">
+                    <div class="col-xs-12 linkedin-table">
+                        <div class="panel panel-default linkedin-table">
+                            <div class="panel-heading p-l-20">
+                                <h5 class="panel-title">Área de Atuação</h5>
+                            </div>
+                            <div class="panel-body p-l-0 p-r-0">
+                                <div class="col-xs-12 p-l-25">
+                                    <div class="panel-heading p-l-10 p-t-5 m-b-7 min-height-25">
+                                        <h5 class="panel-title fs-13 pull-left">Área do Usuário</h5>
+                                        <h5 class="panel-title fs-13 pull-right color-master">Usuários</h5>
+                                    </div>
+                                    <table class="table table-condensed no-footer b-t-default">
+                                        <tbody>
+                                            <tr *ngFor="let key of followStatisticsFunctionsData1; let i=index">
+                                                <td *ngIf="i<6" class="p-l-10 p-r-10">
+                                                    <div class="pull-left">{{key.key}}</div>
+                                                    <div class="pull-right">{{key.value}}</div>
+                                                    <div class="clearfix progress m-b-0 m-t-25">
+                                                        <div [ngStyle]="{'width': key.value}" class="progress-bar color-primary"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-xs-12 p-l-25 p-t-25">
+                                    <div class="panel-heading p-l-10 p-t-5 m-b-7 min-height-25">
+                                        <h5 class="panel-title fs-13 pull-right color-master">Usuários</h5>
+                                    </div>
+                                    <table class="table table-condensed no-footer b-t-default">
+                                        <tbody>
+                                            <tr *ngFor="let key of followStatisticsFunctionsData2; let i=index">
+                                                <td *ngIf="i<6" class="p-l-10 p-r-10">
+                                                    <div class="pull-left">{{key.key}}</div>
+                                                    <div class="pull-right">{{key.value}}</div>
+                                                    <div class="clearfix progress m-b-0 m-t-25">
+                                                        <div [ngStyle]="{'width': key.value}" class="progress-bar color-primary"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+				<div class="page-break row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Empresas por tamanho</div>
+                            </div>
+                            <column-chart [data]="followStatisticsCompanySizeData" height="348" [reduceXTicks]="false" [legends]="legendsType3"></column-chart>
+                            <footer-text-icon [data]="companySizeMostFollowersFooter"></footer-text-icon>
+                        </div>
+                    </div>
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Industria</div>
+                            </div>
+                            <div class="row p-l-15 p-r-15">
+                                <div class="col-md-12">
+                                    <table-chart [data]='followStatisticsIndustriesData' height="465"></table-chart>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+				</div>
+				<div class="page-break row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Top Países</div>
+                            </div>
+                            <div class="row p-l-15 p-r-15">
+                                <div class="col-md-12">
+                                    <table-chart [data]='followStatisticsRegionsData'></table-chart>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+				</div>
+				<div class="row">
+                    <div class="col-xs-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <div class="panel-title">Interações por Publicação</div>
+                            </div>
+                            <table-chart isDataTable="true" [data]='companyUpdates'></table-chart>
+                        </div>
+                    </div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

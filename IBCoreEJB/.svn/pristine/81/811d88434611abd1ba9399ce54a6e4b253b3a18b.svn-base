@@ -1,0 +1,30 @@
+package br.com.opsocial.ejb.entity.report;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class ReportFacebookCity extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private String city;
+	private Long value;
+	
+	public ReportFacebookCity() {
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public Long getValue() {
+		return value;
+	}
+
+	public void setValue(Long value) {
+		this.value = value;
+	}
+}

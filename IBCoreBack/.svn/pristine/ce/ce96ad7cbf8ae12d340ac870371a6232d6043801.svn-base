@@ -1,0 +1,667 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringGroupReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringHashTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringInfluentialUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLinkRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLocationReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLogReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringQualificationReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringReportControlRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTermReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringUserReportRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringGroupReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringHashTag;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringInfluentialUser;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLink;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLocationReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLogReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringQualificationReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringReportControl;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringTagReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringTermReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUser;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUserReport;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.monitorings.json.MonitoringQualificationReportIdJSON;
+import br.com.opsocial.server.utils.monitorings.json.MonitoringTagReportIdJSON;
+
+public class MonitoringLogReportController {
+
+	private Timer timer;
+	private HashSet<Long> monitoringUpdatingReports;
+
+	public MonitoringLogReportController() {
+
+		timer = new Timer();
+		timer.schedule(new Task(), 0, 600L * 1000L);	
+		monitoringUpdatingReports = new HashSet<Long>();
+	}
+
+	class Task extends TimerTask {
+
+		public void run() {
+
+			try {
+
+				MaintenanceAccountRemote accountRemote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+				MaintenanceMonitoringRemote monitoringRemote = (MaintenanceMonitoringRemote) RecoverMaintenance.recoverMaintenance("Monitoring");
+				MaintenanceMonitoringLogReportRemote monitoringLogReportRemote = (MaintenanceMonitoringLogReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringLogReport");
+				
+				List<Account> accounts = accountRemote.getAllActive();
+
+				for(Account account : accounts) {
+
+					List<Monitoring> monitorings = monitoringRemote.getMonitoringsByAccount(account.getIdAccount());
+
+					for(Monitoring monitoring : monitorings) {
+						
+						if(!monitoringUpdatingReports.contains(monitoring.getIdMonitoring()) && 
+								monitoringLogReportRemote.hasMonitoringLogReports(monitoring.getIdMonitoring(), MonitoringLogReport.UPDATE_NOT_APPLIED)) {
+							startUpdate(monitoring);
+						}
+					}
+				}		    		
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void startUpdate(Monitoring monitoring) {
+
+		monitoringUpdatingReports.add(monitoring.getIdMonitoring());
+		
+		new Thread(new TaskUpadteMonitoringReport(monitoring)).start();
+	}
+
+	public class TaskUpadteMonitoringReport implements Runnable {
+
+		private Monitoring monitoring;
+
+		private MaintenanceMonitoringLogReportRemote monitoringLogReportRemote;
+		private MaintenanceMonitoringReportRemote monitoringReportRemote;
+		private MaintenanceMonitoringTermReportRemote monitoringTermReportRemote;
+		private MaintenanceMonitoringQualificationReportRemote monitoringQualificationReportRemote;
+		private MaintenanceMonitoringTagReportRemote monitoringTagReportRemote;
+		private MaintenanceMonitoringLocationReportRemote monitoringLocationReportRemote;
+		private MaintenanceMonitoringInfluentialUserRemote monitoringInfluentialUserRemote;
+		private MaintenanceMonitoringLinkRemote monitoringLinkRemote;
+		private MaintenanceMonitoringHashTagRemote monitoringHashTagRemote;
+		private MaintenanceMonitoringGroupReportRemote monitoringGroupReportRemote;
+		private MaintenanceMonitoringRemote monitoringRemote;
+		private MaintenanceMonitoringTagRemote monitoringTagRemote;
+
+		public TaskUpadteMonitoringReport(Monitoring monitoring) {
+			this.monitoring = monitoring;
+		}
+
+		public void run() {
+
+			try {
+
+				monitoringLogReportRemote = (MaintenanceMonitoringLogReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringLogReport");
+				
+				monitoringReportRemote = (MaintenanceMonitoringReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringReport");
+				monitoringTermReportRemote = (MaintenanceMonitoringTermReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringTermReport");
+				monitoringQualificationReportRemote = (MaintenanceMonitoringQualificationReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringQualificationReport");
+				monitoringTagReportRemote = (MaintenanceMonitoringTagReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringTagReport");
+				monitoringLocationReportRemote = (MaintenanceMonitoringLocationReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringLocationReport");
+				monitoringInfluentialUserRemote = (MaintenanceMonitoringInfluentialUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringInfluentialUser");
+				monitoringLinkRemote = (MaintenanceMonitoringLinkRemote) RecoverMaintenance.recoverMaintenance("MonitoringLink");
+				monitoringHashTagRemote = (MaintenanceMonitoringHashTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringHashTag");
+				monitoringGroupReportRemote = (MaintenanceMonitoringGroupReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringGroupReport");
+				monitoringRemote = (MaintenanceMonitoringRemote) RecoverMaintenance.recoverMaintenance("Monitoring");
+				monitoringTagRemote = (MaintenanceMonitoringTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringTag");
+
+				// Update MonitoringLogReport.MON_REPORT_DAY
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_REPORT_DAY, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringReport monitoringReport = monitoringReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringReport.setValue(monitoringReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringReportRemote.save(monitoringReport);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				// Update MonitoringLogReport.MON_REPORT_HOUR
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_REPORT_HOUR, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringReport monitoringReport = monitoringReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringReport.setValue(monitoringReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringReportRemote.save(monitoringReport);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				// Update MonitoringLogReport.MON_TERM_REPORT
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_TERM_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringTermReport monitoringTermReport = monitoringTermReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringTermReport.setValue(monitoringTermReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringTermReportRemote.save(monitoringTermReport);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_GROUP_REPORT
+				try {
+					
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_GROUP_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+					
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+						
+						try {
+							
+							MonitoringGroupReport monitoringGroupReport = monitoringGroupReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+							
+							monitoringGroupReport.setValue(monitoringGroupReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringGroupReportRemote.save(monitoringGroupReport);
+							
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				// Update MonitoringLogReport.MON_QUALIFICATION_REPORT
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_QUALIFICATION_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringQualificationReport monitoringQualificationReport = monitoringQualificationReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringQualificationReport.setValue(monitoringQualificationReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringQualificationReportRemote.save(monitoringQualificationReport);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_QUALIFICATION_REPORT_NEW
+				try {
+					
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_QUALIFICATION_REPORT_NEW, MonitoringLogReport.UPDATE_NOT_APPLIED);
+					
+					Gson gson = new GsonBuilder().serializeNulls().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+					
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+						
+						try {
+							
+							MonitoringQualificationReportIdJSON monitoringQualReportIdJSON = 
+									gson.fromJson(monitoringLogReport.getReportId(), MonitoringQualificationReportIdJSON.class);
+							
+							if(monitoringQualificationReportRemote.hasEntity(monitoringQualReportIdJSON.getIdMonitoring(), 
+									monitoringQualReportIdJSON.getTerm(), monitoringQualReportIdJSON.getQualification(), 
+									monitoringQualReportIdJSON.getNetworkType(), monitoringQualReportIdJSON.getDate())) {
+								
+								MonitoringQualificationReport monitoringQualificationReport = 
+										monitoringQualificationReportRemote.getEntity(monitoringQualReportIdJSON.getIdMonitoring(), 
+												monitoringQualReportIdJSON.getTerm(), monitoringQualReportIdJSON.getQualification(), 
+												monitoringQualReportIdJSON.getNetworkType(), monitoringQualReportIdJSON.getDate());
+								
+								monitoringQualificationReport.setValue(monitoringQualificationReport.getValue() + monitoringLogReport.getValueToApply());
+								monitoringQualificationReportRemote.save(monitoringQualificationReport);
+								
+								monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+								monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+								monitoringLogReportRemote.save(monitoringLogReport);
+								
+							} else {
+								
+								MonitoringQualificationReport monitoringQualificationReport = new MonitoringQualificationReport();
+								monitoringQualificationReport.setMonitoring(monitoringRemote.getById(monitoringQualReportIdJSON.getIdMonitoring()));
+								monitoringQualificationReport.setQualification(monitoringQualReportIdJSON.getQualification());
+								monitoringQualificationReport.setNetworkType(monitoringQualReportIdJSON.getNetworkType());
+								monitoringQualificationReport.setDate(monitoringQualReportIdJSON.getDate());
+								monitoringQualificationReport.setTerm(monitoringQualReportIdJSON.getTerm());
+								monitoringQualificationReport.setValue(monitoringLogReport.getValueToApply().longValue());
+								
+								monitoringQualificationReportRemote.save(monitoringQualificationReport);
+								
+								monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+								monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+								monitoringLogReportRemote.save(monitoringLogReport);
+							}
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				// Update MonitoringLogReport.MON_TAG_REPORT
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_TAG_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringTagReport monitoringTagReport = monitoringTagReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringTagReport.setValue(monitoringTagReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringTagReportRemote.save(monitoringTagReport);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_TAG_REPORT_NEW
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_TAG_REPORT_NEW, MonitoringLogReport.UPDATE_NOT_APPLIED);
+					
+					Gson gson = new GsonBuilder().serializeNulls().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringTagReportIdJSON monitoringTagReportIdJSON = 
+									gson.fromJson(monitoringLogReport.getReportId(), MonitoringTagReportIdJSON.class);
+							
+							if(monitoringTagReportRemote.hasEntity(monitoringTagReportIdJSON.getIdMonitoring(), 
+									monitoringTagReportIdJSON.getIdTag(), monitoringTagReportIdJSON.getNetworkType(), monitoringTagReportIdJSON.getDate())) {
+								
+								MonitoringTagReport monitoringTagReport = monitoringTagReportRemote.getEntity(monitoringTagReportIdJSON.getIdMonitoring(), 
+										monitoringTagReportIdJSON.getIdTag(), monitoringTagReportIdJSON.getNetworkType(), monitoringTagReportIdJSON.getDate());
+								
+								monitoringTagReport.setValue(monitoringTagReport.getValue() + monitoringLogReport.getValueToApply());
+								monitoringTagReportRemote.save(monitoringTagReport);
+								
+								monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+								monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+								monitoringLogReportRemote.save(monitoringLogReport);
+								
+							} else {
+								
+								MonitoringTagReport monitoringTagReport = new MonitoringTagReport();
+								monitoringTagReport.setMonitoring(monitoringRemote.getById(monitoringTagReportIdJSON.getIdMonitoring()));
+								monitoringTagReport.setMonitoringTag(monitoringTagRemote.getById(monitoringTagReportIdJSON.getIdTag()));
+								monitoringTagReport.setNetworkType(monitoringTagReportIdJSON.getNetworkType());
+								monitoringTagReport.setDate(monitoringTagReportIdJSON.getDate());
+								monitoringTagReport.setValue(monitoringLogReport.getValueToApply().longValue());
+								
+								monitoringTagReportRemote.save(monitoringTagReport);
+								
+								monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+								monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+								monitoringLogReportRemote.save(monitoringLogReport);
+							}
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				// Update MonitoringLogReport.MON_LOCATION_REPORT
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_LOCATION_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringLocationReport monitoringLocationReport = monitoringLocationReportRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringLocationReport.setValue(monitoringLocationReport.getValue() + monitoringLogReport.getValueToApply());
+							monitoringLocationReportRemote.save(monitoringLocationReport);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				// Update MonitoringLogReport.MON_INFLUENTIAL_USER
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_INFLUENTIAL_USER, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+
+							MonitoringInfluentialUser monitoringInfluentialUser = monitoringInfluentialUserRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringInfluentialUser.setPostsCount(monitoringInfluentialUser.getPostsCount() + monitoringLogReport.getValueToApply());
+							monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+
+							monitoringInfluentialUser = monitoringInfluentialUserRemote.getById(monitoringInfluentialUser.getIdMonitoringInfluentialUser());
+
+							if(monitoringInfluentialUser.getPostsCount() < 1) {
+
+								// Update MonitoringUsers.
+								try {
+
+									MaintenanceMonitoringUserReportRemote monitoringUserReportRemote = (MaintenanceMonitoringUserReportRemote)
+											RecoverMaintenance.recoverMaintenance("MonitoringUserReport");
+
+									MaintenanceMonitoringReportControlRemote monitoringReportControlRemote = 
+											(MaintenanceMonitoringReportControlRemote) RecoverMaintenance.recoverMaintenance("MonitoringReportControl");
+
+									if(monitoringReportControlRemote.hasEntity(monitoringInfluentialUser.getMonitoring().getIdMonitoring(), 
+											MonitoringReportControl.USERS, monitoringInfluentialUser.getDate())) {
+
+										// Update MonitoringUsers USERS_COUNT.
+										try {
+
+											if(monitoringUserReportRemote.hasEntity(monitoringInfluentialUser.getMonitoring().getIdMonitoring(), 
+													MonitoringUserReport.USERS_COUNT, monitoringInfluentialUser.getDate())) {
+
+												MonitoringUserReport monitoringUserReport = monitoringUserReportRemote.getEntity(monitoringInfluentialUser.getMonitoring().getIdMonitoring(), 
+														MonitoringUserReport.USERS_COUNT, monitoringInfluentialUser.getDate());
+
+												monitoringUserReport.setValue(monitoringUserReport.getValue() + monitoringLogReport.getValueToApply());
+
+												monitoringUserReportRemote.save(monitoringUserReport);
+											}
+
+										} catch (Exception e) {
+											e.printStackTrace();
+										}
+
+										// Update MonitoringUsers USERS_FEMALE_COUNT or USERS_MALE_COUNT.
+										if(monitoringInfluentialUser.getMonitoringUser().getSex() != null && (monitoringInfluentialUser.getMonitoringUser().getSex().equals(MonitoringUser.FEMALE) || 
+												monitoringInfluentialUser.getMonitoringUser().getSex().equals(MonitoringUser.MALE))) {
+
+											String reportProperty = monitoringInfluentialUser.getMonitoringUser().getSex().equals(MonitoringUser.MALE) 
+													? MonitoringUserReport.USERS_MALE_COUNT : MonitoringUserReport.USERS_FEMALE_COUNT;
+
+											if(monitoringUserReportRemote.hasEntity(monitoringInfluentialUser.getMonitoring().getIdMonitoring(), 
+													reportProperty, monitoringInfluentialUser.getDate())) {
+
+												MonitoringUserReport monitoringUserReport = monitoringUserReportRemote.getEntity(monitoringInfluentialUser.getMonitoring().getIdMonitoring(), 
+														reportProperty, monitoringInfluentialUser.getDate());
+
+												monitoringUserReport.setValue(monitoringUserReport.getValue() + monitoringLogReport.getValueToApply());
+
+												monitoringUserReportRemote.save(monitoringUserReport);
+											}
+
+										}
+
+									}
+
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_INFLUENTIAL_USER_POS
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_INFLUENTIAL_USER_POS, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringInfluentialUser monitoringInfluentialUser = monitoringInfluentialUserRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringInfluentialUser.setPositivePostsCount(monitoringInfluentialUser.getPositivePostsCount() + monitoringLogReport.getValueToApply());
+							monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_INFLUENTIAL_USER_NEG
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_INFLUENTIAL_USER_NEG, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringInfluentialUser monitoringInfluentialUser = monitoringInfluentialUserRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringInfluentialUser.setNegativePostsCount(monitoringInfluentialUser.getNegativePostsCount() + monitoringLogReport.getValueToApply());
+							monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_LINK_REPORT
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_LINK_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringLink monitoringLink = monitoringLinkRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringLink.setLinksCount(monitoringLink.getLinksCount() + monitoringLogReport.getValueToApply());
+							monitoringLinkRemote.save(monitoringLink);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				// Update MonitoringLogReport.MON_HASHTAG_REPORT
+				try {
+
+					List<MonitoringLogReport> monitoringLogReports = monitoringLogReportRemote.getMonitoringLogReports(
+							monitoring.getIdMonitoring(), MonitoringLogReport.MON_HASHTAG_REPORT, MonitoringLogReport.UPDATE_NOT_APPLIED);
+
+					for (MonitoringLogReport monitoringLogReport : monitoringLogReports) {
+
+						try {
+							
+							MonitoringHashTag monitoringHashTag = monitoringHashTagRemote.getById(Long.valueOf(monitoringLogReport.getReportId()));
+
+							monitoringHashTag.setHashTagsCount(monitoringHashTag.getHashTagsCount() + monitoringLogReport.getValueToApply());
+							monitoringHashTagRemote.save(monitoringHashTag);
+
+							monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_APPLIED);
+							monitoringLogReport.setUpdateAppliedDate(new Date().getTime() / 1000L);
+							monitoringLogReportRemote.save(monitoringLogReport);
+							
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				monitoringUpdatingReports.remove(monitoring.getIdMonitoring());
+
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (IllegalStateException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}	
+
+		}
+
+		public Monitoring getMonitoring() {
+			return monitoring;
+		}
+
+		public void setMonitoring(Monitoring monitoring) {
+			this.monitoring = monitoring;
+		}
+	}
+
+}

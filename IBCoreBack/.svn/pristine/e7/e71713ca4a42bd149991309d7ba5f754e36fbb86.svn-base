@@ -1,0 +1,68 @@
+package br.com.opsocial.client.entity.youtube;
+
+import java.util.Date;
+
+import br.com.opsocial.client.entity.socialnetworks.youtube.ResourceIdDTO;
+import br.com.opsocial.client.entity.socialnetworks.youtube.SnippetDTO;
+import br.com.opsocial.client.entity.socialnetworks.youtube.StatisticsDTO;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class YoutubePostDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	public static final Long MAX_RESULTS_SEARCH = 20L;
+	public static final String FIELDS_SEARCH = "nextPageToken,etag,items(id(kind,videoId),snippet(title,description,publishedAt,channelId,channelTitle),snippet/thumbnails/default)";
+	public static final String PART_SINGLE_VIDEO = "id,snippet";
+	public static final String PART_CHANNELS_SUBSCRIBERS = "items(id,statistics(subscriberCount))";
+	public static final String PART_VIDEOS_STATISTICS = "items(id,statistics(viewCount,likeCount,dislikeCount,favoriteCount,commentCount))";
+
+	private ResourceIdDTO resourceId;
+	private SnippetDTO snippet;
+	private StatisticsDTO statistics;
+	private Date lastUpdate;
+	private String channelPicture;
+
+	public YoutubePostDTO() {
+	}
+
+	public ResourceIdDTO getResourceId() {
+		return resourceId;
+	}
+
+	public void setResourceId(ResourceIdDTO resourceId) {
+		this.resourceId = resourceId;
+	}
+
+	public SnippetDTO getSnippet() {
+		return snippet;
+	}
+
+	public void setSnippet(SnippetDTO searchResultSnippet) {
+		this.snippet = searchResultSnippet;
+	}
+
+	public StatisticsDTO getStatistics() {
+		return statistics;
+	}
+
+	public void setStatistics(StatisticsDTO statistics) {
+		this.statistics = statistics;
+	}
+
+	public Date getLastUpdate() {
+		return lastUpdate;
+	}
+
+	public void setLastUpdate(Date lastUpdate) {
+		this.lastUpdate = lastUpdate;
+	}
+
+	public String getChannelPicture() {
+		return channelPicture;
+	}
+
+	public void setChannelPicture(String channelPicture) {
+		this.channelPicture = channelPicture;
+	}
+}

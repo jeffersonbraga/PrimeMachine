@@ -1,0 +1,21 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.application.Account;	
+
+@Local
+public interface AccountDAO extends AbstractDAO<Account	> {
+
+	public List<Account> listInactiveAccounts(Date now);
+	
+	public List<Account> listInactiveTestAccounts(Date now);
+	
+	public List<Account> listActiveAccounts(Date now);
+	
+	public List<Account> listByCadastreDate(Date init, Date end);
+}

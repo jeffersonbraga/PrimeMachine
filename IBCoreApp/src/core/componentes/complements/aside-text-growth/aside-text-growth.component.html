@@ -1,0 +1,16 @@
+<div class="panel no-border no-margin">
+    <div class="panel-heading p-b-0 p-t-0">
+        <div class="panel-title">
+             {{ data.title }}
+             <i *ngIf="data.hasGrown" class="fa fa-arrow-circle-up" aria-hidden="true" [ngStyle]="{'color': '#20ffa3'}"></i>
+             <i *ngIf="!data.hasGrown" class="fa fa-arrow-circle-down" aria-hidden="true" [ngStyle]="{'color': '#f7554e'}"></i>
+             <span class="small hint-text">{{ data.smallText }}</span>
+        </div>
+    </div>
+    <div class="panel-body p-b-0">
+        <h1 class="font-montserrat m-t-0 m-b-16 bold">
+          <i class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#666'}"></i>
+          {{ data.value | abbreviateNumber}}
+        </h1>
+    </div>
+</div>

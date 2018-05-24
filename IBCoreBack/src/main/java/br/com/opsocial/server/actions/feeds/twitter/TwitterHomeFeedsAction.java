@@ -1,0 +1,149 @@
+package br.com.opsocial.server.actions.feeds.twitter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.naming.NamingException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import twitter4j.Paging;
+import twitter4j.ResponseList;
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.twitter.TwitterPaging;
+import br.com.opsocial.ejb.entity.twitter.TwitterPost;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+
+@RestController
+@RequestMapping("woopsocial")
+public class TwitterHomeFeedsAction extends ServerAction {
+
+	private Twitter twitter;
+	private List<TwitterPost> twitterPosts;
+	
+	private Profile profileDTO;
+	private TwitterPaging twitterPaging;
+	
+	@Override
+	@RequestMapping(value = "/twitter_home_feeds",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		profileDTO = (Profile) getParameters().get("profile");
+		
+		if(getParameters().containsKey("twitterPaging")) {
+			twitterPaging = (TwitterPaging) getParameters().get("twitterPaging");
+		} else {
+			twitterPaging = null;
+		}
+		
+		TwitterIntegration twitterIntegration = new TwitterIntegration();
+		twitter = twitterIntegration.getTwitter(profileDTO.getToken(), profileDTO.getTokenSecret());
+		
+		Paging pagingTwitterFeed;
+
+		if(twitterPaging != null) {
+			pagingTwitterFeed = getTwitterPaging(twitterPaging);
+			
+			twitterPosts = getTwitterPosts(twitter.getHomeTimeline(pagingTwitterFeed), profileDTO.getNetworkId());
+			
+			if(twitterPosts.size() > 0) {
+				pagingTwitterFeed.setMaxId(twitterPosts.get(twitterPosts.size()-1).getStatusId());
+				pagingTwitterFeed.setPage(pagingTwitterFeed.getPage()+1);
+			}
+		} else {
+			pagingTwitterFeed = new Paging(1, 20);
+			
+			twitterPosts = getTwitterPosts(twitter.getHomeTimeline(pagingTwitterFeed), profileDTO.getNetworkId());
+			
+			if(twitterPosts.size() > 0) {
+				pagingTwitterFeed.setMaxId(twitterPosts.get(twitterPosts.size()-1).getStatusId());
+				pagingTwitterFeed.setPage(pagingTwitterFeed.getPage()+1);
+			}
+		}
+		
+		getParameters().put("twitterFeeds", twitterPosts);
+		getParameters().put("twitterPaging", getTwitterPaging(pagingTwitterFeed));
+		getParameters().put("followers", new br.com.opsocial.client.entity.primitive.Integer(twitter.showUser(twitter.getId()).getFollowersCount()));
+		getParameters().put("tweets", new br.com.opsocial.client.entity.primitive.Integer(twitter.showUser(twitter.getId()).getStatusesCount()));
+
+		getParameters().put("profile", profileDTO);
+			
+	}
+
+	private Paging getTwitterPaging(TwitterPaging twitterPaging) {
+
+		Paging paging = new Paging();
+		paging.setCount(twitterPaging.getCount());
+		paging.setPage(twitterPaging.getPage());
+		paging.setMaxId(twitterPaging.getMaxId());
+
+		return paging;
+	}
+
+	private TwitterPaging getTwitterPaging(Paging paging) {
+
+		TwitterPaging twitterPaging = new TwitterPaging();
+		twitterPaging.setCount(paging.getCount());
+		twitterPaging.setPage(paging.getPage());
+		twitterPaging.setMaxId(paging.getMaxId());
+		twitterPaging.setSinceId(paging.getSinceId());
+		
+		return twitterPaging; 
+	}
+	
+	private List<TwitterPost> getTwitterPosts(ResponseList<Status> status, String networkId) throws IllegalStateException, TwitterException, NamingException {
+
+		List<TwitterPost> twitterPosts = new ArrayList<TwitterPost>();
+		
+		for(Status feed : status) {
+
+			TwitterPost twitterPost = new TwitterPost();
+			
+			twitterPost.setStatusId(feed.getId());
+
+			twitterPost.setText(UtilFunctions.getFomattedStringWithWBR(
+					UtilFunctions.putLinksInTwitterStatus(
+							UtilFunctions.putLinksInUserMentions(
+									UtilFunctions.putLinksInHashTags(feed.getText(), feed.getHashtagEntities()), feed.getUserMentionEntities()), feed.getURLEntities()), 50));
+
+			twitterPost.setText(feed.getText());
+			
+			twitterPost.setCreatedAt(feed.getCreatedAt().getTime() / 1000L);
+			twitterPost.setUserName(feed.getUser().getName());
+			twitterPost.setScreenName(feed.getUser().getScreenName());
+			twitterPost.setProfileUrl("https://twitter.com/" + feed.getUser().getScreenName());
+			twitterPost.setVersion(1L);
+			twitterPost.setProfileImageUrl(feed.getUser().getProfileImageURL().toString());
+			twitterPost.setUserId(feed.getUser().getId());
+			twitterPost.setRetweetCount(Long.valueOf(feed.getRetweetCount()));
+			twitterPost.setFavoriteCount(Long.valueOf(feed.getFavoriteCount()));
+			
+			if(feed.getMediaEntities().length > 0) {
+				twitterPost.setType("photo");
+				twitterPost.setLink("http://" + feed.getMediaEntities()[0].getDisplayURL());
+				twitterPost.setPictureUrl(feed.getMediaEntities()[0].getMediaURL());
+				
+				twitterPost.setPictureWidth(feed.getMediaEntities()[0].getSizes() != null && feed.getMediaEntities()[0].getSizes().get(1) != null ?
+						feed.getMediaEntities()[0].getSizes().get(1).getWidth() : null);
+				
+				twitterPost.setPictureHeight(feed.getMediaEntities()[0].getSizes() != null && feed.getMediaEntities()[0].getSizes().get(1) != null ?
+						feed.getMediaEntities()[0].getSizes().get(1).getHeight() : null);
+			}
+
+			twitterPosts.add(twitterPost);
+		}
+
+		return twitterPosts;
+	}
+	
+}

@@ -1,0 +1,56 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+
+@RestController
+@RequestMapping("opsocial")
+public class RecoverNetworksContents extends ServerAction {
+	
+	@CrossOrigin
+	@RequestMapping(value = "/get_profiles_to_connect",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Profile>> doAction(HttpSession session) throws Exception {
+		
+//		if(session.getAttribute("message") != null) {
+//			getParameters().put("message", new StringUtil(session.getAttribute("message").toString()));
+//		} else if(session.getAttribute("profileAndPages") != null) {
+//			getParameters().put("profileAndPages", 
+//					(List<Profile>) session.getAttribute("profileAndPages"));
+//		} else if(session.getAttribute("profile") != null) {
+//			getParameters().put("profile", session.getAttribute("profile"));
+//		} else if(session.getAttribute("token") != null) {
+//			getParameters().put("token", new StringUtil(session.getAttribute("token").toString()));
+//		} else if(session.getAttribute("tryToLoginInstagramAgain") != null) {
+//			getParameters().put("tryToLoginInstagramAgain", 
+//					(Boolean) session.getAttribute("tryToLoginInstagramAgain"));
+//		}
+		
+		List<Profile> profilesToAdd = (List<Profile>) session.getAttribute("profilesToAdd");
+		
+		session.setAttribute("profile", null);
+		session.setAttribute("message", null);
+		session.setAttribute("profilesToAdd", null);
+		
+		return new ResponseEntity<>(profilesToAdd, HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+	}
+}

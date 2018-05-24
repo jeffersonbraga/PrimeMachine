@@ -1,0 +1,47 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class ListProfilesForNetworksInteractions extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		User user = (User) getSession().getAttribute("user");
+		
+		java.lang.Character network = ((Character) getParameters().get("network"));
+		
+		List<java.lang.Character> types = new ArrayList<java.lang.Character>();
+		
+		if(network.equals(Profile.TWITTER)) {
+			types.add(Profile.TWITTER);
+		} else if(network.equals(Profile.FACEBOOK)) {
+			types.add(Profile.FACEBOOK);
+			types.add(Profile.FACEBOOK_PAGE);
+		} else if(network.equals(Profile.INSTAGRAM)) {
+			types.add(Profile.INSTAGRAM);
+		} 
+				
+		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		List<Profile> profiles = profileRemote.getEntityByNetworkType(types, user.getAccount().getIdAccount());
+		
+		List<Profile> profileDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : profiles) {
+			profileDTOs.add(profile);
+		}
+
+		getParameters().put("profiles", profileDTOs);
+	}
+
+}

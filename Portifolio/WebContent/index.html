@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Portifolio</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+<!-- BEGIN SIDEBAR -->
+<div class="page-sidebar p-t-0" data-pages="sidebar" pg-sidebar id="sidebar" style="z-index: 81000;">
+    <div id="appMenu" class="sidebar-overlay-slide from-top">
+    </div>
+    <!-- END SIDEBAR HEADER -->
+    <!-- BEGIN SIDEBAR MENU -->
+    <div class="sidebar-menu p-t-6">
+        <ul class="menu-items">
+			<li class="">
+                <a class="full-width" href="cadastrar.html">
+                    <span class="title">Cadastrar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='cadastrar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-edit"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" href="agendar/agendar.html">
+                    <span class="title">Agendar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='agendar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-calendar"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width" href="realizar/realizar.html">
+                    <span class="title">Realizar</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='realizar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-medkit"></i>
+                    </span>
+                </a>
+            </li>
+            <li class="">
+                <a class="full-width"  href="laudar/laudar.html">
+                    <span class="title">Laudo</span>
+                    <span [ngClass]="{'bg-primary': route_selected=='laudar'}" class="icon-thumbnail pull-right">
+                        <i class="fa fa-search-plus"></i>
+                    </span>
+                </a>
+            </li>
+        </ul>
+        <div class="clearfix"></div>
+    </div>
+    <!-- END SIDEBAR MENU -->
+</div>
+<!-- END SIDEBAR -->
+</body>
+</html>

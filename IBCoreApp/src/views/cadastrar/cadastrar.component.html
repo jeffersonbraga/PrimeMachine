@@ -1,0 +1,216 @@
+<!--<div class="col-md-2 no-padding m-l-0 m-r-15 m-t-20 p-l-15">
+</div>-->
+<div class="col-md-6 col-lg-6" #containerPost  style="z-index: 1000;">
+
+    <div class="panel panel-transparent">
+        <div class="panel-heading">
+            <div class="panel-title">
+                DADOS PESSOAIS
+            </div>
+        </div>
+    </div>
+	<section>
+		<article>
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="form-group form-group-default">
+						<label>Código</label>
+						<input type="text" class="form-control" disabled [(ngModel)]="registroCadastro.cd_pessoa">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="form-group form-group-default">
+						<label>Nome</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.nm_pessoa">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>RG/Identificação</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.nr_registro">
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>CPF</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.nr_cpf">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>E-mail</label>
+						<input type="email" name="ds_email" id="ds_email" class="form-control" [(ngModel)]="registroCadastro.ds_email">
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Telefone</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.nr_telefone">
+					</div>
+				</div>
+			</div>
+		</article>
+	</section>
+
+    <div class="panel panel-transparent">
+        <div class="panel-heading">
+            <div class="panel-title">
+                Endereço
+            </div>
+        </div>
+    </div>
+	<section>
+		<article>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>CEP</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_cep">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Rua</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_rua">
+					</div>
+				</div>
+				<div class="col-lg-3">
+					<div class="form-group form-group-default">
+						<label>Numero</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_numero">
+					</div>
+				</div>
+				<div class="col-lg-3">
+					<div class="form-group form-group-default">
+						<label>Complemento</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_complemento">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Bairro</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_bairro">
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Cidade</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_cidade">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Estado</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_estado">
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Telefone</label>
+						<input type="text" class="form-control" [(ngModel)]="registroCadastro.endereco.ds_telefone">
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="form-group form-group-default">
+						<label>Observações</label>
+							<textarea 
+							rows="3" 
+							class="form-control" 
+							style="resize: none;overflow: auto; min-height: 85px;z-index:10;" 
+							[(ngModel)]="registroCadastro.endereco.ds_observacoes"></textarea>
+					</div>
+				</div>
+			</div>
+		</article>
+	</section>
+	<section>
+		<article>
+                <div class="col-md-12 col-sm-12 col-xs-12 no-padding sm-p-t-10 xs-p-t-10 p-b-50" style="z-index:10;">
+                    <button 
+                        style="width: 160px;" tabindex="50"
+                        class="btn btn-success pull-right btn-mobile sm-padding-10 xs-padding-10 p-l-5"  (click)="save()">
+                        <i class="fa fa-link"></i> 
+                        <span class="bold">SALVAR REGISTRO</span>
+                        <i class="fa-spin"></i> 
+                    </button>
+                </div>
+		</article>
+	</section>
+</div>
+<div class="col-md-6 col-lg-6" #containerDocumento  style="z-index: 1000;">
+
+	<div class="panel panel-transparent">
+		<div class="panel-heading">
+			<div class="panel-title">
+				DOCUMENTO
+			</div>
+		</div>
+	</div>
+	<section>
+			<article>
+				<div class="row">
+					<div class="col-lg-6">
+						<div class="form-group form-group-default form-group-default-select">
+							<label>Tipo de documento</label>
+							<select class="full-width" data-placeholder="Select your time zone"
+							aria-hidden="true">
+								<!--<option *ngFor="let item of timezones" [value]="item.idTimezone">{{ item.description }}</option>-->
+								<option>SUS</option>
+								<option>CONVÊNIO UNIMED</option>
+								<option>CONVÊNIO POLIMED</option>
+								<option>CONVÊNIO PARTICULAR</option>
+							</select>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="form-group form-group-default form-group-default-select">
+							<label>Número do documento</label>
+							<input type="text" class="form-control" [(ngModel)]="documentosSaude.ds_numero_documento">
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="form-group form-group-default form-group-default-select">
+							<label>Validade do documento</label>
+							<input type="text" class="form-control" [(ngModel)]="documentosSaude.dt_validade">
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+							<button 
+							style="width: 160px;"
+							class="btn btn-success pull-right btn-mobile sm-padding-10 xs-padding-10 p-l-5" (click)="addDocSaude()" >
+							<i class="fa fa-save"></i> 
+							<span class="bold">SALVAR DOCTO</span>
+							<i class="fa-spin"></i> 
+						</button>
+					</div>
+				</div>
+		</article>
+	</section>
+	<section>
+		<article>
+				<div class="col-lg-12">
+					<table-chart [data]='lista_documentosSaude'></table-chart>
+				</div>
+		</article>
+	</section>
+</div>

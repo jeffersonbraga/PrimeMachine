@@ -1,0 +1,129 @@
+package br.com.primum.service.indicadores;
+
+import java.util.Date;
+import java.util.List;
+
+import br.com.primum.bo.indicadores.IndicadoresBO;
+import br.com.primum.modelo.conclusao_auditoria.Conclusao_auditoria;
+import br.com.primum.modelo.cronograma_auditoria.Cronograma_auditoria;
+
+public class IndicadoresService {
+	
+	private IndicadoresBO indicadoresBO;
+
+	public IndicadoresBO getIndicadoresBO() {
+		return indicadoresBO;
+	}
+
+	public void setIndicadoresBO(IndicadoresBO indicadoresBO) {
+		this.indicadoresBO = indicadoresBO;
+	}
+	
+	// ******************************************
+	// ***********  AUDITORIA  ******************
+	public List<?> Auditoria_ScorePorAvaliacao(Integer cd_cronograma_auditoria){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Auditoria_ScorePorAvaliacao( cd_cronograma_auditoria );
+	}
+	
+	public List<?> Auditoria_Pontuacao_e_ScoreConformidade(){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Auditoria_Pontuacao_e_ScoreConformidade();
+	}
+	
+	//public List<?> Auditoria_EvolucaoPlanoDeAuditoria(Integer cd_auditoria, Integer cd_pessoa_juridica, Integer tp_cronograma_auditoria){
+	public List<?> Auditoria_EvolucaoPlanoDeAuditoria( Integer cd_auditoria ){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Auditoria_EvolucaoPlanoDeAuditoria( cd_auditoria );
+	}
+	
+	public List<?> Auditoria_NCsPorSituacao(Integer cd_cronograma_auditoria){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Auditoria_NCsPorSituacao(cd_cronograma_auditoria);
+	}
+
+	// ******************************************
+	// ***********  OUVIDORIA  ******************
+	public List<?> Ouvidoria_chamados_por_periodo(Integer ano){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Ouvidoria_chamados_por_periodo(ano);
+	}
+	
+	public List<?> Ouvidoria_chamadosRegistradosXFinalizados(){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Ouvidoria_chamadosRegistradosXFinalizados();
+	}
+	
+	public List<?> Ouvidoria_principais_reclamacoes(Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Ouvidoria_principais_reclamacoes( dataInicio, dataFim);
+	}
+	
+	public List<?> Ouvidoria_reclamacoes_por_periodo(Integer cd_classificacao, Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().Ouvidoria_reclamacoes_por_periodo(cd_classificacao, dataInicio, dataFim);
+	}
+	
+	// ******************************************
+	// ***********  MANUTENÇÃO  ******************
+	
+	
+	
+	//******************************************
+	// ***************  ACTION  ****************
+	// ------------   GRUPO 1 ----------------
+	public List<Integer> atividadesExecutadas(Integer cd_usuario, Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().atividadesExecutadas(cd_usuario, dataInicio, dataFim);
+	}
+	
+	public List<List<?>> atividadesExecutadasTodos( Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().atividadesExecutadasTodos( dataInicio, dataFim);
+	}
+	
+	
+	public List<Integer> tempoMedioExecucao(Integer cd_usuario, Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().tempoMedioExecucao(cd_usuario, dataInicio, dataFim);
+	}
+	
+	public List<List<?>> tempoMedioExecucaoTodos( Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().tempoMedioExecucaoTodos( dataInicio, dataFim);
+	}
+	
+	public List<Integer> tempoPrevistoTempoUtilizado(Integer cd_usuario, Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().tempoPrevistoTempoUtilizado(cd_usuario, dataInicio, dataFim);
+	}
+	
+	public List<List<?>> diaPorcentagemExecutadas(Integer cd_usuario, Date dataInicio, Date dataFim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().diaPorcentagemExecutadas(cd_usuario, dataInicio, dataFim);
+	}
+	
+	// ------------   GRUPO 2 ----------------
+	
+	// ------------   GRUPO 3 ----------------
+	
+	public List<List<?>> ncsPorSetor( Date dt_inicio, Date dt_fim ){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().ncsPorSetor( dt_inicio, dt_fim);
+	}
+	
+	public List< Conclusao_auditoria > desempenhoAuditorias( Cronograma_auditoria c, Date data_inicio, Date data_fim ){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().desempenhoAuditorias(c, data_inicio, data_fim);
+	}
+	
+	public List<List<?>> NcsPorPeriodo( Date dt_inicio, Date dt_fim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().NcsPorPeriodo( dt_inicio, dt_fim);
+	}
+	
+	public List<Integer> nivelNcs( Date dt_inicio, Date dt_fim){
+		this.setIndicadoresBO(new IndicadoresBO());
+		return getIndicadoresBO().nivelNcs( dt_inicio, dt_fim);
+	}
+}

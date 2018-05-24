@@ -1,0 +1,69 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.InstagramReportDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+
+@Stateless
+public class MaintenanceInstagramReportBean extends AbstractDASImpl<InstagramReport> implements MaintenanceInstagramReportRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	InstagramReportDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<InstagramReport> dao) {
+		this.dao = (InstagramReportDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramReport> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramReport> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public InstagramReport getEntity(String idInstagramUser, String property, Long date) {
+		return dao.getEntity(idInstagramUser, property, date);
+	}
+
+	@Override
+	public InstagramReport getEntityBeforeDate(String idInstagramUser, String property, Long date) {
+		return dao.getEntityBeforeDate(idInstagramUser, property, date);
+	}
+
+	@Override
+	public List<InstagramFollowerTrend> getInstagramFollowersTrends(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getInstagramFollowersTrends(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public InstagramFollowerTrend getInstagramFollowersTrend(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getInstagramFollowersTrend(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

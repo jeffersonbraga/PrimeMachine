@@ -1,0 +1,82 @@
+package br.com.opsocial.server.actions.config;
+
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class UpdateUserAction extends ServerAction {
+	
+	@CrossOrigin
+	@RequestMapping(value = "/update_user",
+    method = RequestMethod.PUT,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> doAction(@Valid @RequestBody User user, HttpServletRequest request, HttpSession session) {
+	
+		try{
+			//User userDTO = (User) getParameters().get("user");
+			MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+			MaintenanceAccountRemote accountRemote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+			
+			//TODO: pegar usuário da sessão
+			session.setAttribute("user", remote.getById(1L));
+			User userSession = (User) request.getSession().getAttribute("user");
+			User userDb = remote.getById(userSession.getId());
+
+			if(!userSession.getPassword().equals(user.getPassword())){
+				String password = user.getPassword();
+				PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+				String hashedPassword = passwordEncoder.encode(password);
+				user.setPassword(hashedPassword);
+			}
+			
+			Account account = user.getAccount();
+			
+			accountRemote.save(account);
+			
+			remote.setIdUserSession(userSession.getId());
+			
+			if(userSession.getId() == user.getId()){
+				//Previne injeção de dados
+				userDb.setPassword(user.getPassword());
+				userDb.setName(user.getName());
+				userDb.setEmail(user.getEmail());
+				userDb.setAvatar(user.getAvatar());
+				userDb.setType(user.getType());
+				
+				remote.save(userDb);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return new ResponseEntity<>(user, HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+}

@@ -1,0 +1,859 @@
+package br.com.opsocial.server.utils.monitorings;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.naming.NamingException;
+
+import br.com.opsocial.client.entity.facebook.FacePostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringHashTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringInfluentialUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLinkRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLocationRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostLocationRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringSearchRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceRateLimitStatusRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPagingRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostURLRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringLocationId;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringPostLocationId;
+import br.com.opsocial.ejb.entity.application.idclass.MonitoringSearchId;
+import br.com.opsocial.ejb.entity.application.idclass.TwitterPostMonitoringId;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringHashTag;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringInfluentialUser;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLink;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLocation;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostLocation;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringSearch;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUser;
+import br.com.opsocial.ejb.entity.twitter.RateLimitStatus;
+import br.com.opsocial.ejb.entity.twitter.TwitterPaging;
+import br.com.opsocial.ejb.entity.twitter.TwitterPost;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostURL;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import br.com.opsocial.server.utils.tasks.MonitoringController;
+import twitter4j.HashtagEntity;
+import twitter4j.Query;
+import twitter4j.QueryResult;
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.URLEntity;
+import twitter4j.User;
+
+public class MonitoringTwitter {
+
+	private Monitoring monitoring;
+	private TwitterIntegration twitterIntegration;
+	private Twitter twitter;
+	private RateLimitStatus rateLimitStatus;
+
+	private List<String> femaleNamesSample;
+	private List<String> maleNamesSample;
+
+	private MaintenanceProfileRemote profileRemote;
+	private MaintenanceRateLimitStatusRemote rateLimitStatusRemote;
+
+	private MaintenanceMonitoringUserRemote monitoringUserRemote;
+	private MaintenanceMonitoringInfluentialUserRemote monitoringInfluentialUserRemote;
+	
+	private MaintenanceMonitoringLocationRemote monitoringLocationRemote;
+	private MaintenanceMonitoringPostLocationRemote monitoringPostLocationRemote;
+	
+	private MaintenanceMonitoringHashTagRemote monitoringHashTagRemote;
+	private MaintenanceMonitoringLinkRemote monitoringLinkRemote;
+	
+	private MaintenanceTwitterPostRemote twitterPostRemote;
+	
+	private MaintenanceTwitterPagingRemote twitterPagingRemote;
+	private MaintenanceMonitoringSearchRemote monitoringSearchRemote;
+
+	public final static String RESOURCE_SEARCH_TWEETS = "/search/tweets";
+	
+	private Long generateDay;
+
+	public MonitoringTwitter(Monitoring monitoring) {
+
+		this.monitoring = monitoring;
+		this.twitterIntegration = new TwitterIntegration();
+		
+		this.generateDay = UtilFunctions.getMidnightDateNoDaylightTime(new Date());
+
+		monitoringUserRemote = (MaintenanceMonitoringUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringUser");
+		monitoringInfluentialUserRemote = (MaintenanceMonitoringInfluentialUserRemote) RecoverMaintenance.recoverMaintenance("MonitoringInfluentialUser");
+		
+		monitoringLocationRemote = (MaintenanceMonitoringLocationRemote) RecoverMaintenance.recoverMaintenance("MonitoringLocation");
+		monitoringPostLocationRemote = (MaintenanceMonitoringPostLocationRemote) RecoverMaintenance.recoverMaintenance("MonitoringPostLocation");
+		
+		monitoringHashTagRemote = (MaintenanceMonitoringHashTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringHashTag");
+		monitoringLinkRemote = (MaintenanceMonitoringLinkRemote) RecoverMaintenance.recoverMaintenance("MonitoringLink");
+		
+		try {
+
+			profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+			rateLimitStatusRemote = (MaintenanceRateLimitStatusRemote) RecoverMaintenance.recoverMaintenance("RateLimitStatus");
+
+			List<Profile> profiles = profileRemote.getEntityByNetworkType(Profile.TWITTER, monitoring.getAccount().getIdAccount());			
+
+			for(Profile profile : profiles) { 
+
+				rateLimitStatus = rateLimitStatusRemote.getEntityByNetworkType(profile.getIdProfile(), RESOURCE_SEARCH_TWEETS);
+
+				if(rateLimitStatus.getResetDate() < (new Date().getTime() / 1000L)) {
+
+					twitter = twitterIntegration.getTwitter(profile.getToken(), profile.getTokenSecret());
+
+					twitter4j.RateLimitStatus rateLimitStatusResponse = twitter.getRateLimitStatus("search").get(RESOURCE_SEARCH_TWEETS);
+
+					rateLimitStatus.setRequestsLimit(rateLimitStatusResponse.getLimit());
+					rateLimitStatus.setRequestsRemaining(rateLimitStatusResponse.getRemaining());
+					rateLimitStatus.setResetDate(Long.valueOf(rateLimitStatusResponse.getResetTimeInSeconds()));
+
+					rateLimitStatus = rateLimitStatusRemote.save(rateLimitStatus);
+
+					break;
+				} else {
+					if(rateLimitStatus.getRequestsRemaining() > 0) {
+						twitter = twitterIntegration.getTwitter(profile.getToken(), profile.getTokenSecret());
+						break;
+					}							
+				}
+			}
+
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (NamingException e) {
+			e.printStackTrace();
+		} catch (TwitterException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		femaleNamesSample = new ArrayList<String>();
+		femaleNamesSample.add("MARIA");
+		femaleNamesSample.add("ANA");
+		femaleNamesSample.add("FRANCISCA");
+		femaleNamesSample.add("ANTONIA");
+		femaleNamesSample.add("MÁRCIA");
+		femaleNamesSample.add("ADRIANA");
+		femaleNamesSample.add("SANDRA");
+		femaleNamesSample.add("JOSEFA");
+		femaleNamesSample.add("PATRÍCIA");
+		femaleNamesSample.add("VERA");
+		femaleNamesSample.add("TEREZINHA");
+		femaleNamesSample.add("SONIA");
+		femaleNamesSample.add("RITA");
+		femaleNamesSample.add("LUCIANA");
+		femaleNamesSample.add("ROSA");
+		femaleNamesSample.add("RAIMUNDA");
+
+		maleNamesSample = new ArrayList<String>();
+		maleNamesSample.add("JOSÉ");
+		maleNamesSample.add("ANTÔNIO");
+		maleNamesSample.add("JOÃO");
+		maleNamesSample.add("FRANCISCO");
+		maleNamesSample.add("LUIZ");
+		maleNamesSample.add("PAULO");
+		maleNamesSample.add("CARLOS");
+		maleNamesSample.add("MANOEL");
+		maleNamesSample.add("PEDRO");
+		maleNamesSample.add("MARCOS");
+		maleNamesSample.add("RAIMUNDO");
+		maleNamesSample.add("SEBASTIÃO");
+		maleNamesSample.add("MARCELO");
+		maleNamesSample.add("JORGE");
+		maleNamesSample.add("GERALDO");
+		maleNamesSample.add("LUÍZ");
+		maleNamesSample.add("FERNANDO");
+		maleNamesSample.add("FÁBIO");
+		maleNamesSample.add("ROBERTO");
+		maleNamesSample.add("MÁRCIO");
+		maleNamesSample.add("EDSON");
+		maleNamesSample.add("ANDRÉ");
+		maleNamesSample.add("SÉRGIO");
+		maleNamesSample.add("DANIEL");
+		maleNamesSample.add("RODRIGO");
+		maleNamesSample.add("RAFAEL");
+		maleNamesSample.add("JOAQUIM");
+		maleNamesSample.add("RICARDO");
+		maleNamesSample.add("EDUARDO");
+		maleNamesSample.add("ALEXANDRE");
+		maleNamesSample.add("CLAUDIO");
+		maleNamesSample.add("BENEDITO");
+		maleNamesSample.add("LEANDRO");
+		maleNamesSample.add("MARIO");
+	}
+
+	public boolean isRateLimited() {
+		return twitter == null ? true : false;
+	}
+
+	public void getCurrentPosts(String term) {
+
+		try {
+			
+			MonitoringSearch monitoringSearch = getMonitoringSearch(term);
+			
+			if(!isRateLimited()) {
+				
+				TwitterPaging twitterPaging = getTwitterPaging(term);
+				
+				Query query = new Query(term);
+				query.setCount(twitterPaging.getCount());
+				if(twitterPaging.getSinceId() != null) {
+					query.setSinceId(twitterPaging.getSinceId());
+				}
+				query.setLang("pt");
+
+				QueryResult result = twitter.search(query);
+				List<Status> status = result.getTweets();
+
+				updateRateLimitStatus(result.getRateLimitStatus());
+
+				saveTwitterPosts(status, term);
+
+				Long searchedDate = new Date().getTime() / 1000L;
+				
+				if(status.size() > 0) {
+					
+					monitoringSearch.setLastDateSearchedWithResults(searchedDate);
+					monitoringSearch.setSearchesWithResults(monitoringSearch.getSearchesWithResults() + 1L);
+					
+					twitterPaging = twitterPagingRemote.getById(twitterPaging.getIdTwitterPaging());
+					
+					if(twitterPaging.getSinceId() == null) {
+						twitterPaging.setMaxId(status.get(status.size() - 1).getId());
+					}
+					twitterPaging.setSinceId(status.get(0).getId());
+					twitterPaging.setPage(twitterPaging.getPage() + 1);
+						
+					twitterPagingRemote.save(twitterPaging);
+				}
+				
+				Long cycles = monitoringSearch.getCycles(); 
+				
+				if((monitoringSearch.getReturnedPosts() == 0 && monitoringSearch.getReturnedPosts().equals(status.size())) 
+						|| monitoringSearch.getReturnedPosts() > 0 && status.size() > 0) {
+					cycles++;
+				} else {
+					cycles = 1L;
+				}
+				
+				monitoringSearch.setCycles(cycles);
+				monitoringSearch.setLastDateSearched(searchedDate);
+				monitoringSearch.setExpectedPosts(MonitoringController.LIMIT_PER_CALL);
+				monitoringSearch.setSearches(monitoringSearch.getSearches() + 1L);
+				monitoringSearch.setReturnedPosts(status.size());
+				
+				monitoringSearchRemote.save(monitoringSearch);
+			}
+			
+		} catch (TwitterException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private synchronized void updateRateLimitStatus(twitter4j.RateLimitStatus rateLimitStatusResponse) {
+
+		rateLimitStatus = rateLimitStatusRemote.getEntityByNetworkType(rateLimitStatus.getProfile().getIdProfile(), RESOURCE_SEARCH_TWEETS);
+
+		rateLimitStatus.setRequestsLimit(rateLimitStatusResponse.getLimit());
+		rateLimitStatus.setRequestsRemaining(rateLimitStatusResponse.getRemaining());
+		rateLimitStatus.setResetDate(Long.valueOf(rateLimitStatusResponse.getResetTimeInSeconds()));
+
+		try {
+
+			rateLimitStatus = rateLimitStatusRemote.save(rateLimitStatus);
+
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void saveTwitterPosts(List<Status> status, String term) {
+
+		twitterPostRemote = (MaintenanceTwitterPostRemote) RecoverMaintenance.recoverMaintenance("TwitterPost");
+
+		MaintenanceTwitterPostMonitoringRemote twitterPostMonitoringRemote = 
+				(MaintenanceTwitterPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("TwitterPostMonitoring");
+
+		Long retrievedDate = new Date().getTime() / 1000L;
+
+		for(Status post : status) {
+
+			if(validateIgnore(post) && validateTermInTitle(post, term)) {
+
+				TwitterPost twitterPost = twitterPostRemote.getById(post.getId());
+
+				String idLocation = null;
+
+				try {
+
+					if(twitterPost == null) {
+
+						twitterPost = new TwitterPost();
+
+						twitterPost.setStatusId(post.getId());
+						twitterPost.setText(post.getText());
+						twitterPost.setCreatedAt(post.getCreatedAt().getTime() / 1000L);
+						twitterPost.setUserId(post.getUser().getId());
+						twitterPost.setUserName(post.getUser().getName());
+						twitterPost.setScreenName(post.getUser().getScreenName());
+						twitterPost.setProfileImageUrl(post.getUser().getProfileImageURL());
+						twitterPost.setRetweetCount(Long.valueOf(post.getRetweetCount()));
+						twitterPost.setFavoriteCount(Long.valueOf(post.getFavoriteCount()));
+						twitterPost.setState(TwitterPost.ACTIVE_STATUS);
+						twitterPost.setType("text");
+						twitterPost.setRetweetedStatus(post.getRetweetedStatus() != null ? post.getRetweetedStatus().getId() : null);
+
+						if(post.getMediaEntities().length > 0) {
+							twitterPost.setType("photo");
+							twitterPost.setLink("http://" + post.getMediaEntities()[0].getDisplayURL());
+							twitterPost.setPictureUrl(post.getMediaEntities()[0].getMediaURL());
+
+							twitterPost.setPictureWidth(post.getMediaEntities()[0].getSizes() != null && post.getMediaEntities()[0].getSizes().get(1) != null ?
+									post.getMediaEntities()[0].getSizes().get(1).getWidth() : null);
+
+							twitterPost.setPictureHeight(post.getMediaEntities()[0].getSizes() != null && post.getMediaEntities()[0].getSizes().get(1) != null ?
+									post.getMediaEntities()[0].getSizes().get(1).getHeight() : null);
+						}
+
+						if(post.getPlace() != null) {
+							
+							try {
+								
+								MonitoringLocation monitoringLocation = new MonitoringLocation();
+								monitoringLocation.setIdLocation(post.getPlace().getId());
+								monitoringLocation.setNetworkType(Profile.TWITTER);
+								monitoringLocation.setName(post.getPlace().getName());
+								monitoringLocation.setFullName(post.getPlace().getFullName());
+								monitoringLocation.setPlaceType(post.getPlace().getPlaceType());
+								monitoringLocation.setCountry(post.getPlace().getCountry());
+								monitoringLocation.setCountryCode(post.getPlace().getCountryCode());
+		
+								monitoringLocation = monitoringLocationRemote.save(monitoringLocation);
+								
+								MonitoringLocationId monitoringLocationId = new MonitoringLocationId();
+								monitoringLocationId.setIdLocation(monitoringLocation.getIdLocation());
+								monitoringLocationId.setNetworkType(monitoringLocation.getNetworkType());
+								
+								MonitoringPostLocationId monitoringPostLocationId = new MonitoringPostLocationId();
+								monitoringPostLocationId.setPostId(twitterPost.getStatusId().toString());
+								monitoringPostLocationId.setMonitoring(monitoring.getIdMonitoring());
+								monitoringPostLocationId.setMonitoringLocation(monitoringLocationId);
+								
+								if(monitoringPostLocationRemote.getById(monitoringPostLocationId) == null) {
+									
+									MonitoringPostLocation monitoringPostLocation = new MonitoringPostLocation();
+									monitoringPostLocation.setPostId(twitterPost.getStatusId().toString());
+									monitoringPostLocation.setMonitoring(monitoring);
+									monitoringPostLocation.setMonitoringLocation(monitoringLocation);
+									monitoringPostLocation.setDate(generateDay);
+									if(post.getGeoLocation() != null) {
+										monitoringPostLocation.setLatitude(post.getGeoLocation().getLatitude());
+										monitoringPostLocation.setLongitude(post.getGeoLocation().getLongitude());
+									}
+									
+									monitoringPostLocationRemote.save(monitoringPostLocation);
+									
+									idLocation = monitoringLocation.getIdLocation();
+								}
+								
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+
+						twitterPost = twitterPostRemote.save(twitterPost);
+						
+						if(post.getURLEntities().length > 0) {
+							
+							MaintenanceTwitterPostURLRemote twitterPostURLRemote = (MaintenanceTwitterPostURLRemote)
+									RecoverMaintenance.recoverMaintenance("TwitterPostURL");
+							
+							for(URLEntity urlEntity : post.getURLEntities()) {
+								
+								TwitterPostURL twitterPostURL = new TwitterPostURL();
+								twitterPostURL.setTwitterPost(twitterPost);
+								twitterPostURL.setURL(urlEntity.getURL());
+								twitterPostURL.setExpandedURL(urlEntity.getExpandedURL());
+								twitterPostURL.setDisplayURL(urlEntity.getDisplayURL());
+								twitterPostURL.setUrlStart(urlEntity.getStart());
+								twitterPostURL.setUrlEnd(urlEntity.getEnd());
+								
+								twitterPostURLRemote.save(twitterPostURL);
+							}
+						}
+					}
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				if(twitterPostMonitoringRemote.getByComposedId(monitoring.getIdMonitoring(), twitterPost.getStatusId()) == null) { 
+
+					try {
+
+						TwitterPostMonitoringId twitterPostMonitoringId = new TwitterPostMonitoringId();
+						twitterPostMonitoringId.setTwitterPost(twitterPost.getStatusId());
+						twitterPostMonitoringId.setMonitoring(monitoring.getIdMonitoring());
+						twitterPostMonitoringId.setTerm(term);
+
+						if(twitterPostMonitoringRemote.getById(twitterPostMonitoringId) == null) {
+
+							TwitterPostMonitoring twitterPostMonitoring = new TwitterPostMonitoring();
+							twitterPostMonitoring.setTwitterPost(twitterPost);
+							twitterPostMonitoring.setMonitoring(monitoring);
+							twitterPostMonitoring.setTerm(term);
+							twitterPostMonitoring.setVisible('T');
+							twitterPostMonitoring.setRetrievedDate(retrievedDate);
+							twitterPostMonitoring.setCreatedTime(twitterPost.getCreatedAt());
+							twitterPostMonitoring.setIdLocation(idLocation);
+							twitterPostMonitoring.setHasHashTags(false);
+							twitterPostMonitoring.setHasLinks(false);
+
+							executeAutomaticNeuterQualification(post, twitterPostMonitoring);
+							executeAutomaticNegativeQualification(post, twitterPostMonitoring);
+							executeAutomaticPositiveQualification(post, twitterPostMonitoring);
+
+							twitterPostMonitoring = twitterPostMonitoringRemote.save(twitterPostMonitoring);
+							
+							if(post.getURLEntities().length > 0) {
+								
+								saveMonitoringLinks(post.getURLEntities(), twitterPost);
+								
+								twitterPostMonitoring.setHasLinks(true);
+								twitterPostMonitoring = twitterPostMonitoringRemote.merge(twitterPostMonitoring);
+							}
+							
+							if(post.getHashtagEntities().length > 0) {
+								
+								saveMonitoringHashTags(post.getHashtagEntities());
+								
+								twitterPostMonitoring.setHasHashTags(true);
+								twitterPostMonitoring = twitterPostMonitoringRemote.merge(twitterPostMonitoring);
+							}
+							
+							saveMonitoringInfluentialUserStats(post.getUser(), twitterPostMonitoring);
+
+						}
+						
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+	}
+
+	private boolean validateIgnore(Status status) {
+
+		if(monitoring.getIgnoreTerms() == null) {
+			return true;
+		} else {
+			String[] ignoreTerms = monitoring.getIgnoreTerms().split(";");
+
+			if(status.getText() != null) {
+				for(String ignoreTerm : ignoreTerms) {
+					if(removeLetterSpecialCharacter(status.getText()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(ignoreTerm).toLowerCase())) {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+	
+	private boolean validateTermInTitle(Status status, String term) {
+		
+		try {
+			
+			if(status.getUser() != null && status.getUser().getScreenName() != null) {
+				
+				if(removeLetterSpecialCharacter(status.getUser().getScreenName()).toLowerCase().
+						contains(removeLetterSpecialCharacter(term.trim()).toLowerCase())) {
+					
+					// Valida quando o termo também foi mencionado no conteúdo do texto, se foi, mantêm post recuperado.
+					if(status.getText() != null) {
+						if(removeLetterSpecialCharacter(status.getText()).toLowerCase().
+								contains(removeLetterSpecialCharacter(term.trim()).toLowerCase())) {
+							return true;
+						}
+					}
+					
+					return false;
+				}	
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return true;
+		}
+		
+		return true;
+	}
+
+	private TwitterPostMonitoring executeAutomaticPositiveQualification(Status status, TwitterPostMonitoring twitterPostMonitoring) {
+
+		if(monitoring.getAutoPositiveTerms() != null) {
+
+			String[] terms = monitoring.getAutoPositiveTerms().split(";");
+
+			if(status.getText() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(status.getText()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						twitterPostMonitoring.setQualification(PostMonitoringDTO.POSITIVE);
+						return twitterPostMonitoring;
+					}
+				}
+			}
+		}
+
+		return twitterPostMonitoring;
+	}
+
+	private TwitterPostMonitoring executeAutomaticNegativeQualification(Status status, TwitterPostMonitoring twitterPostMonitoring) {
+
+		if(monitoring.getAutoNegativeTerms() != null) {
+
+			String[] terms = monitoring.getAutoNegativeTerms().split(";");
+
+			if(status.getText() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(status.getText()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						twitterPostMonitoring.setQualification(PostMonitoringDTO.NEGATIVE);
+						return twitterPostMonitoring;
+					}
+				}
+			}
+		}
+
+		return twitterPostMonitoring;
+	}
+
+	private TwitterPostMonitoring executeAutomaticNeuterQualification(Status status, TwitterPostMonitoring twitterPostMonitoring) {
+
+		if(monitoring.getAutoNeuterTerms() != null) {
+
+			String[] terms = monitoring.getAutoNeuterTerms().split(";");
+
+			if(status.getText() != null) {
+				for(String term : terms) {
+					if(removeLetterSpecialCharacter(status.getText()).toLowerCase()
+							.contains(removeLetterSpecialCharacter(term).toLowerCase())) {
+						twitterPostMonitoring.setQualification(PostMonitoringDTO.NEUTER);
+						return twitterPostMonitoring;
+					}
+				}
+			}
+		}
+
+		return twitterPostMonitoring;
+	}
+
+	public String removeLetterSpecialCharacter(String value) {
+
+		value = value.replaceAll("[ÂÀÁÄÃ]", "A");
+		value = value.replaceAll("[âãàáä]", "a");
+		value = value.replaceAll("[ÊÈÉË]", "E");
+		value = value.replaceAll("[êèéë]", "e");
+		value = value.replaceAll("ÎÍÌÏ", "I");
+		value = value.replaceAll("îíìï", "i");
+		value = value.replaceAll("[ÔÕÒÓÖ]", "O");
+		value = value.replaceAll("[ôõòóö]", "o");
+		value = value.replaceAll("[ÛÙÚÜ]", "U");
+		value = value.replaceAll("[ûúùü]", "u");
+		value = value.replaceAll("Ç", "C");
+		value = value.replaceAll("ç", "c");
+
+		return value;
+	}
+	
+	private void saveMonitoringLinks(URLEntity[] urlEntities, TwitterPost twitterPost) {
+		
+		try {
+			
+			for(URLEntity urlEntity : urlEntities) {
+				
+				try {
+					
+					String url;
+					
+					if(urlEntity.getExpandedURL() != null) {
+						url = urlEntity.getExpandedURL();
+					} else {
+						url = urlEntity.getURL();
+					}
+					
+					try {
+						
+						if(monitoringLinkRemote.hasEntity(url, monitoring.getIdMonitoring(), 
+								Profile.TWITTER, generateDay)) {
+							
+							MonitoringLink monitoringLink = monitoringLinkRemote.getEntity(url, 
+									monitoring.getIdMonitoring(), Profile.TWITTER, generateDay);
+							
+							monitoringLink.setLinksCount(monitoringLink.getLinksCount() + 1L);
+							
+							try {
+								
+								monitoringLinkRemote.save(monitoringLink);
+								
+							} catch (IllegalArgumentException e) {
+								e.printStackTrace();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+							
+						} else {
+							
+							MonitoringLink monitoringLink = new MonitoringLink();
+							monitoringLink.setLink(url);
+							monitoringLink.setMonitoring(monitoring);
+							monitoringLink.setNetworkType(Profile.TWITTER);
+							monitoringLink.setLinksCount(1L);
+							monitoringLink.setDate(generateDay);
+							
+							try {
+								
+								monitoringLinkRemote.save(monitoringLink);
+								
+							} catch (IllegalArgumentException e) {
+								e.printStackTrace();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+						
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void saveMonitoringHashTags(HashtagEntity[] hashTags) {
+		
+		try {
+			
+			for(HashtagEntity hashTag : hashTags) {
+				
+				try {
+					
+					if(monitoringHashTagRemote.hasEntity(hashTag.getText(), monitoring.getIdMonitoring(), 
+							Profile.TWITTER, generateDay)) {
+						
+						MonitoringHashTag monitoringHashTag = monitoringHashTagRemote.getEntity(hashTag.getText(), 
+								monitoring.getIdMonitoring(), Profile.TWITTER, generateDay);
+						
+						monitoringHashTag.setHashTagsCount(monitoringHashTag.getHashTagsCount() + 1L);
+						
+						try {
+							
+							monitoringHashTagRemote.save(monitoringHashTag);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+					} else {
+						
+						MonitoringHashTag monitoringHashTag = new MonitoringHashTag();
+						monitoringHashTag.setHashTag(hashTag.getText());
+						monitoringHashTag.setMonitoring(monitoring);
+						monitoringHashTag.setNetworkType(Profile.TWITTER);
+						monitoringHashTag.setHashTagsCount(1L);
+						monitoringHashTag.setDate(generateDay);
+						
+						try {
+							
+							monitoringHashTagRemote.save(monitoringHashTag);
+							
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	private void saveMonitoringInfluentialUserStats(User user, TwitterPostMonitoring twitterPostMonitoring) {
+
+		MonitoringInfluentialUser monitoringInfluentialUser;
+
+		try {
+
+			if(monitoringInfluentialUserRemote.hasEntity(String.valueOf(user.getId()), monitoring.getIdMonitoring(), Profile.TWITTER, generateDay)) {
+
+				monitoringInfluentialUser = monitoringInfluentialUserRemote.getEntity(String.valueOf(user.getId()), monitoring.getIdMonitoring(), Profile.TWITTER, generateDay);
+
+				monitoringInfluentialUser.setPostsCount(monitoringInfluentialUser.getPostsCount() + 1L);
+				
+				if(twitterPostMonitoring.getQualification() != null) {
+					if(twitterPostMonitoring.getQualification().equals(FacePostMonitoringDTO.POSITIVE)) {
+						monitoringInfluentialUser.setPositivePostsCount(monitoringInfluentialUser.getPositivePostsCount() + 1L);
+					} else if(twitterPostMonitoring.getQualification().equals(FacePostMonitoringDTO.NEGATIVE)) {
+						monitoringInfluentialUser.setNegativePostsCount(monitoringInfluentialUser.getNegativePostsCount() + 1L);
+					}
+				}
+
+				try {
+
+					monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			} else {
+
+				try {
+
+					MonitoringUser monitoringUser = new MonitoringUser();
+					monitoringUser.setIdUser(String.valueOf(user.getId()));
+					monitoringUser.setName(user.getName());
+					monitoringUser.setNetworkType(Profile.TWITTER);
+					monitoringUser.setProfileUrl(UtilFunctions.TWITTER_URL + user.getScreenName());
+					monitoringUser.setProfileImageUrl(user.getProfileImageURLHttps());
+					monitoringUser.setSex(discoverGender(user.getName().split(" ")[0].toUpperCase()));
+
+					monitoringUser = monitoringUserRemote.save(monitoringUser);
+
+					monitoringInfluentialUser = new MonitoringInfluentialUser();
+					monitoringInfluentialUser.setMonitoring(monitoring);
+					monitoringInfluentialUser.setMonitoringUser(monitoringUser);
+					monitoringInfluentialUser.setFriends(Long.valueOf(user.getFriendsCount()));
+					monitoringInfluentialUser.setFollowers(Long.valueOf(user.getFollowersCount()));
+					monitoringInfluentialUser.setPostsCount(1L);
+					monitoringInfluentialUser.setDate(generateDay);
+					monitoringInfluentialUser.setPositivePostsCount(0L);
+					monitoringInfluentialUser.setNegativePostsCount(0L);
+					
+					if(twitterPostMonitoring.getQualification() != null) {
+						if(twitterPostMonitoring.getQualification().equals(FacePostMonitoringDTO.POSITIVE)) {
+							monitoringInfluentialUser.setPositivePostsCount(1L);
+						} else if(twitterPostMonitoring.getQualification().equals(FacePostMonitoringDTO.NEGATIVE)) {
+							monitoringInfluentialUser.setNegativePostsCount(1L);
+						}
+					}
+
+					monitoringInfluentialUserRemote.save(monitoringInfluentialUser);
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private String discoverGender(String name) {
+
+		String gender = "";
+
+		if(femaleNamesSample.contains(name)) {
+			gender = "female";
+		} else if (maleNamesSample.contains(name)) {
+			gender = "male";
+		} else if(name.endsWith("A")) {
+			gender = "female";
+		}
+
+		return gender;
+	}	
+	
+	private TwitterPaging getTwitterPaging(String term) {
+		
+		twitterPagingRemote = (MaintenanceTwitterPagingRemote) 
+				RecoverMaintenance.recoverMaintenance("TwitterPaging");
+		
+		TwitterPaging twitterPaging = twitterPagingRemote.getEntity(monitoring.getIdMonitoring(), term);
+		
+		if(twitterPaging == null) {
+			
+			twitterPaging = new TwitterPaging();
+			twitterPaging.setMonitoring(monitoring);
+			twitterPaging.setTerm(term);
+			twitterPaging.setCount(MonitoringController.LIMIT_PER_CALL);
+			twitterPaging.setPage(1);
+			
+			try {
+				
+				twitterPaging = twitterPagingRemote.save(twitterPaging);
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return twitterPaging;
+	}
+	
+	private MonitoringSearch getMonitoringSearch(String term) {
+		
+		monitoringSearchRemote = (MaintenanceMonitoringSearchRemote) RecoverMaintenance.recoverMaintenance("MonitoringSearch");
+		
+		MonitoringSearchId monitoringSearchId = new MonitoringSearchId();
+		monitoringSearchId.setMonitoring(monitoring.getIdMonitoring());
+		monitoringSearchId.setTerm(term);
+		monitoringSearchId.setNetwork(Profile.TWITTER);
+		
+		return monitoringSearchRemote.getById(monitoringSearchId);
+	}
+}

@@ -1,0 +1,17 @@
+package br.com.opsocial.server.actions.feeds.instagram;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+
+public class RecoverInstagramContentsAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		getParameters().put("profile", getSession().getServletContext().getAttribute("profile"));
+		getSession().getServletContext().setAttribute("profile", null);
+		getParameters().put("message", new StringUtil((String) getSession().getServletContext().getAttribute("message")));
+		getSession().getServletContext().setAttribute("message", null);
+	}
+}

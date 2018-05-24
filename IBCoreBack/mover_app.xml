@@ -1,0 +1,49 @@
+<project name="Mover_arquivo" default="mover_dist" basedir=".">
+
+	<property name="PATH_INDEX"      		value="D:\Projetos\OpSocialFront\meu_index"/>
+	<property name="PATH_DESTINO"      		value="D:\Projetos\OpSocialBack\src\main\webapp"/>
+	<property name="PATH_ORIGEM"      		value="D:\Projetos\OpSocialFront\dist"/>
+	<property name="PATH_NODEMODULES"  		value="D:\Projetos\OpSocialFront\node_modules"/>
+	<property name="PATH_NODEMODULES_BACK"  value="${PATH_DESTINO}\node_modules"/>
+	<property name="PATH_DEPLOY"      		value="D:\wildfly-10.1.0.Final\standalone\deployments\OpSocialBack.war"/>
+	<property name="PATH_TEMP_VIDEO"      		value="D:\wildfly-10.1.0.Final\standalone\deployments\OpSocialBack.war\opsocial\videos\posts\"/>
+	<property name="PATH_TEMP_FILES"      		value="D:\wildfly-10.1.0.Final\standalone\deployments\OpSocialBack.war\opsocial\images\temp\"/>
+	<property name="PATH_TEMP_THUMBNAIL"      		value="D:\wildfly-10.1.0.Final\standalone\deployments\OpSocialBack.war\opsocial\images\thumbnails\"/>
+		
+	<target name="mover_completo" description="Move angular2 sources">
+		<copy  todir="${PATH_DESTINO}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+
+		<copy  todir="${PATH_NODEMODULES_BACK}">
+			<fileset dir="${PATH_NODEMODULES}"/>
+		</copy>
+	</target>
+
+	<target name="mover_dist" description="Move angular2 sources">
+		<copy  todir="${PATH_DESTINO}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+	</target>
+
+	<target name="mover_deploy" description="Move angular2 sources">
+		<copy  todir="${PATH_DEPLOY}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+	</target>
+
+	<target name="mover_index" description="Move angular2 sources">
+		<copy  todir="${PATH_DEPLOY}">
+			<fileset dir="${PATH_INDEX}"/>
+		</copy>
+	</target>
+
+	<target name="excluir_temp" description="Remove the temp files of videos and photos">
+		<delete dir="${PATH_TEMP_VIDEO}"></delete>
+		<mkdir dir="${PATH_TEMP_VIDEO}"/>
+		<delete dir="${PATH_TEMP_FILES}"></delete>
+		<mkdir dir="${PATH_TEMP_FILES}"/>
+		<delete dir="${PATH_TEMP_THUMBNAIL}"></delete>
+		<mkdir dir="${PATH_TEMP_THUMBNAIL}"/>
+	</target>
+</project>

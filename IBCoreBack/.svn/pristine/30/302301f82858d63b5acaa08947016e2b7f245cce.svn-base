@@ -1,0 +1,68 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.Date;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class FanPageGrowthDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Date date;
+	private Integer year;
+	private Integer month;
+	private Integer day;
+	private Long sum;
+	private Integer growthRate;
+	
+	public FanPageGrowthDTO() {
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public Integer getYear() {
+		return year;
+	}
+
+	public void setYear(Integer year) {
+		this.year = year;
+	}
+
+	public Integer getMonth() {
+		return month;
+	}
+
+	public void setMonth(Integer month) {
+		this.month = month;
+	}
+
+	public Integer getDay() {
+		return day;
+	}
+
+	public void setDay(Integer day) {
+		this.day = day;
+	}
+
+	public Long getSum() {
+		return sum;
+	}
+
+	public void setSum(Long sum) {
+		this.sum = sum;
+	}
+
+	public Integer getGrowthRate() {
+		return growthRate;
+	}
+
+	public void setGrowthRate(Integer growthRate) {
+		this.growthRate = growthRate;
+	}
+}

@@ -1,0 +1,305 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.monitoring.MonitoringPostTagDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.monitorings.json.MonitoringTagReportIdJSON;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import br.com.opsocial.ejb.das.MaintenanceFacePostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceGooglePlusPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringLogReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringReportControlRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceYoutubePostMonitoringRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.facebook.FacePostMonitoring;
+import br.com.opsocial.ejb.entity.google.GooglePlusPostMonitoring;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLogReport;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringPostTag;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringReportControl;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringTagReport;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring;
+import br.com.opsocial.ejb.entity.youtube.YoutubePostMonitoring;
+
+@RestController
+@RequestMapping("woopsocial")
+public class AddTagToPostAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/add_tagto_post",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MonitoringPostTagDTO monitoringPostTagDTO = (MonitoringPostTagDTO) getParameters().get("monitoringPostTag");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("MonitoringPostTag");
+		
+		boolean canContinue = !monitoringPostTagRemote.hasMonitoringTag(monitoringPostTagDTO.getMonitoringTag().getIdTag(), 
+				monitoringPostTagDTO.getPostId(), monitoringPostTagDTO.getIdMonitoring(), monitoringPostTagDTO.getTerm(), monitoringPostTagDTO.getNetwork());
+		
+		if(canContinue) {
+			
+			MonitoringPostTag monitoringPostTag = monitoringPostTagRemote.save(MountDTO.mountMonitoringPostTag(monitoringPostTagDTO));
+			
+			addMonitoringTagToReport(monitoringPostTag);
+			
+			monitoringPostTag = monitoringPostTagRemote.getById(monitoringPostTag.getIdPostTag());
+			
+			getParameters().put("monitoringPostTag", MountDTO.mountMonitoringPostTag(monitoringPostTag));
+			
+			List<MonitoringPostTagDTO> samePostsDtos = new ArrayList<MonitoringPostTagDTO>();
+			
+			if(monitoringPostTagDTO.getNetwork().equals(Profile.FACEBOOK)) {
+				
+				MaintenanceFacePostMonitoringRemote remote = (MaintenanceFacePostMonitoringRemote) RecoverMaintenance.recoverMaintenance("FacePostMonitoring");
+				
+				FacePostMonitoring facePostMonitoring = remote.getByComposedId(monitoringPostTagDTO.getIdMonitoring(), monitoringPostTagDTO.getPostId(), monitoringPostTagDTO.getTerm());
+				
+				if(facePostMonitoring.getMonitoring().getApplyTagsToSamePosts()) {
+					
+					if(facePostMonitoring.getFacebookPost().getObjectId() != null) {
+						
+						List<FacePostMonitoring> samePosts = remote.listByObjectId(facePostMonitoring.getMonitoring().getIdMonitoring(),
+							facePostMonitoring.getFacebookPost().getObjectId());
+						
+						for(FacePostMonitoring postMonitoring : samePosts) {
+							
+							boolean sameCanContinue = !monitoringPostTagRemote.hasMonitoringTag(monitoringPostTagDTO.getMonitoringTag().getIdTag(), 
+									postMonitoring.getFacebookPost().getPostId(), monitoringPostTagDTO.getIdMonitoring(), postMonitoring.getTerm(), monitoringPostTagDTO.getNetwork());
+							
+							if(sameCanContinue && !facePostMonitoring.getFacebookPost().getPostId().equals(postMonitoring.getFacebookPost().getPostId())) {
+								
+								monitoringPostTagDTO.setTerm(postMonitoring.getTerm());
+								monitoringPostTagDTO.setPostId(postMonitoring.getFacebookPost().getPostId());
+								
+								MonitoringPostTag sameMonitoringPostTag = monitoringPostTagRemote.save(MountDTO.mountMonitoringPostTag(monitoringPostTagDTO));
+								
+								addMonitoringTagToReport(sameMonitoringPostTag);
+								
+								samePostsDtos.add((MonitoringPostTagDTO) MountDTO.mountMonitoringPostTag(sameMonitoringPostTag));
+							}
+						}
+						
+						getParameters().put("samePosts", samePostsDtos);
+					}
+				}
+				
+			} else if(monitoringPostTagDTO.getNetwork().equals(Profile.TWITTER)) {
+				
+				MaintenanceTwitterPostMonitoringRemote remote = (MaintenanceTwitterPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("TwitterPostMonitoring");
+				
+				TwitterPostMonitoring twitterPostMonitoring = remote.getByComposedId(monitoringPostTagDTO.getIdMonitoring(), 
+						Long.valueOf(monitoringPostTagDTO.getPostId()), monitoringPostTagDTO.getTerm());
+				
+				if(twitterPostMonitoring.getMonitoring().getApplyTagsToSamePosts()) {
+					
+					List<TwitterPostMonitoring> samePosts = remote.listByRetweedStatus(twitterPostMonitoring.getMonitoring().getIdMonitoring(), 
+							twitterPostMonitoring.getTwitterPost().getStatusId(), twitterPostMonitoring.getTwitterPost().getRetweetedStatus());
+					
+					for(TwitterPostMonitoring postMonitoring : samePosts) {
+						
+						boolean sameCanContinue = !monitoringPostTagRemote.hasMonitoringTag(monitoringPostTagDTO.getMonitoringTag().getIdTag(), 
+								String.valueOf(postMonitoring.getTwitterPost().getStatusId()), monitoringPostTagDTO.getIdMonitoring(), 
+								postMonitoring.getTerm(), monitoringPostTagDTO.getNetwork());
+						
+						if(sameCanContinue) {
+							
+							monitoringPostTagDTO.setTerm(postMonitoring.getTerm());
+							monitoringPostTagDTO.setPostId(String.valueOf(postMonitoring.getTwitterPost().getStatusId()));
+							
+							MonitoringPostTag sameMonitoringPostTag = monitoringPostTagRemote.save(MountDTO.mountMonitoringPostTag(monitoringPostTagDTO));
+							
+							addMonitoringTagToReport(sameMonitoringPostTag);
+							
+							samePostsDtos.add((MonitoringPostTagDTO) MountDTO.mountMonitoringPostTag(sameMonitoringPostTag));
+						}
+						
+					}
+					
+					getParameters().put("samePosts", samePostsDtos);
+				}
+				
+			} else if(monitoringPostTagDTO.getNetwork().equals(Profile.GOOGLE)) {
+				
+				MaintenanceGooglePlusPostMonitoringRemote remote = (MaintenanceGooglePlusPostMonitoringRemote) RecoverMaintenance.recoverMaintenance("GooglePlusPostMonitoring");
+				
+				GooglePlusPostMonitoring googlePlusPostMonitoring = remote.getByComposedId(monitoringPostTagDTO.getIdMonitoring(), monitoringPostTagDTO.getPostId(), monitoringPostTagDTO.getTerm());
+				
+				if(googlePlusPostMonitoring.getMonitoring().getApplyQualificationToSamePosts()) {
+					
+					List<GooglePlusPostMonitoring> samePosts = remote.listSamePosts(googlePlusPostMonitoring.getMonitoring().getIdMonitoring(), 
+							googlePlusPostMonitoring.getGooglePlusPost().getActivityId(), 
+								googlePlusPostMonitoring.getGooglePlusPost().getObjectId());
+					
+					for(GooglePlusPostMonitoring postMonitoring : samePosts) {
+						
+						boolean sameCanContinue = !monitoringPostTagRemote.hasMonitoringTag(monitoringPostTagDTO.getMonitoringTag().getIdTag(), 
+								postMonitoring.getGooglePlusPost().getActivityId(), monitoringPostTagDTO.getIdMonitoring(), 
+								postMonitoring.getTerm(), monitoringPostTagDTO.getNetwork());
+						
+						if(sameCanContinue) {
+							
+							monitoringPostTagDTO.setTerm(postMonitoring.getTerm());
+							monitoringPostTagDTO.setPostId(postMonitoring.getGooglePlusPost().getActivityId());
+							
+							MonitoringPostTag sameMonitoringPostTag = monitoringPostTagRemote.save(MountDTO.mountMonitoringPostTag(monitoringPostTagDTO));
+							
+							addMonitoringTagToReport(sameMonitoringPostTag);
+							
+							samePostsDtos.add((MonitoringPostTagDTO) MountDTO.mountMonitoringPostTag(sameMonitoringPostTag));
+						}
+
+					}
+					
+					getParameters().put("samePosts", samePostsDtos);
+				}
+				
+				
+				
+			} else if(monitoringPostTagDTO.getNetwork().equals(Profile.YOUTUBE)) {
+				
+				MaintenanceYoutubePostMonitoringRemote remote = (MaintenanceYoutubePostMonitoringRemote) RecoverMaintenance.recoverMaintenance("YoutubePostMonitoring");
+				
+				YoutubePostMonitoring youtubePostMonitoring = remote.getByComposedId(monitoringPostTagDTO.getIdMonitoring(), monitoringPostTagDTO.getPostId(), monitoringPostTagDTO.getTerm());
+				
+				if(youtubePostMonitoring.getMonitoring().getApplyQualificationToSamePosts()) {
+					
+					List<YoutubePostMonitoring> samePosts = remote.listSamePosts(
+							youtubePostMonitoring.getMonitoring().getIdMonitoring(), youtubePostMonitoring.getYoutubePost().getDescription());
+					
+					for(YoutubePostMonitoring postMonitoring : samePosts) {
+						
+						boolean sameCanContinue = !monitoringPostTagRemote.hasMonitoringTag(monitoringPostTagDTO.getMonitoringTag().getIdTag(), 
+								postMonitoring.getYoutubePost().getVideoId(), monitoringPostTagDTO.getIdMonitoring(), 
+								postMonitoring.getTerm(), monitoringPostTagDTO.getNetwork());
+						
+						if(sameCanContinue) {
+							
+							monitoringPostTagDTO.setTerm(postMonitoring.getTerm());
+							monitoringPostTagDTO.setPostId(postMonitoring.getYoutubePost().getVideoId());
+						
+							MonitoringPostTag sameMonitoringPostTag = monitoringPostTagRemote.save(MountDTO.mountMonitoringPostTag(monitoringPostTagDTO));
+							
+							addMonitoringTagToReport(sameMonitoringPostTag);
+							
+							samePostsDtos.add((MonitoringPostTagDTO) MountDTO.mountMonitoringPostTag(sameMonitoringPostTag));
+						}
+					}
+					
+					getParameters().put("samePosts", samePostsDtos);
+				}	
+			}
+		}
+		
+	}
+	
+	public void addMonitoringTagToReport(MonitoringPostTag monitoringPostTag) {
+		
+		try {
+			
+			Gson gson = new GsonBuilder().serializeNulls().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
+			
+			MaintenanceMonitoringRemote monitoringRemote = (MaintenanceMonitoringRemote)
+					RecoverMaintenance.recoverMaintenance("Monitoring");
+			
+			MaintenanceMonitoringReportControlRemote monitoringReportControlRemote = 
+					(MaintenanceMonitoringReportControlRemote) RecoverMaintenance.recoverMaintenance("MonitoringReportControl");
+			
+			MaintenanceMonitoringTagReportRemote monitoringTagReportRemote = 
+					(MaintenanceMonitoringTagReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringTagReport");
+			
+			MaintenanceMonitoringLogReportRemote monitoringLogReportRemote = 
+					(MaintenanceMonitoringLogReportRemote) RecoverMaintenance.recoverMaintenance("MonitoringLogReport");
+			
+			Long generateDay = UtilFunctions.getMidnightDateNoDaylightTime(new Date(UtilFunctions.getRetrievedDatePost(monitoringPostTag) * 1000L));
+			
+			if(monitoringReportControlRemote.hasEntity(monitoringPostTag.getIdMonitoring(), 
+					MonitoringReportControl.TAG, generateDay)) {
+				
+				MonitoringTagReport monitoringTagReport;
+				
+				if(monitoringTagReportRemote.hasEntity(monitoringPostTag.getIdMonitoring(), 
+						monitoringPostTag.getMonitoringTag().getIdTag(), monitoringPostTag.getNetwork(), generateDay)) {
+					
+					try {
+						
+						monitoringTagReport = monitoringTagReportRemote.getEntity(monitoringPostTag.getIdMonitoring(), 
+								monitoringPostTag.getMonitoringTag().getIdTag(), monitoringPostTag.getNetwork(), generateDay);
+
+						MonitoringLogReport monitoringLogReport = new MonitoringLogReport();
+						monitoringLogReport.setMonitoring(monitoringRemote.getById(monitoringPostTag.getIdMonitoring()));
+						monitoringLogReport.setReportType(MonitoringLogReport.MON_TAG_REPORT);
+						monitoringLogReport.setReportId(monitoringTagReport.getIdMonitoringTagReport().toString());
+						monitoringLogReport.setValueToApply(1);
+						monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_NOT_APPLIED);
+						monitoringLogReport.setLogDate(new Date().getTime() / 1000L);
+
+						monitoringLogReportRemote.save(monitoringLogReport);
+						
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					
+				} else {
+					
+					try {
+												
+						MonitoringTagReportIdJSON monitoringTagReportIdJSON = new MonitoringTagReportIdJSON();
+						monitoringTagReportIdJSON.setIdMonitoring(monitoringPostTag.getIdMonitoring());
+						monitoringTagReportIdJSON.setIdTag(monitoringPostTag.getMonitoringTag().getIdTag());
+						monitoringTagReportIdJSON.setNetworkType(monitoringPostTag.getNetwork());
+						monitoringTagReportIdJSON.setDate(generateDay);
+						
+						MonitoringLogReport monitoringLogReport = new MonitoringLogReport();
+						monitoringLogReport.setMonitoring(monitoringRemote.getById(monitoringPostTag.getIdMonitoring()));
+						monitoringLogReport.setReportType(MonitoringLogReport.MON_TAG_REPORT_NEW);
+						monitoringLogReport.setReportId(gson.toJson(monitoringTagReportIdJSON));
+						monitoringLogReport.setValueToApply(1);
+						monitoringLogReport.setUpdateApplied(MonitoringLogReport.UPDATE_NOT_APPLIED);
+						monitoringLogReport.setLogDate(new Date().getTime() / 1000L);
+
+						monitoringLogReportRemote.save(monitoringLogReport);
+						
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+}

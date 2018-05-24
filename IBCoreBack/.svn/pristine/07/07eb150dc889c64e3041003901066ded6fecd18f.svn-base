@@ -1,0 +1,28 @@
+package br.com.opsocial.client.entity.primitive;
+
+import java.util.List;
+
+import entity.generic.Persistent;
+
+public class PersistentList<K extends Persistent> extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	private List<K> persistences;
+	
+	public PersistentList() {
+	}
+	
+	public PersistentList(List<K> persistences) {
+		this.persistences = persistences;
+	}
+
+	public List<K> getPersistences() {
+		return persistences;
+	}
+
+	public void setPersistences(List<K> persistences) {
+		this.persistences = persistences;
+	}
+
+}

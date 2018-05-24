@@ -1,0 +1,50 @@
+package br.com.opsocial.server.actions.sets;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.sets.Set;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.tasks.PostsController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+
+public class DeleteSetAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception { 
+	
+		Set setDTO = (Set) getParameters().get("set");
+		
+		MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+	
+		// Remove do PostsController
+		
+		Set set = remote.getById(setDTO.getIdSet());
+		
+		List<PostsController> setsToRemove = null;
+		
+		if(SetsController.POSTS_CONTROLLERS != null) {
+			for(PostsController postsController : SetsController.POSTS_CONTROLLERS) {
+				
+				if(set.getProfile().getIdProfile().equals(postsController.getSet().getProfile().getIdProfile())) {
+					if(setsToRemove == null) {
+						setsToRemove = new ArrayList<PostsController>();
+					}
+					
+					setsToRemove.add(postsController);
+				}
+			}
+		}
+
+		if(setsToRemove != null) {
+			for(PostsController postsController : setsToRemove) {
+				postsController.cancel();
+				SetsController.POSTS_CONTROLLERS.remove(postsController);
+			}
+		}
+		
+		remote.delete(set);
+	}
+}

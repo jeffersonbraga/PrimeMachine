@@ -1,0 +1,130 @@
+package br.com.opsocial.ejb.das.generic;
+
+import java.io.Serializable;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import javax.persistence.EntityTransaction;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.AbstractEntityImpl;
+
+public abstract class AbstractDASImpl<T extends AbstractEntityImpl> implements AbstractDAS<T>, Serializable {
+	
+	protected User user;
+	
+	protected Long idUserSession;
+
+    private Class getDomainClass() {
+        return (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+    }  
+
+    public abstract AbstractDAO getDAO();
+    
+
+    @Override
+    public void delete(T object) throws IllegalArgumentException, IllegalStateException, Exception {
+        try {
+            getDAO().delete(object);
+        } catch (IllegalStateException ex) {
+            throw new Exception(ex.getMessage(), ex);
+        }
+    }
+    
+    @Override
+    public void delete(T object, boolean validateVersion) throws IllegalArgumentException, IllegalStateException, Exception {
+        try {
+            getDAO().delete(object, validateVersion);
+        } catch (IllegalStateException ex) {
+            throw new Exception(ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public T getById(Long id) {
+        return (T) getDAO().getById(id);
+    }
+    
+    @Override
+    public T getById(String id) {
+        return (T) getDAO().getById(id);
+    }
+    
+    @Override
+    public T getById(Object id) {
+        return (T) getDAO().getById(id);
+    }
+
+    @Override
+    public T getByActiveId(Long id) {
+        return (T) getDAO().getByActiveId(id);
+    }
+
+    @Override
+    public long getCount() {
+        return getDAO().getCount();
+    }
+
+    @Override
+    public List<T> getSome(int[] intervalo) {
+        return getDAO().getSome(intervalo);
+    }
+
+    @Override
+    public T save(T object) throws IllegalArgumentException,Exception {
+    	return (T) getDAO().save(object);
+    }
+    
+    @Override
+    public T merge(T object) throws IllegalArgumentException,Exception {
+    	return (T) getDAO().merge(object);
+    }
+
+    @Override
+    public Collection<T> save(ArrayList<T> t) throws Exception {
+        return getDAO().save(t);
+    }
+    
+    @Override
+    public T backup(T object) throws IllegalArgumentException,Exception {
+    	return (T) getDAO().backup(object);
+    }
+    
+    @Override
+    public Collection<T> backup(ArrayList<T> t) throws Exception {
+        return getDAO().backup(t);
+    }
+
+    @Override
+    public List<T> getBySQL(String sql) {
+        return getDAO().getBySQL(sql);
+    }
+
+    @Override
+    public List<T> getByFullSQL(String sql) {
+        return getDAO().getByFullSQL(sql);
+    }
+    
+    @Override
+    public void close() {
+    	getDAO().close();
+    }
+    
+    @Override
+    public List<T> getAllActive() {
+    	return getDAO().getAllActive();
+    }
+    
+    @Override
+    public List<T> getAll( ) {
+        return getDAO().getAll();
+    }
+ 
+    @Override
+    public EntityTransaction getTransaction() {
+    	return getDAO().getTransaction();
+    }
+}

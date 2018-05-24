@@ -1,0 +1,99 @@
+package br.com.opsocial.ejb.entity.rssfeed;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@Entity
+@Table(name="rssfeedmsgs", schema="opsocial")
+public class RssFeedMessage extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	@Id
+	@Column(name = "idrssfeedmsg")
+	@GeneratedValue(strategy = GenerationType.IDENTITY, generator = "rssfeedmsgs_idrssfeedmsg_seq")
+	private Long idRssfeedMsg;
+	
+	@JoinColumn(name = "idrssfeed", referencedColumnName = "idrssfeed")
+	@ManyToOne()
+	private RssFeed rssFeed;
+
+	@Column(name = "messagetitle")
+    private String messageTitle;
+	
+	@Column(name = "messagedescription")
+    private String messageDescription;
+	
+	@Column(name = "messagelink")
+    private String messageLink;
+	
+	@Column(name = "messageauthor")
+    private String messageAuthor;
+	
+	@Column(name = "messageguid")
+    private String messageGuid;
+
+	public Long getIdRssfeedMsg() {
+		return idRssfeedMsg;
+	}
+
+	public void setIdRssfeedMsg(Long idRssfeedMsg) {
+		this.idRssfeedMsg = idRssfeedMsg;
+	}
+
+	public RssFeed getRssFeed() {
+		return rssFeed;
+	}
+
+	public void setRssFeed(RssFeed rssFeed) {
+		this.rssFeed = rssFeed;
+	}
+
+	public String getMessageTitle() {
+		return messageTitle;
+	}
+
+	public void setMessageTitle(String messageTitle) {
+		this.messageTitle = messageTitle;
+	}
+
+	public String getMessageDescription() {
+		return messageDescription;
+	}
+
+	public void setMessageDescription(String messageDescription) {
+		this.messageDescription = messageDescription;
+	}
+
+	public String getMessageLink() {
+		return messageLink;
+	}
+
+	public void setMessageLink(String messageLink) {
+		this.messageLink = messageLink;
+	}
+
+	public String getMessageAuthor() {
+		return messageAuthor;
+	}
+
+	public void setMessageAuthor(String messageAuthor) {
+		this.messageAuthor = messageAuthor;
+	}
+
+	public String getMessageGuid() {
+		return messageGuid;
+	}
+
+	public void setMessageGuid(String messageGuid) {
+		this.messageGuid = messageGuid;
+	}
+}

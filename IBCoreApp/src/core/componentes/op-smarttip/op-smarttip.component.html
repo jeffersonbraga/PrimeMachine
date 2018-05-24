@@ -1,0 +1,31 @@
+<!-- Modal content -->
+<div class="modal-content" #smartTip id="smartTipComponent">
+  <div class="modal-header">
+  </div>
+  <div class="modal-body">    
+    <div class="modal-row">
+        <div class="modal-row">
+            <div class="modal-leftbar pull-left">
+            <span class="EmojiPicker-categoryColumn">
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--recent is-active" title="Recently used" data-category="recent" tabindex="-1" (click)="scrollToItem('recent')"></button>
+            </span>
+            </div>
+
+            <div class="modal-rightbar pull-right scroll-op scroll-hover" style="top:0px;left:0px;right:0px;" #containerEmojiRight>
+                <div class="modal-listContent p-t-5">                    
+                    <div class="modal-listContent">
+                        <p id="resultParagraph" style="text-transform: capitalize; font-weight: bold;">Schedule Smart Tip</p>
+                    </div>                    
+                    <div class="modal-listContent">
+                        <p id="resultParagraph" data-toggle-element="timeToSchedule">33% posts scheduled at 12PM</p>
+                        <p id="resultParagraph">More followers online at 06PM</p>
+                        <p id="resultParagraph">More followers interaction at 09AM</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+  <div class="modal-footer" *ngIf="false">
+  </div>
+</div>

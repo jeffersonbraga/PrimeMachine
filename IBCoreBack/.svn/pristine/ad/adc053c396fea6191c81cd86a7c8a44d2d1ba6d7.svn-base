@@ -1,0 +1,89 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.news.NewsPostMonitoringDTO;
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.Long;
+import br.com.opsocial.client.utils.Icons;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceNewsPostMonitoringRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.news.NewsPostMonitoring;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class MonitoringNewsAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception {
+		
+		MonitoringDTO monitoring = (MonitoringDTO) getParameters().get("monitoring");
+		Long mostRecent = (Long) getParameters().get("mostRecent");
+		Long elder = (Long) getParameters().get("elder");
+		
+		MaintenanceNewsPostMonitoringRemote remote = (MaintenanceNewsPostMonitoringRemote) 
+				RecoverMaintenance.recoverMaintenance("NewsPostMonitoring");
+		
+		MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("MonitoringPostTag");
+		
+		List<NewsPostMonitoring> newsPostMonitorings = new ArrayList<NewsPostMonitoring>();
+		
+		// Carregar tags ------------------------------------
+
+		MaintenanceMonitoringTagRemote monitoringTagRemote = (MaintenanceMonitoringTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringTag");
+		
+		monitoring.setMonitoringTags(MountDTO.mountMonitoringTag(
+				monitoringTagRemote.listByMonitoring(monitoring.getIdMonitoring(), monitoring.getAccount().getIdAccount())));
+		
+		//------------------------------------------------------
+		
+		if(mostRecent != null) {
+
+			if(mostRecent.getValue() != null) {
+				newsPostMonitorings = remote.listMostRecents(mostRecent.getValue(), monitoring.getIdMonitoring());
+				getParameters().put("requestType", new Character('N'));
+			} else {
+				newsPostMonitorings = remote.listMostRecents(monitoring.getIdMonitoring(), 10);	
+			}
+			
+		} else if(elder != null) {
+			newsPostMonitorings = remote.listElder(elder.getValue(), monitoring.getIdMonitoring(), 10);
+			getParameters().put("requestType", new Character('O'));
+			
+		} else {
+			newsPostMonitorings = remote.listMostRecents(monitoring.getIdMonitoring(), 10);			
+		}
+		
+		List<NewsPostMonitoringDTO> posts = new ArrayList<NewsPostMonitoringDTO>();
+	
+		for(NewsPostMonitoring newsPostMonitoring : newsPostMonitorings) {
+			
+			NewsPostMonitoringDTO newsPostMonitoringDTO = MountDTO.mountNewsPostMonitoring(newsPostMonitoring);
+			newsPostMonitoringDTO.setMonitoringPostTags(MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(newsPostMonitoring.getNewsPost().getIdNewsPost().toString(), 
+					monitoring.getIdMonitoring(), newsPostMonitoring.getTerm(), Profile.NEWS)));
+			
+			newsPostMonitoringDTO.getNewsPostDTO().setPublisherPicture(Icons.NEWS_AVATAR);
+			
+			posts.add(newsPostMonitoringDTO);
+		}
+
+		Date now = new Date();
+		
+		Date createTime = new Date(monitoring.getCreatedAt() * 1000);
+		createTime.setMinutes(createTime.getMinutes() + 5);
+		
+		if(now.after(createTime) && posts.isEmpty() && (mostRecent == null || mostRecent.getValue() == null)) {
+			getParameters().put("no_results", new Boolean(true));
+		} else {
+			getParameters().put("posts", posts);
+		}
+		getParameters().put("monitoring", monitoring);
+	}
+}

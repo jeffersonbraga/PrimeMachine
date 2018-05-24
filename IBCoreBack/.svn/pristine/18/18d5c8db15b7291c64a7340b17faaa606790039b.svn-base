@@ -1,0 +1,62 @@
+//package br.com.opsocial.server.actions.monitorings.facebookgroups;
+//
+//import java.util.ArrayList;
+//import java.util.Calendar;
+//import java.util.List;
+//
+//import javax.persistence.OptimisticLockException;
+//
+//import br.com.opsocial.client.entity.application.MonitoringDTO;
+//import entity.application.Profile;
+//import br.com.opsocial.client.entity.primitive.PersistentList;
+//import br.com.opsocial.client.entity.primitive.StringUtil;
+//import br.com.opsocial.server.services.ServerAction;
+//import br.com.opsocial.client.entity.mount.MountDTO;
+//import br.com.opsocial.server.utils.RecoverMaintenance;
+//import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+//import das.MaintenanceProfileRemote;
+//import facebook4j.Facebook;
+//import facebook4j.FacebookException;
+//import facebook4j.Group;
+//import facebook4j.Reading;
+//import facebook4j.auth.AccessToken;
+//
+//public class InsertFacebookGroupsActions extends ServerAction {
+//	
+//	@Override
+//	public void doAction() throws Exception, OptimisticLockException {
+//
+//		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+//		
+//		MonitoringDTO monitoringDTO = (MonitoringDTO) getParameters().get("monitoring");
+//			
+//		String groupId = url.replaceAll("[^0-9]", "");
+//
+//		if(groupId.isEmpty()) {
+//			groupId = url.substring(url.indexOf("groups/") + 7, url.indexOf("/", url.indexOf("groups/") + 7));	
+//		}
+//		
+//		try {
+//			
+//			Group group = facebook.getGroup(groupId, new Reading().fields("id","name","icon","metadata","privacy").metadata());
+//			
+//			ProfileDTO groupDTO = new ProfileDTO();
+//			
+//			groupDTO.setNetworkId(group.getId());
+//			groupDTO.setScreenName(group.getName());
+//			groupDTO.setAvatar(group.getIcon().toExternalForm());
+//			groupDTO.setToken(FacebookIntegration.APP_TOKEN);
+//			groupDTO.setFollowers(0L);
+//			groupDTO.setProfileInformation(group.getPrivacy().name());
+//			groupDTO.setInsertionDate(Calendar.getInstance().getTimeInMillis() / 1000L);
+//			
+//			groupDTO.setAccount(MountDTO.mountAccount(getUser().getAccount()));
+//			groupDTO.setType(ProfileDTO.FACEBOOK_GROUP);
+//			groupDTO.setIdMonitoringForGroups(monitoringDTO != null ? monitoringDTO.getIdMonitoring() : null);
+//			
+//			getParameters().put("group",MountDTO.mountProfile(remote.save(MountDTO.mountProfile(groupDTO))));
+//		
+//		} catch (FacebookException e) {
+//			getParameters().put("error", "Grupo inválido");
+//		}
+//}

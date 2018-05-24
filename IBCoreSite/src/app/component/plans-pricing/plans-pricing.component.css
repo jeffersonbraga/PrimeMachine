@@ -1,0 +1,61 @@
+.text-secondary {
+    color: #6d5cae;
+}
+.bg-secondary {
+    background-color: #6d5cae;
+}
+.btn-secondary {
+    background-color: #6d5cae;
+}
+.text-grey { 
+    color: #9b9b9b;
+}
+
+.btn2:hover, .btn2:focus {
+    font-size: 16px;
+}
+
+.btn-primary {
+   border: 1px solid rgba(255, 255, 255, 1) !important;
+}
+
+.btn-primary-custom{
+   border: 1px solid rgba(43, 48, 59, 1) !important;
+}
+
+.btn-primary:hover {
+    border: 1px solid rgba(98, 98, 98, 0.27) !important;
+        background-color: #fc1c51 !important;
+}
+
+.user-none {
+    user-select: none;
+}
+
+.number-of-profiles {
+    width: 20px;
+}
+
+td {
+    vertical-align: middle !important;
+}
+
+.table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
+    padding: 12px !important;
+}
+
+.fs-35 {
+    font-size: 35px;
+}
+
+@media (max-width: 360px) {
+    .xxs-p-r-5 {
+        padding-right: 5px!important;
+    }
+    .xxs-p-l-5 {
+        padding-left: 5px!important;
+    }
+    .xxs-fs-12 {
+        font-size: 12px!important;
+    }
+}

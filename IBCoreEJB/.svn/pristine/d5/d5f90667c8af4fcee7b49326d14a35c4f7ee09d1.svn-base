@@ -1,0 +1,58 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.FaceReportPostCommentDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.report.FaceReportPostComment;
+
+@Stateless
+public class MaintenanceFaceReportPostCommentBean extends AbstractDASImpl<FaceReportPostComment> implements MaintenanceFaceReportPostCommentRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	FaceReportPostCommentDAO dao;
+
+	@Override
+	public void setDao(AbstractDAO<FaceReportPostComment> dao) {
+		this.dao = (FaceReportPostCommentDAO) dao;	
+	}
+
+	@Override
+	public AbstractDAO<FaceReportPostComment> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<FaceReportPostComment> getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public FaceReportPostComment save(FaceReportPostComment faceReportPostComment) throws IllegalArgumentException, Exception {
+		return super.save(faceReportPostComment);
+	}
+
+	@Override
+	public List<FaceReportPostComment> getComments(String postId) {
+		return dao.getComments(postId);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

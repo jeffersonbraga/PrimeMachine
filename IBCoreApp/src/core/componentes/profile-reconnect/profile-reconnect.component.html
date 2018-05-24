@@ -1,0 +1,50 @@
+<div class="panel panel-transparent">
+	<header>
+		<div class="panel-heading p-l-0">
+			<!-- <div class="panel-title">Perfis Desconectados</div>
+			<p>Você precisa reconectar alguns perfis.</p> -->
+			<div class="panel-title">Disconnected profiles</div>
+			<p>You need to reconnect some of your profiles.</p>
+		</div>
+	</header>
+
+	<section>
+		<article>
+			<div *ngFor="let item of profilesToReconnect, let i = index" class="button-container">
+				<div *ngIf="item.type != 'I'" >
+					<!-- DESKTOP -->
+					<div class="pull-right hidden-xs hidden-sm">
+						<button class="btn btn-xs padding-4 btn-success" *ngIf="item.isTokenValid == 'F'" (click)="reconnect(item, i)">
+							<i class="fa fa-repeat" aria-hidden="true"></i> Reconnect
+						</button>
+						<button class="btn btn-xs padding-4 btn-complete" *ngIf="item.isTokenValid == 'T'">
+							<i class="fa fa-check" aria-hidden="true"></i> Reconnected
+						</button>
+
+						<i class="fa fa-trash fs-20 m-l-20 m-r-20 cursor" aria-hidden="true" (click)="deleteProfile(item, i)"></i>
+					</div>
+					<!-- END DESKTOP -->
+
+					<button_channels [profile]="item" [isSelectable]="false" [emitAnyway]="true"></button_channels>
+
+					<!-- MOBILE -->
+					<button class="btn btn-xs padding-4 btn-success btn-mobile hidden-md hidden-lg" *ngIf="item.isTokenValid == 'F'" (click)="reconnect(item, i)">
+						<i class="fa fa-repeat" aria-hidden="true"></i> Reconnect
+					</button>
+					<button class="btn btn-xs padding-4 btn-complete btn-mobile hidden-md hidden-lg" *ngIf="item.isTokenValid == 'T'">
+						<i class="fa fa-check" aria-hidden="true"></i> Reconnected
+					</button>
+					<div class="m-b-15 hidden-md hidden-lg"></div>
+					<!-- END MOBILE -->
+				</div>
+				<div *ngIf="item.type == 'I'" class="p-r-20">
+					<add-instagram-scheduling [profileInserted]="item" [fromAddChannels]="false"></add-instagram-scheduling>
+				</div>
+			</div>
+		</article>
+		<div [hidden]="!hasError" class="alert alert-warning" role="alert">
+			<button class="close" (click)="hideErrorMessage()"></button>
+			<strong>Ops! </strong>{{errorMessage}}
+		</div>
+	</section>
+</div>

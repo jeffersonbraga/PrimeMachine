@@ -1,0 +1,100 @@
+.inbox{
+    background-color: #fafafa;
+    position: relative;
+    display: block;
+    width: 100%;
+    height: calc(100vh - 255px);
+    overflow: hidden;
+    margin-top: -6px;
+}
+
+@media (max-width: 1400px) {
+    .inbox{
+        height: calc(100vh - 250px);
+    }
+}
+
+.quickview-chat{
+    height: 100%;
+    overflow: auto;
+}
+
+.item-list-inbox *{
+    font-family: 'Montserrat';
+}
+
+.item-list-inbox{
+    padding: 10px 15px;
+    width: 100%;
+    display: block;
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+    cursor: pointer;
+    white-space: nowrap;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+}
+
+.item-list-inbox .thumbnail-wrapper{
+    position: relative;
+    top: 3px;  
+}
+
+.item-list-inbox:hover{
+    background-color: #daeffd;
+}
+
+.item-list-inbox p {
+    margin: 0;
+    line-height: 19px;
+}
+
+.item-list-inbox p:last-child{
+    margin-left: auto;
+}
+
+.container-messages{
+    width: 100%;
+    /* max-height: calc(100vh - 335px); */
+    overflow: hidden;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: #fff;
+    display: none;
+    z-index: 100;
+}
+
+.container-messages.inboxOpen{
+    display: block;
+    animation: openInbox .5s ease 0s;
+}
+
+@keyframes openInbox{
+    0%{
+        top: 30px;
+        opacity: 0;
+    }
+    100%{
+        top: 0;
+        opacity: 1;
+    }
+}
+
+.data-info {
+    max-width: 190px;
+}
+
+.minimal{
+    max-width: 170px !important;
+}
+
+.unread .thumbnail-wrapper{
+    border: 3px solid #00defd;
+}
+
+.unread .last-message{
+    font-weight: bold;
+}

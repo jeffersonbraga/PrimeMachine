@@ -1,0 +1,51 @@
+package br.com.opsocial.ejb.das;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.ProfileUserDashboardDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.application.ProfileUserDashboard;
+
+@Stateless
+public class MaintenanceProfileUserDashboardBean extends AbstractDASImpl<ProfileUserDashboard> implements MaintenanceProfileUserDashboardRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	ProfileUserDashboardDAO dao;
+	
+//	@Override
+//	public ProfileUserDashboard save(ProfileUserDashboard object) throws IllegalArgumentException, Exception {
+//		return super.save(object);
+//	}
+	
+	@Override
+	public void setDao(AbstractDAO<ProfileUserDashboard> dao) {
+		this.dao = (ProfileUserDashboardDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<ProfileUserDashboard> getDao() {
+		return this.dao;
+	}
+
+	@Override
+	public AbstractDAO<ProfileUserDashboard> getDAO() {
+		return this.dao;
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

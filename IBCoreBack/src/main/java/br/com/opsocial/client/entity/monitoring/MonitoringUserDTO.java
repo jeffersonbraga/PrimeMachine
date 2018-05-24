@@ -1,0 +1,66 @@
+package br.com.opsocial.client.entity.monitoring;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class MonitoringUserDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private String idUser;
+	private Character networkType;
+	private String name;
+	private String profileUrl;
+	private String sex;
+	private String imageProfile;
+
+	public MonitoringUserDTO() {
+	}
+
+	public String getIdUser() {
+		return idUser;
+	}
+
+	public void setIdUser(String idUser) {
+		this.idUser = idUser;
+	}
+
+	public Character getNetworkType() {
+		return networkType;
+	}
+
+	public void setNetworkType(Character networkType) {
+		this.networkType = networkType;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getProfileUrl() {
+		return profileUrl;
+	}
+
+	public void setProfileUrl(String profileUrl) {
+		this.profileUrl = profileUrl;
+	}
+
+	public String getSex() {
+		return sex;
+	}
+
+	public void setSex(String sex) {
+		this.sex = sex;
+	}
+
+	public String getImageProfile() {
+		return imageProfile;
+	}
+
+	public void setImageProfile(String imageProfile) {
+		this.imageProfile = imageProfile;
+	}
+}

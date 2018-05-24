@@ -1,0 +1,202 @@
+package br.com.opsocial.server.services;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.lang3.RandomStringUtils;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.das.MaintenanceReportLogoRemote;
+import br.com.opsocial.ejb.entity.application.idclass.ReportLogoId;
+import br.com.opsocial.ejb.entity.report.ReportLogo;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class UploadReportLogo extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+	private static final long SIZE_LIMIT = 2097152L;
+	private String contentType;
+
+	private final static String IMG_JPEG = "image/jpeg";
+	private final static String IMG_PNG = "image/png";
+	private final static String IMG_GIF = "image/gif";
+
+	public UploadReportLogo() {
+		super();
+	}
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		super.doGet(request, response);
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		String width = "";
+		String height = "";
+		String logo = "";
+		Integer errorCode = 0;
+
+		MaintenanceReportLogoRemote reportLogoRemote = (MaintenanceReportLogoRemote) RecoverMaintenance.recoverMaintenance("ReportLogo");
+
+		boolean isMultiPart = ServletFileUpload
+				.isMultipartContent(new ServletRequestContext(request));
+
+		String tempPath = request.getSession().getServletContext().getInitParameter("uploadDirReports");
+
+		ReportLogo reportLogo = new ReportLogo();
+		
+		try {
+			
+			if (isMultiPart) {
+
+				FileItemFactory factory = new DiskFileItemFactory();
+				ServletFileUpload upload = new ServletFileUpload(factory);
+
+				List<FileItem> items = upload.parseRequest(request);
+
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+
+				for(FileItem item : items) {
+
+					if(item.isFormField()) {
+
+						if(item.getFieldName().equals("objectId")) {
+							if(!item.getString().equals("")) {
+								reportLogo.setObjectId(Long.parseLong(item.getString()));
+							}
+						} else if(item.getFieldName().equals("type")) {
+							reportLogo.setType(item.getString().charAt(0));
+						}
+
+					} else {
+
+						contentType = item.getContentType(); 
+
+						if(contentType.equals(IMG_JPEG) || contentType.equals(IMG_PNG) || contentType.equals(IMG_GIF)) {
+
+							if (item.getSize() <= SIZE_LIMIT) {
+
+								String fileName = RandomStringUtils.randomAlphanumeric(12) + "." + getImageExtension(contentType);
+
+								File uploadedFile = new File(tempPath, fileName);
+
+								if (uploadedFile.createNewFile()) {
+
+									try {
+										item.write(uploadedFile);
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+
+									BufferedImage originalImage = ImageIO.read(uploadedFile);
+
+									ImageIO.write(originalImage, getImageExtension(contentType), new File(tempPath, fileName));
+
+									width = String.valueOf(originalImage.getWidth());
+									height = String.valueOf(originalImage.getHeight());
+									logo = fileName;
+
+									reportLogo.setLogo(fileName);
+									reportLogo.setWidth(originalImage.getWidth());
+									reportLogo.setHeight(originalImage.getHeight());
+
+								}
+								
+							} else {
+								errorCode = 1;
+								item.delete();
+							}
+						} else {
+							errorCode = 1;
+							item.delete();
+						}
+					}
+
+				}
+
+			}
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (FileUploadException e) {
+			e.printStackTrace();
+		}
+		
+		if(reportLogo.getObjectId() != null) {
+	
+			ReportLogoId reportLogoId = new ReportLogoId();
+			reportLogoId.setObjectId(reportLogo.getObjectId());
+			reportLogoId.setType(reportLogo.getType());
+			
+			ReportLogo reportLogoOld = reportLogoRemote.getById(reportLogoId);
+			
+			if(reportLogoOld != null) {
+				reportLogo.setFooterText(reportLogoOld.getFooterText());
+				reportLogo.setVersion(reportLogoOld.getVersion());	
+			}
+			
+			try {
+
+				reportLogoRemote.save(reportLogo);
+				
+				reportLogo = reportLogoRemote.getById(reportLogoId);
+
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+				errorCode = 1;
+			} catch (Exception e) {
+				e.printStackTrace();
+				errorCode = 1;
+			}
+		}
+
+		PrintWriter out = response.getWriter();
+
+		JsonObject object = new JsonObject();
+
+		object.addProperty("width", width);
+		object.addProperty("height", height);
+		object.addProperty("logo", logo);
+		if(reportLogo.getObjectId() != null) {
+			object.addProperty("version", String.valueOf(reportLogo.getVersion()));
+		} else {
+			object.addProperty("version", String.valueOf(1));
+		}
+		object.addProperty("error", errorCode);
+
+		out.print(object);
+		out.flush();
+	}
+
+	private String getImageExtension(String contentType) {
+
+		String imageExtension = "";
+
+		if(contentType.equals(IMG_JPEG)) {
+			imageExtension = "jpg";
+		} else if(contentType.equals(IMG_PNG)) {
+			imageExtension = "png";
+		} else {
+			imageExtension = "gif";
+		}
+
+		return imageExtension;
+	}
+	
+}

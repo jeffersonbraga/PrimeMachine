@@ -1,0 +1,24 @@
+package br.com.opsocial.server.actions.application;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class DeactivateLetterToClientsWindowAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		User user = userRemote.getById(getUser().getIdUser());
+		user.setShowLettersToClientsWindow(Profile.INACTIVE);
+		
+		userRemote.save(user);
+	}
+
+}

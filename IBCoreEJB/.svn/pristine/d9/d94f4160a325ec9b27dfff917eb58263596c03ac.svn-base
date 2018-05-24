@@ -1,0 +1,23 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.groups.GroupsProfiles;
+
+@Stateless
+public class GroupsProfilesDAOImpl extends AbstractDAOImpl<GroupsProfiles> implements GroupsProfilesDAO {
+
+	@Override
+	public List<GroupsProfiles> getByGroup(Long idGroup) {
+
+		sql = "SELECT gp FROM GroupsProfiles gp WHERE gp.groups.idGroup = :idGroup";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idGroup", idGroup);
+		
+		return query.getResultList();
+	}
+}

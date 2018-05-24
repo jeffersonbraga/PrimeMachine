@@ -1,0 +1,230 @@
+package br.com.opsocial.ejb.entity.instagram;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.interfaces.OpColumn;
+
+@Entity
+@Table(name="instagramposts", schema="opsocial")
+public class InstagramPost extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	@Id
+	@OpColumn(jsonColumnName="id")
+	@Column(name="idmedia")
+	private Long idMedia;
+	
+	@Column(name="idinstagramuser")
+	private Long idInstagramUser;
+	
+	@Column(name="username")
+	private String userName;
+	
+	@Column(name="avatar")
+	private String avatar;
+	
+	@Column(name="pictureurl")
+	@OpColumn(jsonColumnName="media_url")
+	private String pictureUrl;
+	
+	@Column(name="picturewidth")
+	private Integer pictureWidth;
+
+	@Column(name="pictureheight")
+	private Integer pictureHeight;
+	
+	@Column(name="picturecaption")
+	@OpColumn(jsonColumnName="caption")
+	private String pictureCaption;
+	
+	@Column(name="createtime")
+	@OpColumn(jsonColumnName="timestamp")
+	private String createTime;
+	
+	@Column(name="countlikes")
+	@OpColumn(jsonColumnName="like_count")
+	private Integer countLikes;
+	
+	@Column(name="followers")
+	private Integer followers;
+
+	@Column(name="following")
+	private Integer following;
+	
+	@Column(name="medias")
+	private Integer medias;
+	
+	@Column(name="lastupdate")
+    @Temporal(TemporalType.TIMESTAMP)
+	private Date lastUpdate;
+	
+	@Column(name="medialink")
+	@OpColumn(jsonColumnName="permalink")
+	private String mediaLink;
+	
+	@Transient
+	private String fullName;
+	
+	@Transient
+	private List<String> tags;
+	
+	public InstagramPost() {
+	}
+
+	public Long getIdInstagramUser() {
+		return idInstagramUser;
+	}
+
+	public void setIdInstagramUser(Long idInstagramUser) {
+		this.idInstagramUser = idInstagramUser;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getPictureUrl() {
+		return pictureUrl;
+	}
+
+	public void setPictureUrl(String pictureUrl) {
+		this.pictureUrl = pictureUrl;
+	}
+
+	public Integer getPictureWidth() {
+		return pictureWidth;
+	}
+
+	public void setPictureWidth(Integer pictureWidth) {
+		this.pictureWidth = pictureWidth;
+	}
+
+	public Integer getPictureHeight() {
+		return pictureHeight;
+	}
+
+	public void setPictureHeight(Integer pictureHeight) {
+		this.pictureHeight = pictureHeight;
+	}
+
+	public String getPictureCaption() {
+		return pictureCaption;
+	}
+
+	public void setPictureCaption(String pictureCaption) {
+		this.pictureCaption = pictureCaption;
+	}
+
+	public String getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(String createTime) {
+		this.createTime = createTime;
+	}
+
+	public Integer getCountLikes() {
+		return countLikes;
+	}
+
+	public void setCountLikes(Integer countLikes) {
+		this.countLikes = countLikes;
+	}
+
+	public Long getIdMedia() {
+		return idMedia;
+	}
+
+	public void setIdMedia(Long idMedia) {
+		this.idMedia = idMedia;
+	}
+
+	public Integer getFollowers() {
+		return followers;
+	}
+
+	public void setFollowers(Integer followers) {
+		this.followers = followers;
+	}
+
+	public Integer getFollowing() {
+		return following;
+	}
+
+	public void setFollowing(Integer following) {
+		this.following = following;
+	}
+
+	public Integer getMedias() {
+		return medias;
+	}
+
+	public void setMedias(Integer medias) {
+		this.medias = medias;
+	}
+
+	public Date getLastUpdate() {
+		return lastUpdate;
+	}
+
+	public void setLastUpdate(Date lastUpdate) {
+		this.lastUpdate = lastUpdate;
+	}
+	
+	public String getMediaLink() {
+		return mediaLink;
+	}
+
+	public void setMediaLink(String mediaLink) {
+		this.mediaLink = mediaLink;
+	}
+
+	public String getFullName() {
+		return fullName;
+	}
+
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+
+	public List<String> getTags() {
+		return tags;
+	}
+
+	public void setTags(List<String> tags) {
+		this.tags = tags;
+	}
+
+	@Override
+	public Long getId() {
+		return idMedia;
+	}
+	
+	@Override
+	public void setId(Long id) {
+		idMedia = id;
+	}
+}

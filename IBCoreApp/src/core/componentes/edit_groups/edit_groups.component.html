@@ -1,0 +1,36 @@
+<div class="panel panel-transparent m-b-0">
+    <div class="panel-heading p-l-0 p-r-0">
+        <div class="panel-title">EDIT GROUP "{{group.name}}"</div>
+        <div>
+            <div class="form-group form-group-default new-group">
+                <label class="label-sm">Nome do Grupo</label>
+                <input [(ngModel)]="group.name" name="groupName" type="text" placeholder="Nome do Grupo" class="form-control input-sm" required>
+                <!--<label class="label-sm group-name text-capitalize-op">{{group.name}}</label>-->
+            </div>
+        </div>
+    </div>
+    <div class="panel-body my-panel-body p-l-0 p-r-0 p-b-0">
+        <div class="my-panel-title p-b-8">
+            selecione os canais do grupo
+        </div>
+        <div class="profile-container" *ngIf="!loading">
+            <div *ngFor="let itemGroup of group.groupsObject;" class="button-channels__group pull-left">
+                <button_channels [isClassVisible]="true" [profile]="itemGroup.profile" (objectChecked)="addRemoveObjectChecked($event)"
+                [listCheckedProfiles]="oldCheckedList">
+
+                </button_channels>
+            </div>
+            <div *ngFor="let item of accountProfiles;" class="button-channels__group pull-left">
+                <button_channels [profile]="item" (objectChecked)="addRemoveObjectChecked($event)"></button_channels>
+            </div>
+        </div>
+        <!-- Loader -->
+        <div class="col-sm-12 text-center" *ngIf="loading">
+            <div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+        </div>
+        <div class="pull-right m-t-10">
+            <button class="btn bg-master text-white pull-left m-r-10" (click)="manageGroups()">Cancelar</button>
+            <button class="btn btn-primary pull-left" (click)="saveGroup()">Salvar alterações</button>
+        </div>
+    </div>
+</div>

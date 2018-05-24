@@ -1,0 +1,37 @@
+<div class="panel no-border no-margin">
+    <div class="panel-heading p-b-0">
+        <div class="panel-title">
+             {{ data.title }}
+             <i *ngIf="data.hasGrown" class="fa fa-arrow-circle-up" aria-hidden="true" [ngStyle]="{'color': '#20ffa3'}"></i>
+             <i *ngIf="!data.hasGrown" class="fa fa-arrow-circle-down" aria-hidden="true" [ngStyle]="{'color': '#f7554e'}"></i>
+             <span class="small hint-text">{{ data.smallText }}</span>
+        </div>
+    </div>
+    <div class="panel-body">
+        <h1 class="font-montserrat m-t-0 m-b-8 bold">{{ data.value | abbreviateNumber}}</h1>
+        <div class="progress m-b-8">
+            <div class="progress-bar progress-bar-complete" 
+              [ngStyle]="{'width': data.leftContent.percentage + '%', 'background-color': data.leftContent.color}"
+              data-toggle="tooltip" data-placement="top" title="{{data.leftContent.value}} ({{data.leftContent.percentage}}%)"></div>
+            <div class="progress-bar" 
+              [ngStyle]="{'width': data.rightContent.percentage + '%', 'background-color': data.rightContent.color}" 
+              data-toggle="tooltip" data-placement="top" title="{{data.rightContent.value}} ({{data.rightContent.percentage}}%)"></div>
+        </div>
+        <div class="pull-left">
+          <h4 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-2 bold">
+            {{ data.leftContent.title }}
+          </h4>
+          <h5 class="font-montserrat text-uppercase fs-16 m-t-0 m-b-0 bold">
+            {{ data.leftContent.smallText }}
+          </h5>
+        </div>
+        <div class="pull-right">
+          <h4 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-2 bold">
+            {{ data.rightContent.title }}
+          </h4>
+          <h5 class="font-montserrat text-uppercase fs-16 m-t-0 m-b-0 bold">
+            {{ data.rightContent.smallText }}
+          </h5>
+        </div>
+    </div>
+</div>

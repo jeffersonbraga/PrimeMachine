@@ -1,0 +1,53 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.List;
+
+import entity.generic.Persistent;
+
+public class ReportFacebookPostCommentsDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private FaceReportPostDTO faceReportPostDTO;
+	
+	private Long dateFrom;
+	private Long dateUntil;
+	
+	private List<FaceReportPostCommentDTO> comments;
+	
+	public ReportFacebookPostCommentsDTO() {
+		
+	}
+
+	public FaceReportPostDTO getFaceReportPostDTO() {
+		return faceReportPostDTO;
+	}
+
+	public void setFaceReportPostDTO(FaceReportPostDTO faceReportPostDTO) {
+		this.faceReportPostDTO = faceReportPostDTO;
+	}
+
+	public Long getDateFrom() {
+		return dateFrom;
+	}
+
+	public void setDateFrom(Long dateFrom) {
+		this.dateFrom = dateFrom;
+	}
+
+	public Long getDateUntil() {
+		return dateUntil;
+	}
+
+	public void setDateUntil(Long dateUntil) {
+		this.dateUntil = dateUntil;
+	}
+
+	public List<FaceReportPostCommentDTO> getComments() {
+		return comments;
+	}
+
+	public void setComments(List<FaceReportPostCommentDTO> comments) {
+		this.comments = comments;
+	}
+}

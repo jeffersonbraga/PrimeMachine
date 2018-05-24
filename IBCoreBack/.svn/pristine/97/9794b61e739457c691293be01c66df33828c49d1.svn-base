@@ -1,0 +1,102 @@
+package br.com.opsocial.server.actions.sets;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import br.com.opsocial.client.entity.primitive.Long;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenancePostRemote;
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.Set;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.tasks.PostsController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+
+public class InsertSetAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception {
+		
+		Set setDTO = (Set) getParameters().get("set");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		// remove set da PostsController se já existe
+		
+		List<PostsController> setsToRemove = null;
+		
+		if(SetsController.POSTS_CONTROLLERS != null) {
+			for(PostsController postsController : SetsController.POSTS_CONTROLLERS) {
+				
+				if(setDTO.getProfile().getIdProfile().equals(postsController.getSet().getProfile().getIdProfile())) {
+					if(setsToRemove == null) {
+						setsToRemove = new ArrayList<PostsController>();
+					}
+					
+					setsToRemove.add(postsController);
+				}
+			}
+		}
+
+		if(setsToRemove != null) {
+			for(PostsController postsController : setsToRemove) {
+				postsController.cancel();
+				SetsController.POSTS_CONTROLLERS.remove(postsController);
+			}
+		}
+
+		// ---------------------------------
+
+		Date now = new Date();
+		Date startDate = new Date(setDTO.getStartDate() * 1000);
+
+		if(startDate.after(now)) {
+
+			MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+
+			Set set = remote.save(setDTO);
+
+			String avatar = setDTO.getProfile().getAvatar(); 
+			setDTO = set;
+			setDTO.getProfile().setAvatar(avatar);
+		
+			if(set.getPosts() != null) {
+				
+				MaintenancePostRemote postRemote = (MaintenancePostRemote) RecoverMaintenance.recoverMaintenance("Post");
+				
+				for(Post post : set.getPosts()) {
+					Date postDate = new Date(set.getStartDate() * 1000);
+					postDate.setTime(postDate.getTime() + set.getPosts().indexOf(post) * set.getFrequency() * 1000);
+					
+					post.setPostDate(postDate);
+					
+					postRemote.save(post);
+				}
+			}
+					
+			set = remote.getById(set.getIdSet());
+			
+			if(set.getPosts() != null) {
+				for(Post post : set.getPosts()) {
+					post.setFormattedPost(UtilFunctions.applyFormattingInSetPosts(post.getText()));
+				}
+			}
+			
+			getParameters().put("set", set);
+			
+			User user = (User) getSession().getAttribute("user");	
+			long count = remote.getAmount(user.getAccount().getIdAccount());
+		
+			getParameters().put("count", new Long(count));
+			
+		} else {
+			getParameters().put("message", new StringUtil("Data e hora inicial deve ser maior que a hora atual."));
+		}
+	}
+}

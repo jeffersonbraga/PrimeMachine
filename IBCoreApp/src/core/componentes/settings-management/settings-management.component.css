@@ -1,0 +1,45 @@
+#imgFile{
+	display: none;
+}
+
+.avatar{
+	float: left;
+	height: 130px;
+	width: 130px;
+	border-radius: 100%;
+	position: relative;
+	margin-right: 20px;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+.avatar .img-overlay{
+	opacity: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background-color: rgba(0,0,0,0.5);
+    width: 100%;
+    height: 100%;
+	transition: all .4s ease;
+}
+
+.avatar .img-overlay span{
+	color: white;
+	font-size: 60px;
+    z-index: 1;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.avatar:hover .img-overlay{
+	opacity: 1;
+}
+
+.avatar img{
+	width: 130px;
+    height: 130px;
+    object-fit: cover;
+}

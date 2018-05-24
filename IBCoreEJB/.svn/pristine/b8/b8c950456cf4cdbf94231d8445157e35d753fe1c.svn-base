@@ -1,0 +1,400 @@
+package br.com.opsocial.ejb.entity.application;
+
+import java.util.List;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.instagram.InstagramDevice;
+
+@Entity
+@Table(name="profiles", schema="opsocial")
+public class Profile extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	public static final Character TWITTER = 'T';
+	public static final Character FACEBOOK = 'F';
+	public static final Character GOOGLE = 'G';
+	public static final Character YOUTUBE = 'Y'; 
+	public static final Character FACEBOOK_PAGE = 'P';
+	public static final Character INSTAGRAM = 'I';
+	public static final Character RECLAMEAQUI = 'R';
+	public static final Character NEWS = 'N';
+	public static final Character BLOGS = 'B';
+	public static final Character FACEBOOK_GROUP = 'A';
+	public static final Character LINKEDIN = 'L';
+	public static final Character LINKEDIN_PAGE = 'H';
+	
+	public static final long FANS_FACEBOOK_TO_REPORT = 30L;
+	
+	public static final Character REPORT_UNAVAILABLE = 'U';
+	public static final Character REPORT_GENERATING = 'G';
+	public static final Character REPORT_FINALIZED = 'F';
+	public static final Character REPORT_REFRESH_TOKEN = 'R';
+	
+	public static final String GROUP_STATUS_OPEN = "OPEN";
+	public static final String GROUP_STATUS_CLOSED = "CLOSED";
+	public static final String GROUP_STATUS_SECRET = "SECRET";
+	
+	public static final char ACTIVE = 'T';
+	public static final char INACTIVE = 'F';
+	
+	public static final Character VALID_TOKEN = 'T';
+	public static final Character INVALID_TOKEN = 'F';
+	public static final Character INVALID_TOKEN_NO_ADMIN = 'A';
+	
+	@Id
+	@Column(name = "idprofile")
+	@GeneratedValue(strategy = GenerationType.IDENTITY, generator = "profiles_idprofile_seq")
+	private Long idProfile;
+	
+	@Column(name = "networkid")
+	private String networkId;
+	
+	@Column(name = "avatar")
+	private String avatar;
+	
+	@Column(name="screenname")
+	private String screenName;
+	
+	@Column(name="type")
+	private Character type;
+	
+	@Column(name="token")
+	private String token;
+	
+	@Column(name="tokensecret")
+	private String tokenSecret;
+	
+	@Column(name = "active")
+	private char active = 'T';
+	
+	@Column(name = "refreshtoken")
+	private String refreshToken;
+	
+	@Column(name = "tokendate")
+	private Long tokenDate;
+	
+	@Column(name = "tokenexpiresin")
+	private Long tokenExpiresIn;
+	
+	@Column(name = "followers")
+	private Long followers;
+	
+	@Column(name = "follows")
+	private Long follows;
+	
+	@Column(name = "insertiondate")
+	private Long insertionDate;
+	
+	@JoinColumn(name = "idaccount", referencedColumnName = "idaccount")
+	@ManyToOne()
+	private Account account;
+	
+	@JoinColumn(name = "parentidprofile", referencedColumnName = "idprofile")
+	@ManyToOne()
+	private Profile parentProfile;
+	
+	@JoinColumn(name = "idinstagramdevice", referencedColumnName = "idinstagramdevice")
+	@ManyToOne
+	private InstagramDevice instagramDevice;
+	
+    @Transient
+    private List<Profile> childrenProfiles;
+    
+    @Column(name="profileinformation")
+    private String profileInformation;
+    
+    @Column(name="turn")
+    private Character turn = 'T';
+    
+    @Column(name="idmonitoringforgroups")
+    private Long idMonitoringForGroups;
+    
+    @Column(name="instagrampassword")
+    private String instagramPassword;
+   
+    @Column(name="instagramguid")
+    private String instagramGUID;
+    
+    @Column(name="instagramdeviceid")
+    private String instagramDeviceId;
+    
+    @Column(name="instagramphoneid")
+    private String instagramPhoneId;
+    
+    @Column(name="isschedulingauthenticated")
+    private Character isSchedulingAuthenticated;
+    
+    @Column(name="istokenvalid")
+    private Character isTokenValid = 'T';
+    
+    @Transient
+    private Character reportState;
+	
+	public Profile() {
+	}
+	
+	public Long getIdProfile() {
+		return idProfile;
+	}
+
+	public void setIdProfile(Long idProfile) {
+		this.idProfile = idProfile;
+	}
+
+	public Profile getParentProfile() {
+		return parentProfile;
+	}
+
+	public void setParentProfile(Profile parentProfile) {
+		this.parentProfile = parentProfile;
+	}
+
+	public InstagramDevice getInstagramDevice() {
+		return instagramDevice;
+	}
+
+	public void setInstagramDevice(InstagramDevice instagramDevice) {
+		this.instagramDevice = instagramDevice;
+	}
+
+	public List<Profile> getChildrenProfiles() {
+		return childrenProfiles;
+	}
+
+	public void setChildrenProfiles(List<Profile> childrenProfiles) {
+		this.childrenProfiles = childrenProfiles;
+	}
+
+	public String getScreenName() {
+		return screenName;
+	}
+
+	public void setScreenName(String screenName) {
+		this.screenName = screenName;
+	}
+
+	public Character getType() {
+		return type;
+	}
+
+	public void setType(Character type) {
+		this.type = type;
+	}
+
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
+
+	public String getTokenSecret() {
+		return tokenSecret;
+	}
+
+	public void setTokenSecret(String tokenSecret) {
+		this.tokenSecret = tokenSecret;
+	}
+	
+	public char getActive() {
+		return active;
+	}
+
+	public void setActive(char active) {
+		this.active = active;
+	}	
+	
+	@Override
+	public Boolean isActive() {		
+		return active == 'T';
+	}
+	
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
+	}
+
+	public Long getTokenDate() {
+		return tokenDate;
+	}
+
+	public void setTokenDate(Long tokenDate) {
+		this.tokenDate = tokenDate;
+	}
+
+	public Long getTokenExpiresIn() {
+		return tokenExpiresIn;
+	}
+
+	public void setTokenExpiresIn(Long tokenExpiresIn) {
+		this.tokenExpiresIn = tokenExpiresIn;
+	}
+
+	public Long getFollowers() {
+		return followers;
+	}
+
+	public void setFollowers(Long followers) {
+		this.followers = followers;
+	}
+
+	public Long getFollows() {
+		return follows;
+	}
+
+	public void setFollows(Long follows) {
+		this.follows = follows;
+	}
+
+	public Long getInsertionDate() {
+		return insertionDate;
+	}
+
+	public void setInsertionDate(Long insertionDate) {
+		this.insertionDate = insertionDate;
+	}
+
+	public Account getAccount() {
+		return account;
+	}
+
+	public void setAccount(Account account) {
+		this.account = account;
+	}
+
+	@Override
+	public Long getId() {		
+		return idProfile;
+	}
+
+	@Override
+	public void setId(Long id) {
+		this.idProfile= id;		
+	}
+
+	public String getNetworkId() {
+		return networkId;
+	}
+
+	public void setNetworkId(String networkId) {
+		this.networkId = networkId;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+	
+	public Character getTurn() {
+		return turn;
+	}
+
+	public void setTurn(Character turn) {
+		this.turn = turn;
+	}
+
+	public String getProfileInformation() {
+		return profileInformation;
+	}
+
+	public void setProfileInformation(String profileInformation) {
+		this.profileInformation = profileInformation;
+	}
+
+	public Long getIdMonitoringForGroups() {
+		return idMonitoringForGroups;
+	}
+
+	public void setIdMonitoringForGroups(Long idMonitoringForGroups) {
+		this.idMonitoringForGroups = idMonitoringForGroups;
+	}
+
+	public String getInstagramPassword() {
+		return instagramPassword;
+	}
+
+	public void setInstagramPassword(String instagramPassword) {
+		this.instagramPassword = instagramPassword;
+	}
+
+	public String getInstagramGUID() {
+		return instagramGUID;
+	}
+
+	public void setInstagramGUID(String instagramGUID) {
+		this.instagramGUID = instagramGUID;
+	}
+
+	public String getInstagramDeviceId() {
+		return instagramDeviceId;
+	}
+
+	public void setInstagramDeviceId(String instagramDeviceId) {
+		this.instagramDeviceId = instagramDeviceId;
+	}
+
+	public String getInstagramPhoneId() {
+		return instagramPhoneId;
+	}
+
+	public void setInstagramPhoneId(String instagramPhoneId) {
+		this.instagramPhoneId = instagramPhoneId;
+	}
+
+	public Character getIsSchedulingAuthenticated() {
+		return isSchedulingAuthenticated;
+	}
+
+	public void setIsSchedulingAuthenticated(Character isSchedulingAuthenticated) {
+		this.isSchedulingAuthenticated = isSchedulingAuthenticated;
+	}
+
+	public Object getReportLogo() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void setReportLogo(Object mountReportLogo) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void setIsInDashboard(boolean b) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Character getReportState() {
+		return reportState;
+	}
+
+	public void setReportState(Character reportState) {
+		this.reportState = reportState;
+	}
+
+	public Character getIsTokenValid() {
+		return isTokenValid;
+	}
+
+	public void setIsTokenValid(Character isTokenValid) {
+		this.isTokenValid = isTokenValid;
+	}
+}

@@ -1,0 +1,24 @@
+<div [ngClass]="{'slide-up' : slideUp, 'slide-right' : slideRight}" class="modal fade in scroll-op scroll-larger" [id]="idModal || 'generic-modal'" bsModal #genericModal="bs-modal" [config]="{backdrop: 'static'}"
+	role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content-wrapper">
+			<div class="modal-content">
+				<div *ngIf="slideUp" class="modal-header modal-header-generic clearfix text-left">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true" (click)="hideModal()">
+						<i class="pg-close fs-28"></i>
+					</button>
+					<img src="/assets/img/woop.svg" class="op-logo-modal m-r-15"/>
+					<breadcrumb-modal></breadcrumb-modal>
+				</div>
+				<div *ngIf="slideRight" class="modal-header clearfix text-left">
+					<button type="button" class="close p-t-45 p-r-30" data-dismiss="modal" aria-hidden="true" (click)="hideModal()">
+						<i class="pg-close fs-28"></i>
+					</button>
+				</div>
+				<div class="modal-body">
+					<dynamic-modal-content [componentData]="componentData"></dynamic-modal-content>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

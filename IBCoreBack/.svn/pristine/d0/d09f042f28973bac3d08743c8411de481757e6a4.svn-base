@@ -1,0 +1,32 @@
+package br.com.opsocial.server.utils.streams;
+
+import java.io.Serializable;
+
+public class ActionLikeAux implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	private StreamPost streamPost;
+	private Long idProfile;
+	
+	public ActionLikeAux() {
+		
+	}
+
+	public StreamPost getStreamPost() {
+		return streamPost;
+	}
+
+	public void setStreamPost(StreamPost streamPost) {
+		this.streamPost = streamPost;
+	}
+
+	public Long getIdProfile() {
+		return idProfile;
+	}
+
+	public void setIdProfile(Long idProfile) {
+		this.idProfile = idProfile;
+	}
+	
+}

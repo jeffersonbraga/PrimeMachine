@@ -1,0 +1,359 @@
+package br.com.opsocial.ejb.utils.reports;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.TimeZone;
+
+import br.com.opsocial.ejb.entity.report.AgeGroup;
+
+
+public abstract class UtilReports {
+	
+	public static final Long INSIGHTS_POSTS_INTERVAL = 1800L;
+	
+	public static final String POST_IMPRESSIONS_UNIQUE = "post_impressions_unique";
+	public static final String POST_IMPRESSIONS = "post_impressions";
+	public static final String POST_STORIES = "post_stories";
+	public static final String POST_CONSUMPTIONS = "post_consumptions";
+	
+	public static final String POST_IMPRESSIONS_PAID_UNIQUE = "post_impressions_paid_unique";
+	public static final String POST_IMPRESSIONS_ORGANIC_UNIQUE = "post_impressions_organic_unique";
+	public static final String POST_IMPRESSIONS_VIRAL_UNIQUE = "post_impressions_viral_unique";
+	
+	public static final String POST_IMPRESSIONS_PAID = "post_impressions_paid";
+	public static final String POST_IMPRESSIONS_ORGANIC = "post_impressions_organic";
+	public static final String POST_IMPRESSIONS_VIRAL = "post_impressions_viral";
+	
+	public static final String POST_STORIES_BY_ACTION_TYPE = "post_stories_by_action_type";
+	public static final String POST_STORIES_BY_ACTION_TYPE_LIKE = "post_stories_by_action_type_like";
+	public static final String POST_STORIES_BY_ACTION_TYPE_COMMENT = "post_stories_by_action_type_comment";
+	public static final String POST_STORIES_BY_ACTION_TYPE_SHARE = "post_stories_by_action_type_share";
+	
+	public static final String POST_REACTIONS_LIKE_TOTAL = "post_reactions_like_total";
+	public static final String POST_REACTIONS_LOVE_TOTAL = "post_reactions_love_total";
+	public static final String POST_REACTIONS_HAHA_TOTAL = "post_reactions_haha_total";
+	public static final String POST_REACTIONS_WOW_TOTAL = "post_reactions_wow_total";
+	public static final String POST_REACTIONS_SORRY_TOTAL = "post_reactions_sorry_total";
+	public static final String POST_REACTIONS_ANGER_TOTAL = "post_reactions_anger_total";
+	
+	public static final String POST_CONSUMPTIONS_BY_TYPE = "post_consumptions_by_type";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_OTHER_CLICKS = "post_consumptions_by_type_other_clicks";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_PHOTO_VIEW = "post_consumptions_by_type_photo_view";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_LINK_CLICKS = "post_consumptions_by_type_link_clicks";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_VIDEO_PLAY = "post_consumptions_by_type_video_play";
+	
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_13_17 = "post_video_view_time_by_age_bucket_and_gender_U.13-17";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_18_24 = "post_video_view_time_by_age_bucket_and_gender_U.18-24";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_25_34 = "post_video_view_time_by_age_bucket_and_gender_U.25-34";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_35_44 = "post_video_view_time_by_age_bucket_and_gender_U.35-44";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_45_54 = "post_video_view_time_by_age_bucket_and_gender_U.45-54";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_55_64 = "post_video_view_time_by_age_bucket_and_gender_U.55-64";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_65 = "post_video_view_time_by_age_bucket_and_gender_U.65+";
+	
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_65 = "post_video_view_time_by_age_bucket_and_gender_M.65+";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_55_64 = "post_video_view_time_by_age_bucket_and_gender_M.55-64";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_45_54 = "post_video_view_time_by_age_bucket_and_gender_M.45-54";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_35_44 = "post_video_view_time_by_age_bucket_and_gender_M.35-44";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_25_34 = "post_video_view_time_by_age_bucket_and_gender_M.25-34";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_18_24 = "post_video_view_time_by_age_bucket_and_gender_M.18-24";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_13_17 = "post_video_view_time_by_age_bucket_and_gender_M.13-17";
+	
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_65 = "post_video_view_time_by_age_bucket_and_gender_F.65+";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_55_64 = "post_video_view_time_by_age_bucket_and_gender_F.55-64";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_45_54 = "post_video_view_time_by_age_bucket_and_gender_F.45-54";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_35_44 = "post_video_view_time_by_age_bucket_and_gender_F.35-44";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_25_34 = "post_video_view_time_by_age_bucket_and_gender_F.25-34";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_18_24 = "post_video_view_time_by_age_bucket_and_gender_F.18-24";
+	public static final String POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_13_17 = "post_video_view_time_by_age_bucket_and_gender_F.13-17";
+	
+	public static final String POST_VIDEO_VIEWS_ORGANIC = "post_video_views_organic";
+	public static final String POST_VIDEO_VIEWS_PAID = "post_video_views_paid";
+	public static final String POST_VIDEO_VIEWS_AUTOPLAYED = "post_video_views_autoplayed";
+	public static final String POST_VIDEO_VIEWS_CLICKED_TO_PLAY = "post_video_views_clicked_to_play";
+	
+	public static final String RETWEETS_OF_ME_COUNT = "retweetsOfMeCount";
+	public static final String MENTIONS_COUNT = "mentionsCount";
+	public static final String MESSAGES_SENT_BY_ME_COUNT = "messagesSentByMeCount";
+	public static final String REPLIES_BY_ME = "repliesByMeCount";
+	public static final String REPLIES_OF_ME = "repliesOfMeCount";
+	
+	public static final String MSG_SENT_WITH_TEXT_COUNT = "msgSentWithTextCount";
+	public static final String MSG_SENT_WITH_PHOTO_COUNT = "msgSentWithPhotoCount";
+	public static final String MSG_SENT_WITH_LINK_COUNT = "msgSentWithLinkCount";
+	
+	public static final String FOLLOWERS_FEMALE_COUNT_ALL = "followersFemaleCountAll";
+	public static final String FOLLOWERS_MALE_COUNT_ALL = "followersMaleCountAll";
+	
+	public static final String PAGE_FANS = "pageFans";
+	public static final String PAGE_FANS_ONLINE = "page_fans_online";
+	public static final String PAGE_FANS_ONLINE_0 = "page_fans_online_0";
+	public static final String PAGE_FANS_ONLINE_1 = "page_fans_online_1";
+	public static final String PAGE_FANS_ONLINE_2 = "page_fans_online_2";
+	public static final String PAGE_FANS_ONLINE_3 = "page_fans_online_3";
+	public static final String PAGE_FANS_ONLINE_4 = "page_fans_online_4";
+	public static final String PAGE_FANS_ONLINE_5 = "page_fans_online_5";
+	public static final String PAGE_FANS_ONLINE_6 = "page_fans_online_6";
+	public static final String PAGE_FANS_ONLINE_7 = "page_fans_online_7";
+	public static final String PAGE_FANS_ONLINE_8 = "page_fans_online_8";
+	public static final String PAGE_FANS_ONLINE_9 = "page_fans_online_9";
+	public static final String PAGE_FANS_ONLINE_10 = "page_fans_online_10";
+	public static final String PAGE_FANS_ONLINE_11 = "page_fans_online_11";
+	public static final String PAGE_FANS_ONLINE_12 = "page_fans_online_12";
+	public static final String PAGE_FANS_ONLINE_13 = "page_fans_online_13";
+	public static final String PAGE_FANS_ONLINE_14 = "page_fans_online_14";
+	public static final String PAGE_FANS_ONLINE_15 = "page_fans_online_15";
+	public static final String PAGE_FANS_ONLINE_16 = "page_fans_online_16";
+	public static final String PAGE_FANS_ONLINE_17 = "page_fans_online_17";
+	public static final String PAGE_FANS_ONLINE_18 = "page_fans_online_18";
+	public static final String PAGE_FANS_ONLINE_19 = "page_fans_online_19";
+	public static final String PAGE_FANS_ONLINE_20 = "page_fans_online_20";
+	public static final String PAGE_FANS_ONLINE_21 = "page_fans_online_21";
+	public static final String PAGE_FANS_ONLINE_22 = "page_fans_online_22";
+	public static final String PAGE_FANS_ONLINE_23 = "page_fans_online_23";
+	public static final String PAGE_FANS_ONLINE_PER_DAY = "page_fans_online_per_day";
+
+	public static final String PAGE_NEW_FANS = "pageNewFans";
+	public static final String PAGE_FAN_REMOVES = "pageFanRemoves";
+	
+	public static final String PAGE_VIEWS = "pageViews";
+	public static final String PAGE_VIEWS_EXTERNAL_REFERRALS = "pageViewsExternalReferrals";
+	
+	public static final String PAGE_POSTS_IMPRESSIONS = "pagePostsImpressions";
+	public static final String PAGE_POSTS_IMPRESSIONS_UNIQUE = "pagePostsImpressionsUnique";
+	
+	public static final String PAGE_IMPRESSIONS = "pageImpressions";
+	public static final String PAGE_IMPRESSIONS_UNIQUE = "pageImpressionsUnique";
+	public static final String PAGE_IMPRESSIONS_PAID = "pageImpressionsPaid";
+	public static final String PAGE_IMPRESSIONS_ORGANIC = "pageImpressionsOrganic";
+	public static final String PAGE_IMPRESSIONS_VIRAL = "pageImpressionsViral";
+
+	public static final String PAGE_IMPRESSIONS_MALE_13_AMONG_17 = "pageImpressionsMale13Among17";
+	public static final String PAGE_IMPRESSIONS_MALE_18_AMONG_24 = "pageImpressionsMale18Among24";
+	public static final String PAGE_IMPRESSIONS_MALE_25_AMONG_34 = "pageImpressionsMale25Among34";
+	public static final String PAGE_IMPRESSIONS_MALE_35_AMONG_44 = "pageImpressionsMale35Among44";
+	public static final String PAGE_IMPRESSIONS_MALE_45_AMONG_54 = "pageImpressionsMale45Among54";
+	public static final String PAGE_IMPRESSIONS_MALE_55_AMONG_64 = "pageImpressionsMale55Among64";
+	public static final String PAGE_IMPRESSIONS_MALE_65_PLUS = "pageImpressionsMale65Plus";
+
+	public static final String PAGE_IMPRESSIONS_FEMALE_13_AMONG_17 = "pageImpressionsFemale13Among17";
+	public static final String PAGE_IMPRESSIONS_FEMALE_18_AMONG_24 = "pageImpressionsFemale18Among24";
+	public static final String PAGE_IMPRESSIONS_FEMALE_25_AMONG_34 = "pageImpressionsFemale25Among34";
+	public static final String PAGE_IMPRESSIONS_FEMALE_35_AMONG_44 = "pageImpressionsFemale35Among44";
+	public static final String PAGE_IMPRESSIONS_FEMALE_45_AMONG_54 = "pageImpressionsFemale45Among54";
+	public static final String PAGE_IMPRESSIONS_FEMALE_55_AMONG_64 = "pageImpressionsFemale55Among64";
+	public static final String PAGE_IMPRESSIONS_FEMALE_65_PLUS = "pageImpressionsFemale65Plus";
+
+	public static final String PAGE_FANS_MALE_13_AMONG_17 = "pageFansMale13Among17";
+	public static final String PAGE_FANS_MALE_18_AMONG_24 = "pageFansMale18Among24";
+	public static final String PAGE_FANS_MALE_25_AMONG_34 = "pageFansMale25Among34";
+	public static final String PAGE_FANS_MALE_35_AMONG_44 = "pageFansMale35Among44";
+	public static final String PAGE_FANS_MALE_45_AMONG_54 = "pageFansMale45Among54";
+	public static final String PAGE_FANS_MALE_55_AMONG_64 = "pageFansMale55Among64";
+	public static final String PAGE_FANS_MALE_65_PLUS = "pageFansMale65Plus";
+
+	public static final String PAGE_FANS_FEMALE_13_AMONG_17 = "pageFansFemale13Among17";
+	public static final String PAGE_FANS_FEMALE_18_AMONG_24 = "pageFansFemale18Among24";
+	public static final String PAGE_FANS_FEMALE_25_AMONG_34 = "pageFansFemale25Among34";
+	public static final String PAGE_FANS_FEMALE_35_AMONG_44 = "pageFansFemale35Among44";
+	public static final String PAGE_FANS_FEMALE_45_AMONG_54 = "pageFansFemale45Among54";
+	public static final String PAGE_FANS_FEMALE_55_AMONG_64 = "pageFansFemale55Among64";
+	public static final String PAGE_FANS_FEMALE_65_PLUS = "pageFansFemale65Plus";
+
+	public static final String PAGE_CONSUMPTIONS_OTHER_CLICKS = "pageConsumptionsOtherClicks";
+	public static final String PAGE_CONSUMPTIONS_LINK_CLICKS = "pageConsumptionsLinkClicks";
+	public static final String PAGE_CONSUMPTIONS_PHOTO_VIEW = "pageConsumptionsPhotoView";
+
+	public static final String PAGE_IMPRESSIONS_BY_FAN = "pageImpressionsByFan";
+	public static final String PAGE_IMPRESSIONS_BY_CHECKIN = "pageImpressionsByCheckin";
+	public static final String PAGE_IMPRESSIONS_BY_OTHER = "pageImpressionsByOther";
+	public static final String PAGE_IMPRESSIONS_BY_USER_POST = "pageImpressionsByUserPost";
+	public static final String PAGE_IMPRESSIONS_BY_PAGE_POST = "pageImpressionsByPagePost";
+	public static final String PAGE_IMPRESSIONS_BY_MENTION = "pageImpressionsByMention";
+
+	public static final String PAGE_STORIES = "pageStories";
+	
+	public static final String PAGE_POSITIVE_FEEDBACK_LIKE = "page_positive_feedback_like";
+	public static final String PAGE_POSITIVE_FEEDBACK_COMMENT = "page_positive_feedback_comment";
+	public static final String PAGE_POSITIVE_FEEDBACK_LINK = "page_positive_feedback_link";
+	
+	public static final String PAGE_NEGATIVE_FEEDBACK_HIDE_CLICKS = "page_negative_feedback_hide_clicks";
+	public static final String PAGE_NEGATIVE_FEEDBACK_HIDE_ALL_CLICKS = "page_negative_feedback_hide_all_clicks";
+	public static final String PAGE_NEGATIVE_FEEDBACK_REPORT_SPAM_CLICKS = "page_negative_feedback_report_spam_clicks";
+	
+	public static final String PAGE_ACTIONS_POST_REACTIONS_LIKE_TOTAL = "page_actions_post_reactions_like_total";
+	public static final String PAGE_ACTIONS_POST_REACTIONS_LOVE_TOTAL = "page_actions_post_reactions_love_total";
+	public static final String PAGE_ACTIONS_POST_REACTIONS_WOW_TOTAL = "page_actions_post_reactions_wow_total";
+	public static final String PAGE_ACTIONS_POST_REACTIONS_HAHA_TOTAL = "page_actions_post_reactions_haha_total";
+	public static final String PAGE_ACTIONS_POST_REACTIONS_SORRY_TOTAL = "page_actions_post_reactions_sorry_total";
+	public static final String PAGE_ACTIONS_POST_REACTIONS_ANGER_TOTAL = "page_actions_post_reactions_anger_total";
+	
+	public static final String PAGE_VIDEO_VIEWS = "page_video_views";
+	public static final String PAGE_VIDEO_VIEWS_ORGANIC = "page_video_views_organic";
+	public static final String PAGE_VIDEO_VIEWS_PAID = "page_video_views_paid";
+	public static final String PAGE_VIDEO_VIEW_TIME = "page_video_view_time";
+	public static final String PAGE_VIDEO_COMPLETE_VIEWS_30S = "page_video_complete_views_30s";
+	public static final String PAGE_VIDEO_COMPLETE_VIEWS_30S_PAID = "page_video_complete_views_30s_paid";
+	public static final String PAGE_VIDEO_COMPLETE_VIEWS_30S_ORGANIC = "page_video_complete_views_30s_organic";
+	public static final String PAGE_VIDEO_VIEWS_10S = "page_video_views_10s";
+	public static final String PAGE_VIDEO_VIEWS_10S_PAID = "page_video_views_10s_paid";
+	public static final String PAGE_VIDEO_VIEWS_10S_ORGANIC = "page_video_views_10s_organic";
+	public static final String PAGE_VIDEO_VIEWS_AUTOPLAYED = "page_video_views_autoplayed";
+	public static final String PAGE_VIDEO_VIEWS_CLICK_TO_PLAY = "page_video_views_click_to_play";
+
+	public static final String PAGE_STORIES_BY_FAN = "pageStoriesByFan"; 
+	public static final String PAGE_STORIES_BY_CHECKIN = "pageStoriesByCheckin";
+	public static final String PAGE_STORIES_BY_OTHER = "pageStoriesByOther";
+	public static final String PAGE_STORIES_BY_USER_POST = "pageStoriesByUserPost";
+	public static final String PAGE_STORIES_BY_PAGE_POST = "pageStoriesByPagePost";
+	public static final String PAGE_STORIES_BY_MENTION = "pageStoriesByMention";
+	
+	public static final String PAGE_FANS_PAGE_PROFILE = "pageFansPageProfile";
+	public static final String PAGE_FANS_HOVERCARD = "pageFansHovercard";
+	public static final String PAGE_FANS_MOBILE = "pageFansMobile";
+	public static final String PAGE_FANS_EXTERNAL_CONNECT = "pageFansExternalConnect";
+	public static final String PAGE_FANS_ADS = "pageFansAds";
+	public static final String PAGE_FANS_LIKE_STORY = "pageFansLikeStory";
+	public static final String PAGE_FANS_PHOTO_SNOWLIFT = "pageFansPhotoSnowlift";
+	public static final String PAGE_FANS_PAGE_INVITE = "pageFansPageInvite";
+	public static final String PAGE_FANS_RECOMMENDED_PAGES = "pageFansRecommendedPages";
+	public static final String PAGE_FANS_SEARCH = "pageFansSearch";
+	
+	public static final String PAGE_FANS_PAGE_SUGGESTION = "pageFansPageSuggestion";
+	public static final String PAGE_FANS_PAGE_TIMELINE = "pageFansPageTimeline";
+	public static final String PAGE_FANS_MOBILE_ADS = "pageFansMobileAds";
+	public static final String PAGE_FANS_REGISTRATION = "pageFansRegistration";
+	public static final String PAGE_FANS_WIZARD_SUGGESTION = "pageFansWizardSuggestion";
+	public static final String PAGE_FANS_PROFILE_CONNECT = "pageFansProfileConnect";
+	public static final String PAGE_FANS_FAVORITES = "pageFansFavorites";
+	public static final String PAGE_FANS_API = "pageFansApi";
+	public static final String PAGE_FANS_PAGE_BROWSER = "pageFansPageBrowser";
+	public static final String PAGE_FANS_MOBILE_PAGE_BROWSER = "pageFansMobilePageBrowser";
+	public static final String PAGE_FANS_TICKER = "pageFansTicker";
+	public static final String PAGE_FANS_FEED_CHAINING = "pageFansFeedChaining";
+	public static final String PAGE_FANS_ALL_CATEGORY_PYML = "pageFansAllCategoryPyml";
+	public static final String PAGE_FANS_PAGE_SUGGESTIONS_ON_LIKING = "pageFansPageSuggestionsOnLiking";
+	public static final String PAGE_FANS_MOBILE_PAGE_SUGGESTIONS_ON_LIKING = "pageFansMobilePageSuggestionsOnLiking";
+	public static final String PAGE_FANS_FAN_CONTEXT_STORY= "pageFansFanContextStory";
+	public static final String PAGE_FANS_SPONSORED_STORY = "pageFansSponsoredStory";
+	public static final String PAGE_FANS_PAGE_INVITE_ESCAPE_HATCH_FINCH = "pageFansPageInviteEscapeHatchFinch";
+
+	public static final String GROUP_UNIQUE = "unique";
+	public static final String GROUP_IMP_GENDER_AGE = "imp_gender_age";
+	public static final String GROUP_IMP_STORY_TYPE = "imp_story_type";
+	public static final String GROUP_CON_TYPE = "con_type";
+	public static final String GROUP_STORIES_TYPE = "stories_type";
+	public static final String GROUP_FANS_GENDER_AGE = "fans_gender_age";
+	public static final String GROUP_FANS_LIKE_SOURCE = "fans_like_source";
+	public static final String GROUP_FANS_ONLINE = "fans_online";
+	public static final String GROUP_POSITIVE_FEEDBACK = "positive_feedback";
+	public static final String GROUP_NEGATIVE_FEEDBACK = "negative_feedback";
+
+	public static final String GROUP_IMP_COUNTRY = "imp_country";
+	public static final String GROUP_IMP_CITY = "imp_city";
+	public static final String GROUP_FAN_CITY = "fan_city";
+	public static final String GROUP_FAN_COUNTRY ="fan_country";
+	public static final String GROUP_VIEWS_EXTERNAL = "views_external";
+	public static final String GROUP_MAIN = "main";
+
+	public static final String REPORT_DATE_FORMAT = "yyyy-MM-dd";
+	public static final String FQL_URL = "https://api.facebook.com/method/fql.query";
+
+	public static final Character UNAVAILABLE = 'U';
+	public static final Character GENERATING = 'G';
+	public static final Character FINALIZED = 'F';
+	public static final Character REFRESH_TOKEN = 'R';
+	
+	private static final Long REPORT_DAYS = 7776000L;
+	
+	public static final String RETWEETS_OF_ME = "retweetsOfMeCount";
+	public static final String MENTIONS = "mentionsCount";
+	public static final String FAVORITE_COUNT = "favoriteCount";
+	
+	public static final String REPLIES_OF_ME_COUNT_ALL = "repliesOfMeCountAll";
+	public static final String RETWEETS_OF_ME_COUNT_ALL = "retweetsOfMeCountAll";
+	public static final String FAVORITE_COUNT_ALL = "favoriteCountAll";
+	
+	public static final Character IS_A_FOLLOWER = 'T';
+	public static final Character NOT_A_FOLLOWER = 'F';
+	
+	public static final String PROFILE_FOLLOWERS = "profile_followers";
+	public static final String PROFILE_FOLLOWERS_ADDS = "profile_followers_adds";
+	public static final String PROFILE_FOLLOWERS_REMOVES = "profile_followers_removes";
+	
+	public static final Character FEMALE = 'F';
+	public static final Character MALE = 'M';
+	public static final Character UNIDENTIFIED = 'U';
+
+	public UtilReports() {
+	}
+	
+	public static Long getDateForFanPageGrowth() {
+		
+		Calendar date = new GregorianCalendar();
+		date.add(Calendar.YEAR, - 1);
+		date.add(Calendar.MONTH, 1);
+		date.set(Calendar.DAY_OF_MONTH, 1);
+		date.setTimeZone(TimeZone.getTimeZone("America/Phoenix"));
+		date.set(Calendar.AM_PM, Calendar.AM);
+		date.set(Calendar.HOUR_OF_DAY, 0);
+		date.set(Calendar.MINUTE, 0);
+		date.set(Calendar.SECOND, 0);
+		
+		return date.getTimeInMillis() / 1000L;
+	}
+	
+	public static List<AgeGroup> initiateAgeGroupList() {
+		
+		List<AgeGroup> ageGroups = new ArrayList<AgeGroup>();
+		ageGroups.add(new AgeGroup("13", "17"));
+		ageGroups.add(new AgeGroup("18", "24"));
+		ageGroups.add(new AgeGroup("25", "34"));
+		ageGroups.add(new AgeGroup("35", "44"));
+		ageGroups.add(new AgeGroup("45", "55"));
+		ageGroups.add(new AgeGroup("55", "64"));
+		ageGroups.add(new AgeGroup("65", ""));
+		
+		return ageGroups;
+	}
+	
+	public static String getVideoTotalTimeByAgeGenderProperties(Character gender) {
+		
+		StringBuilder builder = new StringBuilder();
+		
+		if(gender.equals(UNIDENTIFIED)) {
+			
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_13_17 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_18_24 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_25_34 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_35_44 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_45_54 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_55_64 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_U_65 + "'");
+			
+		} else if(gender.equals(FEMALE)) {
+			
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_13_17 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_18_24 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_25_34 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_35_44 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_45_54 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_55_64 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_F_65 + "'");
+			
+		} else {
+			
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_13_17 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_18_24 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_25_34 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_35_44 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_45_54 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_55_64 + "',");
+			builder.append("'" + POST_VIDEO_VIEW_TIME_BY_AGE_BUCKET_AND_GENDER_M_65 + "'");
+		}
+		
+		return builder.toString();
+	}
+	
+}

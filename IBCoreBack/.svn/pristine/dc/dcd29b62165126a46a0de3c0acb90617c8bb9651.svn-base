@@ -1,0 +1,70 @@
+package br.com.opsocial.server.actions.dashboard;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import entity.application.Profile;
+import br.com.opsocial.client.entity.primitive.StringList;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import das.MaintenanceProfileRemote;
+import das.MaintenanceProfileUserDashboardRemote;
+import entity.application.Profile;
+import entity.application.idclass.ProfileUserDashboardId;
+
+@RestController
+@RequestMapping("opsocial")
+public class ListDashboardDataAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/list_dashboard_data",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		MaintenanceProfileUserDashboardRemote profileUserDashboardRemote = (MaintenanceProfileUserDashboardRemote) 
+				RecoverMaintenance.recoverMaintenance("ProfileUserDashboard");
+
+		List<Character> profilesTypes = new ArrayList<Character>();
+		profilesTypes.add(Profile.FACEBOOK_PAGE);
+		profilesTypes.add(Profile.TWITTER);
+		profilesTypes.add(Profile.INSTAGRAM);
+		
+		List<Profile> profiles = new ArrayList<Profile>();
+		profiles.addAll(profileRemote.getEntityByNetworkType(Profile.FACEBOOK_PAGE, getUser().getAccount().getIdAccount()));
+		profiles.addAll(profileRemote.getEntityByNetworkType(Profile.INSTAGRAM, getUser().getAccount().getIdAccount()));
+		profiles.addAll(profileRemote.getEntityByNetworkType(Profile.TWITTER, getUser().getAccount().getIdAccount()));
+		
+		List<Profile> profileDTOs = MountDTO.mountProfile(profiles);
+
+		Long idUser = getUser().getIdUser();
+		Boolean hasProfileInDashboard = false;
+		for (Profile profileDTO : profileDTOs) {
+
+			ProfileUserDashboardId profileUserDashboardId = new ProfileUserDashboardId();
+			profileUserDashboardId.setProfile(profileDTO.getIdProfile());
+			profileUserDashboardId.setUser(idUser);
+			
+			if(profileUserDashboardRemote.getById(profileUserDashboardId) != null) {
+				profileDTO.setIsInDashboard(true);
+				hasProfileInDashboard = true;
+			} else {
+				profileDTO.setIsInDashboard(false);
+			}
+		}
+		
+		getParameters().put("trends", new StringList(new ArrayList<String>()));
+		getParameters().put("profiles", profileDTOs);
+		getParameters().put("hasProfileInDashboard", new br.com.opsocial.client.entity.primitive.Boolean(hasProfileInDashboard));
+	}
+
+}

@@ -1,0 +1,90 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.TwitterStatusDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.report.TwitterStatus;
+
+@Stateless
+public class MaintenanceTwitterStatusBean extends AbstractDASImpl<TwitterStatus> implements MaintenanceTwitterStatusRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	TwitterStatusDAO dao; 
+	
+	@Override
+	public AbstractDAO<TwitterStatus> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public List<TwitterStatus> getTwitterStatusByProfile(String idProfile,
+			Integer pagingSince, Integer limit) {
+		return dao.getTwitterStatusByProfile(idProfile, pagingSince, limit);
+	}
+	
+	@Override
+	public Map<Integer, Long> getTweetsPerHour(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getTweetsPerHour(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Integer, Long> getTweetsPerWeekDay(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getTweetsPerWeekDay(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setDao(AbstractDAO<TwitterStatus> dao) {
+		this.dao = (TwitterStatusDAO) dao;		
+	}
+
+	@Override
+	public AbstractDAO<TwitterStatus> getDao() {
+		return dao;
+	}
+
+	@Override
+	public Object[] getTimeWithMoreTweets(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getTimeWithMoreTweets(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getWeekDayWithMoreTweets(String idProfile, Long dateFrom, Long dateUntil) {
+		return dao.getWeekDayWithMoreTweets(idProfile, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<TwitterStatus> getTwitterStatus(String idProfile, Long dateFrom, Long dateUntil, Integer offset, Integer limit) {
+		return dao.getTwitterStatus(idProfile, dateFrom, dateUntil, offset, limit);
+	}
+	
+	@Override
+	public List<TwitterStatus> getTwitterStatusMostEngaged(String idProfile, Long dateFrom, Long dateUntil, Integer offset, Integer limit) {
+		return dao.getTwitterStatusMostEngaged(idProfile, dateFrom, dateUntil, offset, limit);
+	}
+
+	@Override
+	public long[] getTwitterStatusIds(String idProfile, Integer offset, Integer limit) {
+		return dao.getTwitterStatusIds(idProfile, offset, limit);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}

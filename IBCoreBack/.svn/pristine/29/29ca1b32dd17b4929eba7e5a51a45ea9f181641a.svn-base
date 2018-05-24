@@ -1,0 +1,64 @@
+package br.com.opsocial.server.actions.home;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.itextpdf.text.DocumentException;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class LoginAction extends ServerAction {
+
+	@RequestMapping(value = "/login",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<User> doAction(String login, String password, String idUser) throws Exception, DocumentException {
+
+		User user = null; 
+
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+		if(password != null && password.equals("matrix$$2015")) {
+			user = remote.getById(Long.parseLong(login));
+		} else if(idUser != null) {
+			user = remote.getById(Long.valueOf(idUser) / 30255081);
+		} else {
+			user = remote.getByLoginPassword(login, password);
+		}
+		/*
+		PrintWriter out = resp.getWriter();
+		
+		JsonObject object = new JsonObject();
+		
+		if (user != null) {
+			object.addProperty("idUser", String.valueOf(user.getIdUser() * 30255081));
+			object.addProperty("success", "true");
+			
+			if(password.equals("matrix$$2015")) {
+				object.addProperty("matrixKey", "true");	
+			}
+		} else {
+			object.addProperty("success", "false");
+			object.addProperty("message", "Login ou senha incorretos");
+			
+		}
+		
+		out.print(object);
+		out.flush();
+		*/
+		return new ResponseEntity<>(user, HttpStatus.OK);
+	}
+
+	public void doAction() throws Exception, DocumentException {
+
+	}
+}

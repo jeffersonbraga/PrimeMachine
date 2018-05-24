@@ -1,0 +1,288 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javax.naming.NamingException;
+
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.media.ImageUpload;
+import twitter4j.media.ImageUploadFactory;
+import twitter4j.media.MediaProvider;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.Set;
+import facebook4j.Album;
+import facebook4j.Facebook;
+import facebook4j.FacebookException;
+import facebook4j.PostUpdate;
+import facebook4j.ResponseList;
+import facebook4j.auth.AccessToken;
+
+public class PostsController extends Timer {
+	
+	private Set set;
+	private String postIndex;
+	private Integer index;
+	
+	public PostsController(Set set) throws NamingException {
+		this.set = set;
+		
+		super.schedule(
+				new Task(), 
+				0, 
+				set.getFrequency() * 1000);
+		
+		postIndex = set.getPostIndex();
+	}
+	
+	class Task extends TimerTask {
+
+		@Override
+		public void run() { 
+			
+			String tempPath = ServicesImpl.context.getInitParameter("uploadDirTemp") + "/";
+			
+			MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+			
+			set = remote.getById(set.getIdSet());
+			
+			if(set.getActive() == 'T') {
+				
+				if(set.getProfile().getActive() != 'F') {
+					
+					Boolean aux = true;
+					
+					try {
+		
+						if(set.getPosts() != null && !set.getPosts().isEmpty()) {
+							
+							Post toPost = null;
+	
+							if(postIndex == null || postIndex.isEmpty()) {
+								index = 0;
+							} else {
+								index = Integer.parseInt(postIndex);
+							}
+						
+							if(index == set.getPosts().size()) {
+								aux = false;
+							} else {
+								toPost = set.getPosts().get(index);
+							}
+							
+							if(aux) {
+							
+								try {
+									if(set.getProfile().getType().equals(Profile.TWITTER)) {
+										
+										TwitterIntegration twitterIntegration = new TwitterIntegration();
+										Twitter twitter = twitterIntegration.getTwitter(set.getProfile().getToken(), set.getProfile().getTokenSecret());
+										
+										if(toPost.getPicture() != null) {
+										
+											ImageUpload upload = new ImageUploadFactory(
+													twitterIntegration.getConfigurationBuilderForMedia(set.getProfile().getToken(), set.getProfile().getTokenSecret()))
+													.getInstance(MediaProvider.TWITTER);
+											
+											String pathName = tempPath + toPost.getPicture().substring(toPost.getPicture().lastIndexOf("/") + 1);
+											upload.upload(new File(pathName), toPost.getText());
+										} else {
+											twitter.updateStatus(toPost.getText());
+										}
+										
+									} else if(set.getProfile().getType().equals(Profile.FACEBOOK) ||
+											set.getProfile().getType().equals(Profile.FACEBOOK_PAGE)) {
+
+										AccessToken accessToken = new AccessToken(set.getProfile().getToken(), null);
+										
+										Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+										
+										if(toPost.getAppendType() != null) {
+											
+											if(toPost.getAppendType().equals(Post.APPEND_PICTURE)) {
+												
+												ResponseList<Album> albums = facebook.albums().getAlbums();
+												
+												for(Album album : albums) {
+													if(album.getName().equals("Timeline Photos")) {
+												
+														FacebookAPI facebookAPI = new FacebookAPI();
+														
+														String pathName = tempPath + toPost.getPicture().substring(toPost.getPicture().lastIndexOf("/") + 1);
+														
+														List<String> pictures = new ArrayList<String>();
+														pictures.add(pathName);		
+														
+														facebookAPI.uploadPhoto(album.getId(), pictures, accessToken.getToken(), toPost.getText());
+														
+														break;
+													}
+												}
+											} else if(toPost.getAppendType().equals(Post.APPEND_RESUME)) {
+												
+												try {
+													
+													URL postLink = new URL(toPost.getLink());
+													
+													PostUpdate postUpdate = new PostUpdate(postLink);
+													postUpdate.setMessage(toPost.getText());
+													postUpdate.setCaption(postLink.getHost());
+													if(toPost.getPicture() != null) {
+														postUpdate.setPicture(new URL(toPost.getPicture()));
+													}
+													if(toPost.getTitle() != null) {
+														postUpdate.setName(toPost.getTitle());
+													}
+													if(toPost.getDescription() != null) {
+														postUpdate.setDescription(toPost.getDescription());
+													}
+													
+													facebook.postFeed(postUpdate);
+													
+												} catch (MalformedURLException e) {
+													e.printStackTrace();
+												} catch (facebook4j.FacebookException e) {
+													e.printStackTrace();
+												}
+									
+											} else if(toPost.getAppendType().equals(Post.APPEND_ALBUM)) {
+												
+												FacebookAPI facebookAPI = new FacebookAPI();
+												
+												facebookAPI.createAlbum(set.getProfile().getNetworkId(), accessToken.getToken(), toPost.getTitle(), toPost.getDescription());
+												
+												ResponseList<facebook4j.Album> albums = facebook.albums().getAlbums();
+												
+												Album insertedAlbum = null;
+												
+												for(Album album : albums) {
+													if(album.getName().equals(toPost.getTitle())) {
+														insertedAlbum = album;
+														break;
+													}	
+												}
+												
+												String[] arrayPictures = toPost.getPicture().split("§");
+												
+												List<String> pictures = new ArrayList<String>();
+												
+												for(String picture : arrayPictures) {
+													String pathName = tempPath + picture.substring(picture.lastIndexOf("/") + 1);
+													pictures.add(pathName);
+													facebookAPI.uploadPhoto(insertedAlbum.getId(), pictures, accessToken.getToken(), toPost.getText());
+												}
+											}
+											
+										} else {
+											
+											try {
+												
+												facebook.postStatusMessage(toPost.getText());
+												
+											} catch (facebook4j.FacebookException e) {
+												e.printStackTrace();
+											}
+										}	
+									}
+								}  catch (FacebookException faceException) {
+									if(faceException.getErrorCode() == 400) {
+										
+										set = remote.getById(set.getId());
+										set.setPostIndex("");
+										set.setStatus(Set.FINALIZED);
+										set.setState(Set.OFF);
+										set = remote.save(set);
+										
+										SetsController.POSTS_CONTROLLERS.remove(this);
+										cancel();
+									}
+									faceException.printStackTrace();
+								} catch (TwitterException twitterException) {
+									if(twitterException.getStatusCode() == 401) {
+										set = remote.getById(set.getId());
+										set.setPostIndex("");
+										set.setStatus(Set.FINALIZED);
+										set.setState(Set.OFF);
+										set = remote.save(set);
+										
+										SetsController.POSTS_CONTROLLERS.remove(this);
+										cancel();
+									}
+								}
+								
+								toPost.setPosted('T');
+							}
+						}
+						
+						Date now = new Date();
+						now.setSeconds(0);
+						Long time = now.getTime() / 1000;
+						
+						if(!aux || set.getEndDate().equals(time)) {
+							set = remote.getById(set.getId());
+							set.setPostIndex("");
+							set.setStatus(Set.FINALIZED);
+							set.setState(Set.OFF);
+							set = remote.save(set);
+							
+							SetsController.POSTS_CONTROLLERS.remove(this);
+							cancel();
+
+						} else {
+							set = remote.getById(set.getId());
+							index++;
+							postIndex = String.valueOf(index);
+							set.setPostIndex(postIndex);
+							set = remote.save(set);
+						}
+							
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			} else {
+
+				try {
+					set = remote.getById(set.getId());
+					set.setPostIndex("");
+					set.setStatus(Set.FINALIZED);
+					set.setState(Set.OFF);
+					set = remote.save(set);
+
+					SetsController.POSTS_CONTROLLERS.remove(this);
+					cancel();
+				} catch (NamingException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	public Set getSet() {
+		return set;
+	}
+
+	public void setSet(Set set) {
+		this.set = set;
+	}
+}

@@ -1,0 +1,102 @@
+<div class="panel panel-transparent">
+	<header>
+		<div class="row">
+			<div class="avatar m-t-15 m-b-15 m-l-15" (click)="openFileUpload()">
+				<div class="img-overlay">
+					<span class="fa fa-pencil"></span>
+				</div>
+				<img [src]="previewAvatar || ControlService.avatar_path + user.avatar"  id="preview-avatar" *ngIf="hasAvatar || previewAvatar">
+				<img [src]="'assets/img/profiles/avatar.png'"  id="preview-avatar" *ngIf="!hasAvatar && !previewAvatar">
+			</div>
+			<div class="m-t-50">
+				<h3><strong>{{ user?.name || "Type your name"}}</strong></h3>
+				<h6 [ngSwitch]="account?.planType">
+					<span *ngSwitchCase="0"><strong>Woop freemiun • </strong></span>
+					<!-- <span *ngSwitchCase="1"><strong>Plano oplay • </strong></span> -->
+					<!-- <span *ngSwitchCase="2"><strong>Plano opop • </strong></span> -->
+					<!-- <span *ngSwitchCase="3"><strong>Plano opower • </strong></span> -->
+					<!-- <span *ngSwitchCase="4"><strong>Plano oplus • </strong></span> -->
+					<!-- <span *ngSwitchCase="5"><strong>Plano oprime • </strong></span> -->
+					<!-- <span *ngSwitchCase="6"><strong>Plano opremium • </strong></span> -->
+					<span *ngSwitchCase="7"><strong>Woop Custom • </strong></span>
+					<span *ngSwitchCase="8"><strong>Woop Basic • </strong></span>
+					<span *ngSwitchCase="9"><strong>Woop Intermediate • </strong></span>
+					<span *ngSwitchCase="10"><strong>Woop Enterprise • </strong></span>
+				</h6>
+			</div>
+			<button *ngIf="account.planType != 0" class="btn btn-xs btn-default btn-cons" type="button" (click)="cancelSubscription()">
+				<span class="pull-left">
+					<i class="fa fa-times"></i>
+				</span>
+				<span class="m-l-5">Cancelar assinatura</span>
+			</button>
+			<a href="https://woopsocial.com/plans" target="_blank">
+				<button *ngIf="account.planType == 0"  class="btn btn-success" type="button">
+					<span class="pull-left">
+						<i class="fa fa-tag"></i>
+					</span>
+					<span class="m-l-5">Upgrade my account</span>
+				</button>
+			</a>
+		</div>
+	</header>
+
+	<section>
+		<article>
+			<div class="panel-heading">
+				<div class="panel-title">Configurações da Conta</div>
+			</div>
+
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="form-group form-group-default">
+						<label>Name</label>
+						<input #N="ngModel" type="text" name="name" id="name" class="form-control" [(ngModel)]="user.name" (keyup)="validate()">
+						<label *ngIf="!user.name && !N.pristine" class="error" for="cname">Name required.</label>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Password</label>
+						<input type="password" name="password" id="password" class="form-control" [(ngModel)]="password" (keyup)="validate()">
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>Repeat password</label>
+						<input #PS="ngModel" type="password" name="password-repeat" id="password-repeat" class="form-control" [(ngModel)]="passwordRepeat"
+						 (keyup)="validate()">
+						<label *ngIf="password != passwordRepeat" class="error" for="cname">Password doesn't match.</label>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-lg-6">
+					<div class="form-group form-group-default">
+						<label>E-mail (Login)</label>
+						<input #E="ngModel" type="email" name="email" id="email" class="form-control" [(ngModel)]="user.email" (focus)="hideError()">
+						<label *ngIf="!user.email && !E.pristine" class="error" for="cname">E-mail required.</label>
+						<label *ngIf="user.email && !E.valid" class="error" for="cname">Invalid e-mail.</label>
+						<label *ngIf="hasError" class="error" for="cname">{{ errorMessage }}</label>
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="form-group form-group-default form-group-default-select2" [class.hidden]="!timezones">
+						<label>GMT</label>
+						<select #T="ngModel" ngControl="T" id="timezone" name="timezone" class="full-width" data-placeholder="Select your time zone"
+						 [(ngModel)]="user.account.timezone.idTimezone" tabindex="-1" aria-hidden="true">
+							<option *ngFor="let item of timezones" [value]="item.idTimezone">{{ item.description }}</option>
+						</select>
+					</div>
+				</div>
+			</div>
+		</article>
+		<input #fileInput type="file" id="imgFile" name="file" (change)="changeAvatar(fileInput)" accept="image/*">
+	</section>
+
+	<footer class="m-t-10 m-b-10">
+		<button (click)="save()" data-dismiss="modal" class="btn btn-success pull-right" [disabled]="!validated">Save</button>
+	</footer>
+</div>

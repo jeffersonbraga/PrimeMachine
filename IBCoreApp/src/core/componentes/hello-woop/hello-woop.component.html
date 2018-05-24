@@ -1,0 +1,146 @@
+<div>
+    <div class="panel panel-transparent m-b-0">
+        <div class="panel-heading">
+            <div class="panel-title">
+                HELLO {{userName}}
+            </div>
+        </div>
+        <div class="panel-body p-b-0">
+            <div class="row">
+                <div class="col-lg-11">
+                    <div class="form-group form-group-default form-group-default-select2 no-border">
+                        Your account has been created. To get started with all Woop features we need to know your timezone and you must add at least
+                        one social channel. Do not worry, you can add more channels later. To make everything work out well,
+                        you need to provide all the permissions Woop requests from your social networks. We will never publish
+                        anything without your permission and we will always keep your data safe. Enjoy Woop :)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-transparent p-t-0 m-b-0">
+        <div class="panel-heading p-t-0 p-b-0 h-25">
+            <div class="panel-title">
+                Select a timezone
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="form-group form-group-default form-group-default-select2">
+                        <label>Timezone</label>
+                        <select #my_timezone #T="ngModel" ngControl="T" id="timezone" name="timezone" class="full-width" data-placeholder="Select a timezone"
+                            [(ngModel)]="timezone" tabindex="-1" aria-hidden="true">
+                            <option *ngFor="let item of timezones" [value]="item.idTimezone">{{ item.description }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div [hidden]="!hasErrorTimezone" class="alert alert-warning m-l-10 m-r-20 m-b-0" role="alert">
+                        <button class="close" (click)="hideErrorTimezoneMessage()"></button>
+                        <span>
+                            <strong>Ops! </strong> Select the default timezone for your account.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+    <div class="panel panel-transparent p-t-0 m-b-0">
+        <div class="panel-heading p-t-0">
+            <div class="panel-title">
+                adicionar novos canais (obrigatório 1 canal)
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <button class="btn btn-info btn-facebook btn-mobile" type="button" (click)="addFacebookChannel()">
+                        <span class="pull-left">
+                            <i class="fa fa-facebook fs-16"></i>
+                        </span>
+                        <span class="bold m-l-5">Facebook</span>
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-info btn-twitter btn-mobile" type="button" (click)="openTwitterAuthPage()">
+                        <span class="pull-left">
+                            <i class="fa fa-twitter fs-16"></i>
+                        </span>
+                        <span class="bold m-l-5">Twitter</span>
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-info btn-linkedin btn-mobile" type="button" (click)="addLinkedInChannel()">
+                        <span class="pull-left">
+                            <i class="fa fa-linkedin fs-16"></i>
+                        </span>
+                        <span class="bold m-l-5">Linkedin</span>
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-info btn-instagram btn-mobile" type="button" (click)="addInstagramChannelComponent()">
+                        <span class="pull-left">
+                            <i class="fa fa-instagram fs-16"></i>
+                        </span>
+                        <span class="bold m-l-5">Instagram</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <add-facebook-channells #facechannels *ngIf="facebookSelected" [disableBackButton]="facebookSelected" [singleSelect]="false"
+        class="p-b-0"></add-facebook-channells>
+
+    <!-- <add-instagram-channel  
+        #instachannels  
+        *ngIf="instagramSelected"     
+        [disableBackButton]="instagramSelected"
+        [cancelReset]="true"
+        class="p-b-0"></add-instagram-channel> -->
+
+    <div [hidden]="!hasError && !firstMessage" class="alert alert-warning m-l-20 m-r-20" role="alert">
+        <button class="close" (click)="hideErrorMessage()"></button>
+        <span *ngIf="hasError">
+            <strong>Ops! </strong>{{errorMessage}}
+        </span>
+        <span *ngIf="firstMessage && !hasError">
+            <strong>IMPORTANT: </strong>Only Instagram Business Profiles are supported.
+            <a href="https://www.facebook.com/business/help/fblite/502981923235522" target="_blank">Click here to learn more</a>
+        </span>
+    </div>
+
+    <div class="panel panel-transparent">
+        <div class="panel-heading">
+            <div class="panel-title">
+                canais selecionados
+            </div>
+        </div>
+        <div class="panel-body p-b-0">
+            <div class="row">
+                <div *ngFor="let item of selectedProfiles; let i = index">
+                    <div class="clearfix" *ngIf="i % 3 == 0"></div>
+                    <div class="col-md-4">
+                        <button_channels [profile]="item" [isEditable]="item.type == 'I'" [isExcludable]="true" [isSelectable]="false" (profileToEdit)="editInstagramChannel($event)"
+                            (profileToDelete)="deleteChannel($event)" [verifySelected]="false"></button_channels>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-success pull-right m-t-20 btn-mobile" (click)="saveProfiles()" [disabled]="(!canSave)">
+                <i class="{{(showSchedulePost)?'fa fa-paste':'fa fa-link'}}"></i>
+                <span class="bold">Continuar para WoopSocial</span>
+                <i class="{{(canSave)?'':'fa fa-spinner fa-spin'}}"></i>
+            </button>
+        </div>
+    </div>
+</div>

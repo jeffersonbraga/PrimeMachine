@@ -1,0 +1,823 @@
+<!-- BEGIN PRICING SECTION -->
+<section class="p-b-60 p-t-200 sm-p-t-60 hidden-xs" id="headerPlansPricing">
+    <div class="container p-l-5 p-r-5">
+        <h5 class="block-title m-b-0 text-center bold text-primary">
+            Choose the best option to start a simplified social media management
+        </h5>
+        <h1 class="m-t-5 text-center">
+            Unlimited scheduling and all features available for all plans
+        </h1>
+        <table class="table table-striped pricing-table no-border m-t-100">
+            <thead>
+                <tr>
+                    <th class="no-border"></th>
+                    <!--h1-->
+                    <th class="no-border text-center v-align-top no-padding bg-master-lighter" style="width: 13.5%;">
+                        <div class="bg-master">
+                            <p class="block-title text-white fs-12 no-margin">
+                                Freemium
+                            </p>
+                        </div>
+                        <p class="semi-bold font-montserrat m-t-35 m-b-35 lh-large">
+                            FREE
+                        </p>
+                    </th>
+                    <!--h2-->
+                    <th class="no-border text-center v-align-top no-padding bg-master-lightest" style="width: 13.5%;">
+                        <div class="bg-menu-dark">
+                            <p class="block-title text-white fs-12 no-margin">
+                                Basic
+                            </p>
+                        </div>
+                        <p class="font-montserrat m-t-35 m-b-35 lh-large">
+                            10 <sup class="fs-14 dollar">USD</sup>
+                        </p>
+                    </th>
+                    <!--h3-->
+                    <th class="no-border text-center v-align-top no-padding bg-master-lightest" style="width: 13.5%;">
+                        <div class="bg-menu-dark">
+                            <p class="block-title text-white fs-12 no-margin">
+                                Intermediate
+                            </p>
+                        </div>
+                        <p class="font-montserrat m-t-35 m-b-35 lh-large">
+                            20 <sup class="fs-14 dollar">USD</sup>
+                        </p>
+                    </th>
+                    <!--h4-->
+                    <th class="no-border text-center v-align-top no-padding bg-master-lightest" style="width: 13.5%;">
+                        <div class="bg-menu-dark">
+                            <p class="block-title text-white fs-12 no-margin">
+                                Enterprise
+                            </p>
+                        </div>
+                        <p class="font-montserrat m-t-35 m-b-35 lh-large">
+                            30 <sup class="fs-14 dollar">USD</sup>
+                        </p>
+                    </th>
+                    <!--h5-->
+                    <th class="no-border text-center bg-menu v-align-top no-padding" style="width: 14%;">
+                        <p class="block-title text-white fs-12 text-primary">
+                            Custom
+                        </p>
+                        <p class="font-montserrat text-white m-t-35 m-b-35 lh-large">
+                            {{planPrice}} <sup class="fs-14 dollar">USD</sup>
+                        </p>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <!--r1-->
+                <tr>
+                    <td>
+                        <p class=" no-margin p-l-10 fs-14 semi-bold">
+                            Social Channels
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Freemium">
+                        <p class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                            One of each network
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Freemium">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            10
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Freemium">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            20
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Freemium">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            30
+                        </p>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Freemium">
+                        <p class="block-title text-white fs-12 m-t-10 m-b-5 user-none">
+                           <a (click)="minus()"><i class="pg-minus_circle text-secondary p-r-20 fs-20 cursor user-none"></i></a>
+                           <span class="number-of-profiles user-none">{{numberOfProfiles}}</span>
+                           <a (click)="plus()"><i class="pg-plus_circle text-secondary p-l-20 fs-20 cursor user-none"></i></a>
+                        </p>
+                    </td>
+                </tr>
+                <!--r2-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class=" no-margin p-l-10 fs-14 semi-bold">
+                            Team Members
+                        </p>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Freemium">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            1
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            1
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            2
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <p class="block-title fs-12 m-t-10 m-b-5 text-secondary">
+                            3
+                        </p>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Regular">
+                        <p class="block-title text-white fs-12 m-t-10 m-b-5">
+                           {{teamMembers}}
+                        </p>
+                    </td>
+                </tr>
+                <!--r3-->
+                <tr>
+                    <td class="v-align-middle">
+                        <p class="no-margin p-l-10 fs-14 l-h-20 semi-bold">
+                            <span class="bold">Advanced</span> Analytics Reports 
+                            <br>
+                        </p>
+                            <i class="fa fa-facebook-square facebook-color p-l-10"></i> <span class="fs-12 light">Facebook,</span>
+                            <i class="fa fa-instagram instagram-color"></i> <span class="fs-12 light">Instagram,</span>
+                            <i class="fa fa-twitter-square twitter-color"></i> <span class="fs-12 light">Twitter and</span>
+                            <i class="fa fa-linkedin-square linkedin-color"></i> <span class="fs-12 light">Linkedin</span>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <p class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                            10 days
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--r4-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class="no-margin p-l-10 fs-14 l-h-20 semi-bold">
+                            <span class="bold">Unlimited</span> Scheduling
+                            <br>
+                        </p>
+                        <span class="p-l-10 fs-12 light">Photos, album, videos, gifs and Instagram stories</span>
+                    </td>
+                    <td class="text-center p-t-14 bg-master-lighter" data-title="Regular">
+                        <p class="no-margin fs-14 semi-bold sm-text-right sm-p-r-10">
+                            <i class="fa"></i>
+                            <i class="fa fa-facebook-square facebook-color fa-2"></i>
+                            <i class="fa fa-instagram instagram-color fa-2"></i>
+                            <i class="fa fa-twitter-square twitter-color fa-2"></i>
+                            <i class="fa fa-linkedin-square linkedin-color fa-2"></i>
+                        </p>
+                    </td>
+                    <td class="text-center p-t-14" data-title="Regular">
+                        <p class="no-margin fs-14 semi-bold sm-text-right sm-p-r-10">
+                            <i class="fa"></i>
+                            <i class="fa fa-facebook-square facebook-color fa-2"></i>
+                            <i class="fa fa-instagram instagram-color fa-2"></i>
+                            <i class="fa fa-twitter-square twitter-color fa-2"></i>
+                            <i class="fa fa-linkedin-square linkedin-color fa-2"></i>
+                        </p>
+                    </td>
+                    <td class="text-center p-t-14" data-title="Regular">
+                        <p class="no-margin fs-14 semi-bold sm-text-right sm-p-r-10">
+                            <i class="fa"></i>
+                            <i class="fa fa-facebook-square facebook-color fa-2"></i>
+                            <i class="fa fa-instagram instagram-color fa-2"></i>
+                            <i class="fa fa-twitter-square twitter-color fa-2"></i>
+                            <i class="fa fa-linkedin-square linkedin-color fa-2"></i>
+                        </p>
+                    </td>
+                    <td class="text-center p-t-14" data-title="Regular">
+                        <p class="no-margin fs-14 semi-bold sm-text-right sm-p-r-10">
+                            <i class="fa"></i>
+                            <i class="fa fa-facebook-square facebook-color fa-2"></i>
+                            <i class="fa fa-instagram instagram-color fa-2"></i>
+                            <i class="fa fa-twitter-square twitter-color fa-2"></i>
+                            <i class="fa fa-linkedin-square linkedin-color fa-2"></i>
+                        </p>
+                    </td>
+                    <td class="text-center bg-menu p-t-14" data-title="Regular">
+                        <p class="no-margin fs-14 semi-bold sm-text-right sm-p-r-10">
+                            <i class="fa"></i>
+                            <i class="fa fa-facebook-square text-white fa-2"></i>
+                            <i class="fa fa-instagram text-white fa-2"></i>
+                            <i class="fa fa-twitter-square text-white fa-2"></i>
+                            <i class="fa fa-linkedin-square text-white fa-2"></i>
+                        </p>
+                    </td>
+                </tr>
+                <!--r5-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class="no-margin p-l-10 fs-14 l-h-20 semi-bold">
+                            Content & Inbox Streams
+                            <br>
+                        </p>
+                        <span class="p-l-10 fs-12 light">
+                            Interact with all your social channels in a single dashboard 
+                        </span>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--r6-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class="no-margin p-l-10 fs-14 l-h-20 semi-bold">
+                            Channels Groups
+                            <br>
+                        </p>
+                        <span class="p-l-10 fs-12 light">
+                            Organize your social channels by groups
+                        </span>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--r7-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class=" no-margin p-l-10 fs-14 semi-bold">
+                            RSS Feeds
+                        </p>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--r8-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class=" no-margin p-l-10 fs-14 semi-bold">
+                            Link Shortening and Tracking
+                        </p>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--r9-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class=" no-margin p-l-10 fs-14 semi-bold">
+                            PDF and XLS Data Export
+                        </p>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <p class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                            10 days
+                        </p>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--r10-->
+                <tr class="bg-master-lightest">
+                    <td class="v-align-middle">
+                        <p class="no-margin p-l-10 fs-14 l-h-20 semi-bold">
+                            Facebook Comment Extractor
+                            <br>
+                        </p>
+                        <span class="p-l-10 fs-12 light">
+                            Extract comments from a Facebook post on a spreadsheet
+                        </span>
+                    </td>
+                    <td class="text-center bg-master-lighter" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="text-center" data-title="Regular">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                    <td class="bg-menu text-center" data-title="Extended">
+                        <h4 class="fa fa-check text-secondary m-t-15 fs-14" style="font-style: italic"></h4>
+                    </td>
+                </tr>
+                <!--Bottom-->
+                <tr class="bg-transparent">
+                    <td class=""></td>
+                    <td class="text-center p-b-30 p-t-35 bg-master-lighter" data-title="Regular">
+                        <p class="m-t-0 m-b-20 fs-14 text-primary bold">
+                            FREE
+                        </p>
+                        <a *ngIf="!user" class="bold btn btn-rounded btn-secondary text-white text-uppercase" [routerLink]="['/create']">Create Account</a>
+                        <a *ngIf="user" class="bold btn btn-rounded btn-secondary text-white text-uppercase" (click)="goToDashboard()" data-text="Buy now">Go to dashboard</a>
+                    </td>
+                    <td class="text-center p-b-30 p-t-30" data-title="Regular">
+                        <p class="m-t-0 fs-12 l-h-20">
+                            <span class="bold text-secondary">$10</span> 
+                            <span class="semi-bold text-secondary">MONTHLY</span>
+                            <span class="text-grey">OR</span> 
+                            <br>
+                            <span class="bold text-secondary">$100</span> 
+                            <span class="semi-bold text-secondary">YEARLY</span>
+                            <span class="bold text-primary">(SAVE $20)</span> 
+                        </p><a class="bold btn btn-rounded btn-primary text-uppercase" (click)="subscribe('basic')">Subscribe</a>
+                    </td>
+                    <td class="text-center p-b-30 p-t-30" data-title="Regular">
+                        <p class="m-t-0 fs-12 l-h-20">
+                            <span class="bold text-secondary">$20</span> 
+                            <span class="semi-bold text-secondary">MONTHLY</span>
+                            <span class="text-grey">OR</span> 
+                            <br>
+                            <span class="bold text-secondary">$200</span> 
+                            <span class="semi-bold text-secondary">YEARLY</span>
+                            <span class="bold text-primary">(SAVE $40)</span> 
+                        </p><a class="bold btn btn-rounded btn-primary text-uppercase" (click)="subscribe('intermediate')">Subscribe</a>
+                    </td>
+                    <td class="text-center p-b-30 p-t-30" data-title="Custom">
+                        <p class="m-t-0 fs-12 l-h-20">
+                            <span class="bold text-secondary">$30</span> 
+                            <span class="semi-bold text-secondary">MONTHLY</span>
+                            <span class="text-grey">OR</span> 
+                            <br>
+                            <span class="bold text-secondary">$300</span> 
+                            <span class="semi-bold text-secondary">YEARLY</span>
+                            <span class="bold text-primary">(SAVE $60)</span> 
+                        </p><a class="bold btn btn-rounded btn-primary text-uppercase" (click)="subscribe('enterprise')">Subscribe</a>
+                    </td>
+                    <td class="bg-menu text-center p-b-30 p-t-30" data-title="Extended">
+                        <p class="m-t-0 fs-12 text-white l-h-20">
+                            <span class="bold text-white">${{planPrice}}</span> 
+                            <span class="semi-bold text-white">MONTHLY</span>
+                            <span class="text-grey">OR</span> 
+                            <br>
+                            <span class="bold text-white">${{planPriceYearly}}</span> 
+                            <span class="semi-bold text-white">YEARLY</span>
+                            <span class="bold text-primary">(SAVE ${{save}})</span> 
+                        </p><a class="bold btn btn-rounded btn-primary btn-primary-custom text-uppercase" (click)="subscribe('custom')">Subscribe</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+<!-- END PRICING SECTION -->
+
+<!-- MOBILE VERSION -->
+<section class="p-b-0 p-t-100 hidden-sm hidden-md hidden-lg hidden-xlg" id="headerPlansPricing">
+    <div class="container p-l-5 p-r-5">
+        <h5 class="block-title m-b-0 text-center bold text-primary">
+            Choose the best option to start a simplified social media management
+        </h5>
+        <h2 class="m-t-5 text-center">
+            Unlimited scheduling and all features available for all plans
+        </h2>
+        <table class="table table-striped no-border m-t-30 p-l-20 p-r-20">
+            <thead>
+                <th class="text-center v-align-top bg-master-lighter p-l-10 p-r-10 p-t-10">
+                    <div class="bg-master">
+                        <p class="block-title text-white fs-16 no-margin p-t-10 p-b-10">
+                            Freemium
+                        </p>
+                    </div>
+                    <p class="semi-bold font-montserrat m-t-10 m-b-5 lh-large">
+                        FREE
+                    </p>
+                </th>
+            </thead>
+            <tbody>
+                <tr class="m-t-0">
+                    <td class="text-center">
+                        <p class="no-margin p-l-10 fs-14 semi-bold">
+                            4 Social Channels <br>
+                            <span class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                                (One of each network)
+                            </span>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 semi-bold">
+                                <span class="bold">Advanced</span> Analytics Reports <br>
+                            <span class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                                10 days
+                            </span>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 l-h-20 semi-bold">
+                            <span class="bold">Unlimited</span> Scheduling
+                            <br>
+                            <i class="fa fa-facebook-square facebook-color p-l-10"></i> <span class="fs-12 light">Facebook,</span>
+                            <i class="fa fa-instagram instagram-color"></i> <span class="fs-12 light">Instagram,</span>
+                            <i class="fa fa-twitter-square twitter-color"></i> <span class="fs-12 light">Twitter and</span>
+                            <i class="fa fa-linkedin-square linkedin-color"></i> <span class="fs-12 light">Linkedin</span>
+                            <br>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center p-b-30 p-t-35 bg-master-lighter">
+                        <a *ngIf="!user" class="bold btn btn-rounded btn-secondary text-white text-uppercase full-width p-t-10 p-b-10" 
+                        [routerLink]="['/create']">Create Account</a>
+                        <a *ngIf="user" class="bold btn btn-rounded btn-secondary text-white text-uppercase full-width p-t-10 p-b-10" 
+                        (click)="goToDashboard()" data-text="Buy now">Go to dashboard</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="table table-striped no-border m-t-30 p-l-20 p-r-20">
+            <thead>
+                <th class="text-center v-align-top bg-master-lighter p-l-10 p-r-10 p-t-10">
+                    <div class="bg-master">
+                        <p class="block-title text-white fs-16 no-margin p-t-10 p-b-10">
+                            Basic
+                        </p>
+                    </div>
+                    <p class="font-montserrat m-t-10 m-b-5 lh-large">
+                        10 <sup class="fs-14 dollar">USD</sup>
+                    </p>
+                </th>
+            </thead>
+            <tbody>
+                <tr class="m-t-0">
+                    <td class="text-center">
+                        <p class="no-margin p-l-10 fs-14 semi-bold">
+                            10 Social Channels
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 semi-bold">
+                                <span class="bold">Advanced</span> Analytics Reports <br>
+                            <span class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                                UNLIMITED
+                            </span>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 l-h-20 semi-bold">
+                            <span class="bold">Unlimited</span> Scheduling
+                            <br>
+                            <i class="fa fa-facebook-square facebook-color p-l-10"></i> <span class="fs-12 light">Facebook,</span>
+                            <i class="fa fa-instagram instagram-color"></i> <span class="fs-12 light">Instagram,</span>
+                            <i class="fa fa-twitter-square twitter-color"></i> <span class="fs-12 light">Twitter and</span>
+                            <i class="fa fa-linkedin-square linkedin-color"></i> <span class="fs-12 light">Linkedin</span>
+                            <br>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center p-b-30 p-t-30">
+                        <p class="m-t-0 fs-12 l-h-20">
+                            <span class="bold text-secondary">$10</span> 
+                            <span class="semi-bold text-secondary">MONTHLY</span>
+                            <span class="text-grey">OR </span> 
+                            <span class="bold text-secondary">$100</span> 
+                            <span class="semi-bold text-secondary">YEARLY</span>
+                            <span class="bold text-primary">(SAVE $20)</span> 
+                        </p><a class="bold btn btn-rounded btn-primary text-uppercase full-width p-t-10 p-b-10" (click)="subscribe('basic')">Subscribe</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="table table-striped no-border m-t-30 p-l-20 p-r-20">
+            <thead>
+                <th class="text-center v-align-top bg-master-lighter p-l-10 p-r-10 p-t-10">
+                    <div class="bg-master">
+                        <p class="block-title text-white fs-16 no-margin p-t-10 p-b-10">
+                            Intermediate
+                        </p>
+                    </div>
+                    <p class="font-montserrat m-t-10 m-b-5 lh-large">
+                        20 <sup class="fs-14 dollar">USD</sup>
+                    </p>
+                </th>
+            </thead>
+            <tbody>
+                <tr class="m-t-0">
+                    <td class="text-center">
+                        <p class="no-margin p-l-10 fs-14 semi-bold">
+                            20 Social Channels
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 semi-bold">
+                                <span class="bold">Advanced</span> Analytics Reports <br>
+                            <span class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                                UNLIMITED
+                            </span>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 l-h-20 semi-bold">
+                            <span class="bold">Unlimited</span> Scheduling
+                            <br>
+                            <i class="fa fa-facebook-square facebook-color p-l-10"></i> <span class="fs-12 light">Facebook,</span>
+                            <i class="fa fa-instagram instagram-color"></i> <span class="fs-12 light">Instagram,</span>
+                            <i class="fa fa-twitter-square twitter-color"></i> <span class="fs-12 light">Twitter and</span>
+                            <i class="fa fa-linkedin-square linkedin-color"></i> <span class="fs-12 light">Linkedin</span>
+                            <br>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center p-b-30 p-t-30">
+                        <p class="m-t-0 fs-12 l-h-20">
+                            <span class="bold text-secondary">$20</span> 
+                            <span class="semi-bold text-secondary">MONTHLY</span>
+                            <span class="text-grey">OR </span>
+                            <span class="bold text-secondary">$200</span> 
+                            <span class="semi-bold text-secondary">YEARLY</span>
+                            <span class="bold text-primary">(SAVE $40)</span> 
+                        </p><a class="bold btn btn-rounded btn-primary text-uppercase full-width p-t-10 p-b-10" (click)="subscribe('intermediate')">Subscribe</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="table table-striped no-border m-t-30 p-l-20 p-r-20">
+            <thead>
+                <th class="text-center v-align-top bg-master-lighter p-l-10 p-r-10 p-t-10">
+                    <div class="bg-master">
+                        <p class="block-title text-white fs-16 no-margin p-t-10 p-b-10">
+                            Enterprise
+                        </p>
+                    </div>
+                    <p class="font-montserrat m-t-10 m-b-5 lh-large">
+                        30 <sup class="fs-14 dollar">USD</sup>
+                    </p>
+                </th>
+            </thead>
+            <tbody>
+                <tr class="m-t-0">
+                    <td class="text-center">
+                        <p class="no-margin p-l-10 fs-14 semi-bold">
+                            30 Social Channels
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 semi-bold">
+                                <span class="bold">Advanced</span> Analytics Reports <br>
+                            <span class="fs-12 m-t-10 m-b-5 text-secondary bold">
+                                UNLIMITED
+                            </span>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 l-h-20 semi-bold">
+                            <span class="bold">Unlimited</span> Scheduling
+                            <br>
+                            <i class="fa fa-facebook-square facebook-color p-l-10"></i> <span class="fs-12 light">Facebook,</span>
+                            <i class="fa fa-instagram instagram-color"></i> <span class="fs-12 light">Instagram,</span>
+                            <i class="fa fa-twitter-square twitter-color"></i> <span class="fs-12 light">Twitter and</span>
+                            <i class="fa fa-linkedin-square linkedin-color"></i> <span class="fs-12 light">Linkedin</span>
+                            <br>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="text-center p-b-30 p-t-30">
+                        <p class="m-t-0 fs-12 l-h-20">
+                            <span class="bold text-secondary">$30</span> 
+                            <span class="semi-bold text-secondary">MONTHLY</span>
+                            <span class="text-grey">OR </span> 
+                            <span class="bold text-secondary">$300</span> 
+                            <span class="semi-bold text-secondary">YEARLY</span>
+                            <span class="bold text-primary">(SAVE $60)</span> 
+                        </p><a class="bold btn btn-rounded btn-primary text-uppercase full-width p-t-10 p-b-10" (click)="subscribe('enterprise')">Subscribe</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <table class="table table-striped no-border m-t-30 p-l-20 p-r-20">
+            <thead>
+                <th class="text-center bg-menu p-l-10 p-r-10 p-t-10">
+                    <p class="block-title text-white fs-16 text-primary no-margin p-t-10 p-b-10 bold">
+                        Custom
+                    </p>
+                    <p class="font-montserrat text-white m-t-10 m-b-5 lh-large">
+                        {{planPrice}} <sup class="fs-14 dollar">USD</sup>
+                    </p>
+                </th>
+            </thead>
+            <tbody>
+                <tr class="m-t-0">
+                    <td class="bg-menu text-center">
+                        <p class="block-title text-white xxs-fs-12 fs-14 m-t-10 m-b-5 user-none">
+                           <a (click)="minus()"><i class="pg-minus_circle text-secondary xxs-p-r-5 p-r-20 fs-35 cursor"></i></a>
+                           <span class="number-of-profiles user-none">{{numberOfProfiles}} Social Channels</span>
+                           <a (click)="plus()"><i class="pg-plus_circle text-secondary xxs-p-l-5 p-l-20 fs-35 cursor"></i></a>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-menu">
+                    <td class="text-center">
+                        <p class="no-margin fs-14 semi-bold text-white">
+                                <span class="bold">Advanced</span> Analytics Reports <br>
+                            <span class="fs-12 m-t-10 m-b-5 text-primary bold">
+                                UNLIMITED
+                            </span>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-menu">
+                    <td class="text-center bg-menu">
+                        <p class="no-margin fs-14 l-h-20 semi-bold text-white">
+                            <span class="bold">Unlimited</span> Scheduling
+                            <br>
+                            <i class="fa fa-facebook-square p-l-10"></i> <span class="fs-12 light">Facebook,</span>
+                            <i class="fa fa-instagram"></i> <span class="fs-12 light">Instagram,</span>
+                            <i class="fa fa-twitter-square"></i> <span class="fs-12 light">Twitter and</span>
+                            <i class="fa fa-linkedin-square"></i> <span class="fs-12 light">Linkedin</span>
+                            <br>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="m-t-0 bg-master-lighter">
+                    <td class="bg-menu text-center p-b-30 p-t-30">
+                        <p class="m-t-0 fs-12 text-white l-h-20">
+                            <span class="bold text-white">${{planPrice}}</span> 
+                            <span class="semi-bold text-white">MONTHLY</span>
+                            <span class="text-grey">OR </span>
+                            <span class="bold text-white">${{planPriceYearly}}</span> 
+                            <span class="semi-bold text-white">YEARLY</span>
+                            <span class="bold text-primary">(SAVE ${{save}})</span> 
+                        </p><a class="bold btn btn-rounded btn-primary btn-primary-custom text-uppercase full-width p-t-10 p-b-10" (click)="subscribe('custom')">Subscribe</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+<!-- END MOBILE VERSION -->
+
+<!--START DOUBTS SECTION -->
+<section class="p-b-60">
+    <div class="container ajdust-min-height">
+        <div class="row"><h1 class="text-center">Any doubts?</h1></div>
+        <div class="row">
+            <div class="col-md-6">
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">Which social networks does Woop support?</p>
+                <p class="text-master-dark fs-14">We support Facebook Profiles, Facebook Pages, Instagram, 
+                    Twitter, Linkedin Profiles and Linkedin Pages.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">how does the freemium plan works?</p>
+                <p class="text-master-dark fs-14">When using our freemium tools, you get full access to our features, 
+                    with one exception: the advanced reports modules are only available when purchasing a plan. 
+                    You may add one social channel for each network  and post as much as you please, with no further limitations.</p>
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">What does social channel stand for?</p>
+                <p class="text-master-dark fs-14">
+                    Each social channel of any social network supported by Woop is count as 1.
+                    For example, 8 Facebook pages, 5 Instagram profiles and 2 Twitter profiles would count as 15 social channels in total.</p>
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">How can I upgrade to add more social channels or users?</p>
+                <p class="text-master-dark fs-14">You can purchase channels on our custom plan. We feel/think/prefer that 
+                    you pay only for what suits you. Each new extra profile costs 1 dollars/month and at every 5 
+                    profiles you get one new team member license.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">What are the main differences between each plan?</p>
+                <p class="text-master-dark fs-14">The two differences between the plans are on how many social 
+                    profiles you may add and how many team members can work on the same account. 
+                    You have full access to all our features in all plans.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">How long does the contract last? </p>
+                <p class="text-master-dark fs-14">You can pay month-by-month, or annually. 
+                    It is possible to upgrade, downgrade, or cancel at any time, with no extra charges. 
+                    Please note that we do not refund  downgrades or cancellation.
+                    given billing cycle only.</p>
+            </div>
+            <div class="col-md-6">
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">Can I cancel anytime?</p>
+                <p class="text-master-dark fs-14">You may cancel your account anytime and you will be charged for the given billing cycle only.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">Do you offer a discount for digital influencers?</p>
+                <p class="text-master-dark fs-14">Yes! Write an honest review of Woop on your blog and we'll give you 6 months free on our 1st plan.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">CAN I PAY ANNUALLY?</p>
+                <p class="text-master-dark fs-14">Yes, and it's worth it! A full year's subscription saves you 15% compared to paying monthly. 
+                    You can upgrade from monthly to yearly at any time.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">ARE THERE ANY HIDDEN FEES?</p>
+                <p class="text-master-dark fs-14">Our prices are all-inclusive. There are no setup or cancellation fees, and no additional fees or taxes.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">What are my payment options?</p>
+                <p class="text-master-dark fs-14">We accept all major credit cards. Mostly, payments are taken monthly but 
+                    we also offer a 15% discount if you choose to pay for a full year.</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">DO YOU OFFER special discounts or plans for students, researchers or charity?</p>
+                <p class="text-master-dark fs-14">Registered charities, nonprofits, and students 
+                    in full-time education may use all of our features for free. Get in touch!</p>
+
+                <p class="bold text-master-dark m-b-0 l-h-20 fs-14 text-uppercase">Do you offer free trial?</p>
+                <p class="text-master-dark fs-14">If you want to test our features, you can start using the Freemium 
+                    plan, where all resources are available, including a week with full access to the reports.</p>
+            </div>
+        </div>
+        <div class="row text-center p-t-50 hidden-xs">
+            <h5 class="bold">I STILL HAVE QUESTIONS</h5>
+            <p class=" fs-24 text-master-dark">
+                Feel free to get in touch with us on any of our social channels or chat. 
+                <br>
+                Also, our contact page has details for reaching us by email.
+            </p>
+        </div>
+    </div>
+</section>
+<!--END DOUBTS SECTION-->
+
+<!-- START DEMO SECTION -->
+<!-- <section id="demo-content-3" class="jumbotron p-b-60 relative bg-white">
+	<img class="demo-browser-desktop second-image" src="assets/images/mockups-baixo.png" data-pages="float" data-max-top-translate="50"
+		data-max-bottom-translate="0" data-speed="0.1" data-delay="1000" data-curve="ease" alt="">
+	<div class="demo-shadow"></div>
+</section> -->
+<!-- END DEMO SECTION -->
+
+ <generic-modal #loginModal [currentModal]="loginModal" componentClassName="LoginComponent"></generic-modal>

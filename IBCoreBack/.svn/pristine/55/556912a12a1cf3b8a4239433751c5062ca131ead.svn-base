@@ -1,0 +1,63 @@
+package br.com.opsocial.server.actions.reports;
+
+import java.io.File;
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.report.ReportLogoDTO;
+import br.com.opsocial.ejb.das.MaintenanceReportLogoRemote;
+import br.com.opsocial.ejb.entity.application.idclass.ReportLogoId;
+import br.com.opsocial.ejb.entity.report.ReportLogo;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class DeleteReportLogoAction extends ServerAction {
+
+	private Boolean wasLogoDeleted;
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		ReportLogoDTO reportLogoDTO = (ReportLogoDTO) getParameters().get("reportLogo");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceReportLogoRemote reportLogoRemote = (MaintenanceReportLogoRemote) 
+				RecoverMaintenance.recoverMaintenance("ReportLogo");
+		
+		wasLogoDeleted = true;
+		ReportLogo reportLogo = new ReportLogo();
+		
+		try {
+			
+			ReportLogoId reportLogoId = new ReportLogoId();
+			reportLogoId.setObjectId(reportLogoDTO.getObjectId());
+			reportLogoId.setType(reportLogoDTO.getType());
+			
+			reportLogo = reportLogoRemote.getById(reportLogoId);
+			
+			reportLogo.setLogo(null);
+			reportLogo.setWidth(null);
+			reportLogo.setHeight(null);
+			
+			reportLogoRemote.save(reportLogo);
+			
+			String reportLogoPath = ServicesImpl.context.getInitParameter("uploadDirReports");
+			File reportLogoImage = new File(reportLogoPath, reportLogoDTO.getLogo());
+			reportLogoImage.delete();
+			
+			reportLogo = reportLogoRemote.getById(reportLogoId);
+			
+		} catch (Exception e) {
+			wasLogoDeleted = false;
+			e.printStackTrace();
+		}
+		
+		getParameters().put("wasDeleted", new br.com.opsocial.client.entity.primitive.Boolean(wasLogoDeleted));
+		getParameters().put("reportLogo", MountDTO.mountReportLogo(reportLogo));
+	}
+
+}

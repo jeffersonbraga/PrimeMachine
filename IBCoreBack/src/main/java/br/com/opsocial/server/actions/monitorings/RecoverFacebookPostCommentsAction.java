@@ -1,0 +1,53 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.client.entity.facebook.FacebookPostDTO;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.socialnetworks.facebook.CommentDTO;
+import br.com.opsocial.client.entity.socialnetworks.facebook.CommentsDTO;
+import br.com.opsocial.client.entity.socialnetworks.facebook.FacebookPaging;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+
+@RestController
+@RequestMapping("woopsocial")
+public class RecoverFacebookPostCommentsAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/recover_facebook_post_comments",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+
+		FacebookPostDTO post = (FacebookPostDTO) getParameters().get("post");
+		FacebookPaging facebookPaging = (FacebookPaging) getParameters().get("paging");
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		
+		if(profile != null) {
+			
+			FacebookAPI facebookGraphAPI = new FacebookAPI();
+			
+			CommentsDTO comments = facebookGraphAPI.recoverComments(post.getPostId(), profile.getToken(), facebookPaging, 25);
+
+			for(CommentDTO comment : comments.getComments()) {
+				comment.setReplies(new FacebookAPI().recoverComments(comment.getCommentId(), profile.getToken(), null, 2000).getComments());
+			}
+			
+			setParameters(new HashMap<String, Object>());
+	
+			getParameters().put("comments", comments);
+		} else {
+			getParameters().put("message", new StringUtil("É necessário ter pelo menos 1 perfil/página adicionado para recuperação dos comentários"));
+		}
+	}
+}

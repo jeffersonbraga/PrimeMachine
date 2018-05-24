@@ -1,0 +1,113 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.server.utils.reports.ReportInstagram;
+import br.com.opsocial.server.validation.ReportsValidation;
+
+public class InstagramInsightsController {
+
+	private Timer timer;
+	
+	public InstagramInsightsController() {
+		
+		timer = new Timer();
+		
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.set(Calendar.HOUR_OF_DAY, 5);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+		
+		Date taskTime = taskDate.getTime();
+		
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+	
+	class Task extends TimerTask {
+		
+		public void run() {
+
+			LocalDateTime localDateTimeNow = LocalDateTime.now(ZoneId.of("UTC"));
+			
+			ZonedDateTime reportDate = UtilFunctions.getDateForInstagramReport(localDateTimeNow.minusDays(2));
+
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			MaintenanceReportGenerateRemote reportGenerateRemote = (MaintenanceReportGenerateRemote) 
+					RecoverMaintenance.recoverMaintenance("ReportGenerate");
+			
+			List<Profile> profiles = profileRemote.listActivesByType(Profile.INSTAGRAM);
+			Map<String, String> profileMap = new HashMap<String, String>();
+			
+			for(Profile profile : profiles) {
+				
+				try {
+					
+					if(!profileMap.containsKey(profile.getNetworkId()) && new ReportsValidation().canGenerateReport(profile)) {
+						
+						ReportGenerate reportGenerate = reportGenerateRemote.getEntity(profile.getNetworkId(), Profile.INSTAGRAM);
+						
+						if(reportGenerateRemote.hasEntity(profile.getNetworkId(), Profile.INSTAGRAM)) {
+							
+							if(reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+								
+								// Retrieve insights for the last day with data.
+								ReportInstagram reportInstagram = new ReportInstagram(profile, false);
+								reportInstagram.retrieveAllInsightsForDay(reportDate);
+								reportInstagram.retrieveInsightsForLifetime(reportDate);
+								reportInstagram.retrieveFollowers(reportDate);
+								
+								// Verificação de dias em que os relatórios não foram gerados (Verifica diretamente a tabela ReportControl).
+								List<Long> reportDaysMain = ReportGenerateVerification.getListDaysForInstagramReport(profile.getNetworkId(), Profile.INSTAGRAM, ReportInstagram.GROUP_MAIN);
+
+								for(Long reportDay : reportDaysMain) {
+									new ReportInstagram(profile, true).retrieveAllInsightsForDay(
+											ZonedDateTime.of(LocalDateTime.ofEpochSecond(reportDay, 0, ZoneOffset.UTC), ZoneId.of("America/Los_Angeles")));
+								}
+							}
+							
+						} else {
+							
+							reportGenerate = new ReportGenerate();
+							reportGenerate.setNetworkId(profile.getNetworkId());
+							reportGenerate.setNetworkType(profile.getType());
+							reportGenerate.setTokenSecret(profile.getToken());
+							reportGenerate.setState(ReportFacebook.GENERATING);
+							reportGenerate.setIsInNewInstaFollowersReports('T');
+							
+							reportGenerate = reportGenerateRemote.save(reportGenerate);
+
+							new Thread(new ReportGenerateRunnable(profile, ReportGenerateRunnable.REPORT_DAYS)).start();
+						}
+					}
+					
+					profileMap.put(profile.getNetworkId(), "");
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
+	}
+	
+}

@@ -1,0 +1,51 @@
+package br.com.opsocial.ejb.das;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.GooglePlusPostDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.google.GooglePlusPost;
+
+@Stateless
+public class MaintenanceGooglePlusPostBean extends AbstractDASImpl<GooglePlusPost> implements MaintenanceGooglePlusPostRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	GooglePlusPostDAO dao;
+	
+	@Override
+	public GooglePlusPostDAO getDAO() {
+		return dao;
+	}
+
+	@Override
+	public GooglePlusPost save(GooglePlusPost googlePlusPost) throws IllegalArgumentException, Exception {
+		return dao.save(googlePlusPost);
+	}
+
+	@Override
+	public void setDao(AbstractDAO<GooglePlusPost> dao) {
+		this.dao = (GooglePlusPostDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<GooglePlusPost> getDao() {
+		return dao;
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}

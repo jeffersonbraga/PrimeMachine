@@ -1,0 +1,636 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.Stateless;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.FacePostMonitoringId;
+import br.com.opsocial.ejb.entity.facebook.FacePostMonitoring;
+
+@Stateless
+public class FacePostMonitoringDAOImpl extends AbstractDAOImpl<FacePostMonitoring> implements FacePostMonitoringDAO { 
+
+	@Override
+	public List<FacePostMonitoring> listMostRecents(Long idMonitoring, Integer maxResults) {		
+
+		sql = "select postid from opsocial.facepostsmonitorings where idmonitoring=" + idMonitoring + 
+				" and garbage='F' order by createdtime desc limit " + maxResults;
+		
+		query = em.createNativeQuery(sql);
+		
+		String ids = "";
+		
+		for(Object id : query.getResultList()) {
+			ids += "'" + id.toString() + "',";
+		}
+		
+		if(!ids.isEmpty()) {
+			sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and " +
+					"f.facebookPost.postId in (" + ids.substring(0,ids.length()-1) + ") order by f.createdTime desc";
+			
+			query = em.createQuery(sql);
+			query.setParameter("idMonitoring", idMonitoring);
+			
+			return query.getResultList();
+		} else {
+			return new ArrayList<FacePostMonitoring>();
+		}
+		
+	}
+
+	@Override
+	public List<FacePostMonitoring> listMostRecents(Long createdTime, Long idMonitoring) {
+		
+		sql = "select postid from opsocial.facepostsmonitorings where createdtime > " + createdTime + 
+				" and idmonitoring=" + idMonitoring + " and garbage='F' order by createdtime"; 
+		
+		query = em.createNativeQuery(sql);
+		
+		String ids = "";
+		
+		for(Object id : query.getResultList()) {
+			ids += "'" + id.toString() + "',";
+		}
+		
+		if(!ids.isEmpty()) {
+			sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and " +
+					" f.facebookPost.postId in (" + ids.substring(0,ids.length()-1) + ") order by f.createdTime";
+			query = em.createQuery(sql);
+			query.setParameter("idMonitoring", idMonitoring);
+			return query.getResultList();
+		} else {
+			return new ArrayList<FacePostMonitoring>();
+		}
+	}
+
+	@Override
+	public List<FacePostMonitoring> listElder(Long createdTime, Long idMonitoring, Integer maxResults) {
+		
+		sql = "select postid from opsocial.facepostsmonitorings where createdtime < " + createdTime + 
+				" and idmonitoring=" + idMonitoring + " and garbage='F' order by createdtime desc limit " + maxResults;
+		
+		query = em.createNativeQuery(sql);
+
+		String ids = "";
+		
+		for(Object id : query.getResultList()) {
+			ids += "'" + id.toString() + "',";
+		}
+		
+		if(!ids.isEmpty()) {
+			sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and  " +
+					"f.facebookPost.postId in (" + ids.substring(0,ids.length()-1) + ") order by f.createdTime desc";
+			query = em.createQuery(sql);
+			query.setParameter("idMonitoring", idMonitoring);
+			return query.getResultList();			
+		} else {
+			return new ArrayList<FacePostMonitoring>();
+		}
+	}
+
+	@Override
+	public FacePostMonitoring merge(FacePostMonitoring facePostMonitoring) throws Exception {
+
+		FacePostMonitoringId facePostMonitoringId = new FacePostMonitoringId();
+		facePostMonitoringId.setFacebookPost(facePostMonitoring.getFacebookPost().getPostId());
+		facePostMonitoringId.setMonitoring(facePostMonitoring.getMonitoring().getIdMonitoring());
+		facePostMonitoringId.setTerm(facePostMonitoring.getTerm());
+		
+		FacePostMonitoring objTmp = getById(facePostMonitoringId);
+
+		try {
+			validateVersion(objTmp, facePostMonitoring);
+		} catch (IllegalStateException ex) {
+			throw new OptimisticLockException();
+		}
+
+		em.merge(facePostMonitoring);
+		facePostMonitoring = getById(facePostMonitoringId);
+		
+		this.flush();
+
+		return facePostMonitoring;
+	}
+	
+	@Override
+	public void delete(FacePostMonitoring object) throws Exception {
+		try {
+			object = em.merge(object);
+			em.remove(object);
+			this.flush();	
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+	}
+
+	@Override
+	public Long getCountOfPosts(Long idMonitoring, Long dateFrom, Long dateUntil) {
+
+		sql = "SELECT COUNT(f) FROM FacePostMonitoring f WHERE f.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (f.facebookPost.createdTime >= :dateFrom AND f.facebookPost.createdTime <= :dateUntil)";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("dateFrom", dateFrom);
+		query.setParameter("dateUntil", dateUntil);
+
+		return (Long) query.getSingleResult();
+	}
+	
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+	
+		sql = "SELECT fpm.term, COUNT(fpm) FROM FacePostMonitoring fpm " +
+				"WHERE fpm.monitoring.idMonitoring = :idMonitoring AND (fpm.retrievedDate >= :date AND fpm.retrievedDate < (:date + 86400)) " + 
+				"AND fpm.garbage = 'F' " +
+				"GROUP BY fpm.term";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+
+		sql = "SELECT COUNT(fpm) FROM FacePostMonitoring fpm WHERE fpm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (fpm.retrievedDate >= :date AND fpm.retrievedDate < (:date + 86400)) AND fpm.garbage = 'F'";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+
+	@Override
+	public List<Object[]> getCountOfPostsPerHourDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT series.hour, count(fpm) FROM (SELECT generate_series(0,23)*1 AS hour) AS series " +
+				"LEFT JOIN (SELECT fpm.* FROM opsocial.facepostsmonitorings as fpm INNER JOIN opsocial.monitorings AS m ON fpm.idmonitoring = m.idmonitoring " +
+					"WHERE fpm.idmonitoring = " + idMonitoring + " AND (fpm.retrieveddate >= " + date + " AND fpm.retrieveddate < (" + date + " + 86400)) AND fpm.garbage = 'F') AS fpm ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(fpm.retrieveddate)::timestamp with time zone) " +
+			  "GROUP BY series.hour " +  
+			  "ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT fpm.qualification, fpm.term, COUNT(fpm) FROM opsocial.facepostsmonitorings fpm WHERE fpm.idmonitoring = " + idMonitoring + " " + 
+				"AND (fpm.retrieveddate >= " + date + " AND fpm.retrieveddate < (" + date + " + 86400)) AND fpm.qualification <> '' " + 
+				"GROUP BY fpm.qualification, fpm.term";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT mpt.idtag, COUNT(*) FROM opsocial.facepostsmonitorings AS fpm " +
+				"INNER JOIN opsocial.monitoringspoststags AS mpt ON " +
+				"mpt.postid = fpm.postid AND mpt.term = fpm.term AND mpt.idmonitoring = fpm.idmonitoring " +
+				"WHERE mpt.idmonitoring = " + idMonitoring + " AND (fpm.retrieveddate >= " + date + " AND fpm.retrieveddate < (" + date + " + 86400)) " + 
+				"GROUP BY mpt.idtag";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+
+	@Override
+	public Long getCountOfGarbagePostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(fpm) FROM FacePostMonitoring fpm WHERE fpm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (fpm.retrievedDate >= :date AND fpm.retrievedDate < (:date + 86400)) AND fpm.garbage = 'T'";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+
+	@Override
+	public List<FacePostMonitoring> getByInterval(Long idMonitoring, Long startDate, 
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, 
+			List<String> monitoringWords, Integer limit) {
+		
+		sql = "select * from opsocial.facepostsmonitorings fpm where fpm.idmonitoring = " + idMonitoring + 
+				" and fpm.createdtime >= " + startDate + " and fpm.createdtime <= " + endDate + " and fpm.garbage='F' ";
+				
+		if(monitoringTerms != null) {
+			
+			sql += "and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " fpm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+//		if(monitoringWords != null) {
+//			
+//		}
+		
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " fpm.qualification is null or";
+				} else {
+					sql += " fpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		sql += " order by fpm.createdTime desc";
+		
+		if(limit != null) {
+			sql += " limit " + limit;
+		}
+		
+		query = em.createNativeQuery(sql, FacePostMonitoring.class);
+		
+		List<FacePostMonitoring> facePostsMonitoring = (List<FacePostMonitoring>) query.getResultList(); 
+		
+		if(monitoringTags != null) {
+			
+			List<FacePostMonitoring> facePostsMonitoringToExclude = new ArrayList<FacePostMonitoring>();
+			
+			for(FacePostMonitoring facePostMonitoring : facePostsMonitoring) {
+				
+				try {
+					
+					MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote) 
+							new InitialContext().lookup("global/OpSocialBack/MaintenanceMonitoringPostTagBean!br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote");
+					
+					if(!monitoringPostTagRemote.thereIsMonitoringTag(facePostMonitoring.getFacebookPost().getPostId(), 
+							facePostMonitoring.getMonitoring().getIdMonitoring(), facePostMonitoring.getTerm(), 
+							Profile.FACEBOOK, monitoringTags)) {
+						facePostsMonitoringToExclude.add(facePostMonitoring);
+					}
+					
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			facePostsMonitoring.removeAll(facePostsMonitoringToExclude);
+		}
+		
+		return facePostsMonitoring;
+	}
+
+	
+	//TODO adaptar
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags) {
+		
+		Long postsCount = 0L;
+		
+		sql = "SELECT count(distinct(fpm)) FROM opsocial.facepostsmonitorings AS fpm " + 
+						"LEFT JOIN opsocial.monitoringspoststags AS mpt ON " +
+						"fpm.idmonitoring = mpt.idmonitoring AND fpm.term = mpt.term AND fpm.postid = mpt.postid " +
+						"AND mpt.network = '" + Profile.FACEBOOK + "' " +
+					"WHERE fpm.idmonitoring = " + idMonitoring + " AND fpm.createdtime >= " + startDate + " AND " +
+					"fpm.createdTime <= " + endDate + " AND fpm.garbage = 'F' ";
+		
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("null") || q.equals("Q")) {
+					sql += " fpm.qualification is null or";
+				} else {
+					sql += " fpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ") ";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = "AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		query = em.createNativeQuery(sql);
+		
+		postsCount = (Long) query.getSingleResult(); 
+		
+		return postsCount;
+	}
+	
+	@Override
+	public List<FacePostMonitoring> listSample(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		
+		sql = "Select * From opsocial.facepostsmonitorings fpm where " +
+				"fpm.idMonitoring = " + idMonitoring + " and " +
+				"fpm.createdTime >= " + startDate +" and " +
+				"fpm.createdTime <= " + endDate +" and " +
+				"fpm.garbage='F' ";
+				
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("null") || q.equals("Q")) {
+					sql += " fpm.qualification is null or";
+				} else {
+					sql += " fpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(!notIn.isEmpty()) {
+			
+			sql += "and postid not in (";
+			
+			for(String postId : notIn) {
+				sql += "'" + postId + "',";
+			}
+			
+			sql = sql.substring(0,sql.lastIndexOf(","));
+			
+			sql += ")";
+		}
+		
+		sql += " order by random(), createdtime desc limit " + sample;
+		
+		query = em.createNativeQuery(sql, FacePostMonitoring.class);
+		
+		List<FacePostMonitoring> facePostsMonitoring = (List<FacePostMonitoring>) query.getResultList(); 
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			List<FacePostMonitoring> facePostsMonitoringToExclude = new ArrayList<FacePostMonitoring>();
+			
+			for(FacePostMonitoring facePostMonitoring : facePostsMonitoring) {
+				
+				try {
+					
+					MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote) 
+							new InitialContext().lookup("global/OpSocialBack/MaintenanceMonitoringPostTagBean!br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote");
+					
+					if(!monitoringPostTagRemote.thereIsMonitoringTag(facePostMonitoring.getFacebookPost().getPostId(), 
+							facePostMonitoring.getMonitoring().getIdMonitoring(), facePostMonitoring.getTerm(), 
+							Profile.FACEBOOK, monitoringTags)) {
+						facePostsMonitoringToExclude.add(facePostMonitoring);
+					}
+					
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			facePostsMonitoring.removeAll(facePostsMonitoringToExclude);
+		}
+		
+		return facePostsMonitoring;
+	}
+
+	@Override
+	public List<FacePostMonitoring> listPostsByActiveAccount(Date now, Long from, Long until) {
+		
+		sql = "Select f From FacePostMonitoring f where " +
+				"((f.monitoring.account.testExpire > :now and f.monitoring.account.planType = 0)" +
+				" or " +
+				"(f.monitoring.account.planExpire > :now and f.monitoring.account.planType <> 0)) " +
+				"and f.garbage='F' " +
+				"and f.facebookPost.createdTime between :from and :until";
+		
+		query = em.createQuery(sql);
+		query.setParameter("from", from);
+		query.setParameter("until", until);
+		query.setParameter("now", now);
+		
+		return query.getResultList();
+	}
+
+	@Override
+	public List<FacePostMonitoring> listByMonitoring(Long idMonitoring) {
+		sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+
+		return query.getResultList();
+	}
+
+	@Override
+	public List<FacePostMonitoring> listByTerm(String term, Long idMonitoring) {
+		
+		sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and f.term = :term";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+
+		return query.getResultList();
+	}
+
+	@Override
+	public FacePostMonitoring getByComposedId(Long idMonitoring, String postId, String term) {
+		
+		sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and f.term = :term and f.facebookPost.postId = :postId";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+		query.setParameter("postId", postId);
+		
+		return (FacePostMonitoring) query.getSingleResult();
+	}
+
+	@Override
+	public Map<String, Long> getCountOfPostsPerUser(Long idMonitoring, Long date) {
+		
+		sql = "SELECT fpm.facebookPost.profileId, COUNT(fpm) FROM FacePostMonitoring fpm WHERE fpm.monitoring.idMonitoring = :idMonitoring " +
+				"AND (fpm.retrievedDate >= :date AND fpm.retrievedDate < (:date + 86400)) AND fpm.garbage = 'F' AND fpm.facebookPost.profileId <> '' " + 
+				"GROUP BY fpm.facebookPost.profileId";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		List<Object[]> result = query.getResultList();
+		
+		Map<String, Long> countOfPostsPerUser = new HashMap<String, Long>();
+		
+		for(Object[] object : result) {
+			countOfPostsPerUser.put((String)object[0], (Long)object[1]);
+		}
+		
+		return countOfPostsPerUser;
+	}
+	
+	@Override
+	public FacePostMonitoring getByComposedId(Long idMonitoring, String postId) {
+		
+		sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and f.facebookPost.postId = :postId";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("postId", postId);
+		
+		if(!query.getResultList().isEmpty()) {
+			return (FacePostMonitoring) query.getSingleResult();
+		} else {
+			return null;
+		}
+	}
+	
+	@Override
+	public List<String[]> getWordsFromPostsContent(Long idMonitoring, Long startDate, Long endDate, Character qualification) {
+		
+		sql = "SELECT postid FROM opsocial.facepostsmonitorings WHERE idmonitoring=" + idMonitoring + " " + 
+				"AND (createdTime >= " + startDate + " AND createdTime <= " + endDate + ") " +
+				"AND garbage = 'F' AND qualification = '" + qualification + "' " +
+				"ORDER BY RANDOM() LIMIT 100";
+		
+		query = em.createNativeQuery(sql);
+		
+		List<String> ids = new ArrayList<String>();
+		
+		for(Object id : query.getResultList()) {
+			ids.add(id.toString());
+		}
+		
+		if(!ids.isEmpty()) {
+			
+			sql = "SELECT f.message, f.caption, f.description FROM FacebookPost f WHERE f.postId in :ids ";
+			
+			query = em.createQuery(sql);
+			query.setParameter("ids", ids);
+			
+			List<String[]> words = query.getResultList();
+			
+			return words;	
+		} else {
+			return null;
+		}
+	}
+	
+	@Override
+	public List<FacePostMonitoring> listByObjectId(Long idMonitoring, String objectId) {
+		
+		sql = "select postid from opsocial.facebookposts where objectid = '" + objectId + "'";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object> posts = query.getResultList();
+		
+		if(posts != null && !posts.isEmpty()) {
+			
+			sql = "Select f From FacePostMonitoring f where f.monitoring.idMonitoring = :idMonitoring and f.facebookPost.postId in (";
+			
+			for(Object postId : posts) {
+				if(posts.indexOf(postId) == posts.size() - 1) {
+					sql += "'" + postId.toString() + "')";
+				} else {
+					sql += "'" + postId.toString() + "',";
+				}
+			}
+			
+			query = em.createQuery(sql);
+			query.setParameter("idMonitoring", idMonitoring);
+			
+			return (List<FacePostMonitoring>) query.getResultList();
+			
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public List<Object[]> getCountGroupsPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT fpm.profile.idProfile, COUNT(fpm) FROM FacePostMonitoring fpm " +
+				"WHERE fpm.monitoring.idMonitoring = :idMonitoring AND (fpm.retrievedDate >= :date AND fpm.retrievedDate < (:date + 86400)) " + 
+				"AND fpm.garbage = 'F' " +
+				"GROUP BY fpm.profile.idProfile";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+	
+}

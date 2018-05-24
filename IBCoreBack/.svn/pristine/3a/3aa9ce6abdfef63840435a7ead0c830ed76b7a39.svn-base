@@ -1,0 +1,2043 @@
+package br.com.opsocial.server.utils.reports;
+
+import java.math.BigDecimal;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TimeZone;
+import java.util.TreeMap;
+
+import javax.naming.NamingException;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.entity.users.basicinfo.UserInfoData;
+import org.mcavallo.opencloud.Cloud;
+import org.mcavallo.opencloud.Tag;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.report.PostEngagementStatsDTO;
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostDTO;
+import br.com.opsocial.client.entity.report.facebook.FacebookInfluentialUserDTO;
+import br.com.opsocial.client.entity.report.facebook.FanPageGrowthDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookCityDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookContentDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookDashboardDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookHistoricalDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookOverviewDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookPostCommentsDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookPostToPostDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramInteractionRankingDTO;
+import br.com.opsocial.client.entity.report.instagram.InstagramPostsStatsYearDTO;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramDashboardDTO;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramHistoricalDTO;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramOverviewDTO;
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterDashboardDTO;
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterOverviewDTO;
+import br.com.opsocial.client.entity.report.twitter.TwitterReportDTO;
+import br.com.opsocial.client.entity.report.twitter.TwitterReportStatusDTO;
+import br.com.opsocial.client.utils.Icons;
+import br.com.opsocial.ejb.das.MaintenanceFaceReportLocationRemote;
+import br.com.opsocial.ejb.das.MaintenanceFaceReportPostCommentRemote;
+import br.com.opsocial.ejb.das.MaintenanceFaceReportPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceFacebookInfluentialUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceFacebookPostInsightRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramFollowerRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostCommentRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostLikeRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramReportPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportControlRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportDetailedRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterFollowerRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterFollowerReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterStatusRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterStatusReportRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.InstagramFollowerId;
+import br.com.opsocial.ejb.entity.instagram.InstagramEngagedFollower;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollower;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+import br.com.opsocial.ejb.entity.instagram.InstagramTopPostTag;
+import br.com.opsocial.ejb.entity.instagram.InstagramUser;
+import br.com.opsocial.ejb.entity.report.FaceReportPost;
+import br.com.opsocial.ejb.entity.report.FacebookInfluentialUser;
+import br.com.opsocial.ejb.entity.report.FanPageGrowth;
+import br.com.opsocial.ejb.entity.report.PostEngagementStats;
+import br.com.opsocial.ejb.entity.report.ReportFacebookCity;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+import br.com.opsocial.ejb.entity.report.TwitterReport;
+import br.com.opsocial.server.utils.Calc;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+
+public abstract class UtilReports {
+
+	public static final Long INSIGHTS_POSTS_INTERVAL = 1800L;
+	public static final Integer DASHBOARD_INSIGHTS_PERIOD = 14;
+
+	public static final String PAGE_FANS_FROM_PAGES = "pageFansFromPages";
+	public static final String PAGE_FANS_FROM_RECOMMENDATIONS = "pageFansFromRecommendations";
+	public static final String PAGE_FANS_FROM_LIKE_SUGGESTIONS = "pageFansFromLikeSuggestions";
+	
+	public UtilReports() {
+		
+	}
+	
+	public static ReportInstagramDashboardDTO mountReportInstagramDashboard(Profile profile) {
+		
+		ReportInstagramDashboardDTO reportInstagramDashboard = new ReportInstagramDashboardDTO();
+		
+		MaintenanceInstagramReportPostRemote instagramReportPostRemote = (MaintenanceInstagramReportPostRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramReportPost");
+
+		MaintenanceInstagramPostCommentRemote instagramPostCommentRemote = (MaintenanceInstagramPostCommentRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostComment");
+
+		MaintenanceInstagramPostLikeRemote instagramPostLikeRemote = (MaintenanceInstagramPostLikeRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostLike");
+
+		MaintenanceInstagramFollowerRemote instagramFollowerRemote = (MaintenanceInstagramFollowerRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramFollower");
+
+		MaintenanceInstagramReportRemote instagramReportRemote = (MaintenanceInstagramReportRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramReport");
+		
+		MaintenanceInstagramPostTagRemote instagramPostTagRemote = (MaintenanceInstagramPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostTag");
+
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote)
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+		
+		GenericDateInterval genericDateInterval = getInstagramReportDates(DASHBOARD_INSIGHTS_PERIOD);
+		
+		Calendar untilDateOld = Calendar.getInstance();
+		untilDateOld.setTimeInMillis((genericDateInterval.getDateFrom() - 86400L) * 1000L);
+		
+		GenericDateInterval genericDateIntervalOld = getInstagramReportDates(untilDateOld, DASHBOARD_INSIGHTS_PERIOD);
+		
+		Long firstDate = reportControlRemote.getFirstDate(profile.getNetworkId(), Profile.INSTAGRAM);
+		Long dateFromVerified = genericDateInterval.getDateFrom();
+
+		if(genericDateInterval.getDateFrom() <= firstDate) {
+			dateFromVerified = firstDate + 86400L;
+		}
+		
+		reportInstagramDashboard.setDateFrom(genericDateInterval.getDateFrom());
+		reportInstagramDashboard.setDateUntil(genericDateInterval.getDateUntil());
+		
+		// Followers Statistics.
+		List<InstagramFollowerTrend> instagramFollowerTrendsDTO = new ArrayList<InstagramFollowerTrend>();
+		List<InstagramFollowerTrend> instagramFollowerTrends = instagramReportRemote.getInstagramFollowersTrends(profile.getNetworkId(), 
+				dateFromVerified, genericDateInterval.getDateUntil());
+		
+		Long followersBalance = 0L;
+		for (InstagramFollowerTrend instagramFollowerTrend : instagramFollowerTrends) {
+			
+			instagramFollowerTrendsDTO.add(instagramFollowerTrend);
+			
+			followersBalance += instagramFollowerTrend.getBalanceFollowers(); 
+		}
+		reportInstagramDashboard.setInstagramFollowerTrends(instagramFollowerTrendsDTO);
+		reportInstagramDashboard.setFollowersBalance(followersBalance);
+		
+		Long followersBallanceOld = instagramReportRemote.getInstagramFollowersTrend(profile.getNetworkId(), 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil()).getBalanceFollowers();
+		
+		reportInstagramDashboard.setFollowersBalancePerformance(Calc.calcPercentageGrowth(followersBallanceOld.doubleValue(), 
+				followersBalance.doubleValue(), 0).intValue());
+		
+		// Likes Statistics.
+		Map<String, Long> likesPerDay = instagramPostLikeRemote.getLikesPerDay(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long likes = 0L;
+		for(Map.Entry<String, Long> likeDay : likesPerDay.entrySet()) {
+			likes += likeDay.getValue();
+		}
+		reportInstagramDashboard.setLikesPerDay(likesPerDay);
+		reportInstagramDashboard.setLikes(likes);
+		
+		Long likesOld = instagramPostLikeRemote.getCountOfLikes(Long.valueOf(profile.getNetworkId()), 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportInstagramDashboard.setLikesPerformance(Calc.calcPercentageGrowth(likesOld.doubleValue(), 
+				reportInstagramDashboard.getLikes().doubleValue(), 0).intValue());
+		
+		// Comments Statistics.
+		Map<String, Long> commentsPerDay = instagramPostCommentRemote.getCommentsPerDay(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long comments = 0L;
+		for(Map.Entry<String, Long> commentDay : commentsPerDay.entrySet()) {
+			comments += commentDay.getValue();
+		}
+		reportInstagramDashboard.setCommentsPerDay(commentsPerDay);
+		reportInstagramDashboard.setComments(comments);
+		
+		Long commentsOld = instagramPostCommentRemote.getCountOfComments(Long.valueOf(profile.getNetworkId()), 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportInstagramDashboard.setCommentsPerformance(Calc.calcPercentageGrowth(commentsOld.doubleValue(), 
+				reportInstagramDashboard.getComments().doubleValue(), 0).intValue());
+		
+		// Interactions Statistics.
+		Map<String, Long> interactionsPerDay = instagramReportPostRemote.getInteractionsPerDay(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long interactions = 0L;
+		for(Map.Entry<String, Long> interactionDay : interactionsPerDay.entrySet()) {
+			interactions += interactionDay.getValue();
+		}
+		reportInstagramDashboard.setInteractionsPerDay(interactionsPerDay);
+		reportInstagramDashboard.setInteractions(interactions);
+		
+		Long interactionsOld = likesOld + commentsOld;
+		
+		reportInstagramDashboard.setInteractionsPerformance(Calc.calcPercentageGrowth(interactionsOld.doubleValue(), 
+				reportInstagramDashboard.getInteractions().doubleValue(), 0).intValue());
+		
+		Object[] likesOrigin = instagramPostLikeRemote.getLikesOrigin(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Object[] commentsOrigin = instagramPostCommentRemote.getCommentsOrigin(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		Long interactionsFromUsers = ((Long) likesOrigin[0]) + ((Long) commentsOrigin[0]);
+		Long interactionsFromFollowers = ((Long) likesOrigin[1]) + ((Long) commentsOrigin[1]); 
+		Long interactionsFromNoFollowers = ((Long) likesOrigin[2]) + ((Long) commentsOrigin[2]); 
+		
+		Integer interFromFollowersPerc = Calc.calcPercentageNormal(interactionsFromFollowers.doubleValue(), 
+				interactionsFromUsers.doubleValue(), 0).intValue();
+		
+		Integer interFromNoFollowersPerc = Calc.calcPercentageNormal(interactionsFromNoFollowers.doubleValue(), 
+				interactionsFromUsers.doubleValue(), 0).intValue();
+		
+		reportInstagramDashboard.setInteractionsFromFollowers(interFromFollowersPerc);
+		reportInstagramDashboard.setInteractionsFromNoFollowers(interFromNoFollowersPerc);
+
+		// Cloud HashTags.
+		Cloud cloudHashTags = new Cloud();
+		cloudHashTags.setMaxWeight(24);
+		cloudHashTags.setMinWeight(7);
+		cloudHashTags.setMaxTagsToDisplay(10);
+		
+		List<InstagramTopPostTag> instagramTopPostTags = instagramPostTagRemote.getInstagramTopPostTags(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		for (InstagramTopPostTag instagramTopPostTag : instagramTopPostTags) {
+			
+			Tag tag = new Tag(instagramTopPostTag.getTag(), instagramTopPostTag.getInteractions().doubleValue());
+			cloudHashTags.addTag(tag);
+		}
+		
+		String htmlHashTags = "";
+		
+		for(Tag tag : cloudHashTags.tags()) {	
+			htmlHashTags += "<font style='opacity: " + new BigDecimal((tag.getWeight() + 50) / 100).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue() + 
+				";filter: alpha(opacity = " + (tag.getWeightInt() + 50)  + ");zoom: 1;font-family: Source Sans Pro; font-weight:600; color:#008dbd;font-size:" + tag.getWeight() + "px;line-height: 1;word-break:break-all;'>" + tag.getName() + " </font>";
+		}
+		
+		reportInstagramDashboard.setHashTagsCloud(htmlHashTags);
+		
+		// Followers Most Engaged.
+		List<InstagramEngagedFollower> instagramEngagedFollowers = instagramFollowerRemote.getMostEngagedFollowers(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramDashboard.setMostEngagedFollowers(
+				updateInstagramEngagedFollowers(instagramEngagedFollowers, profile));
+
+		// Posts With More Interactions.
+		reportInstagramDashboard.setPostsWithMoreInteractions(
+				instagramReportPostRemote.getPostsWithMoreInteractions(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		
+		//TO DO 
+		//Collections.sort(reportInstagramDashboard.getPostsWithMoreInteractions());
+		
+		return reportInstagramDashboard;
+	}
+	
+	public static ReportTwitterDashboardDTO mountReportTwitterDashboard(Profile profile) {
+		
+		ReportTwitterDashboardDTO reportTwitterDashboard = new ReportTwitterDashboardDTO();
+		
+		MaintenanceTwitterReportRemote twitterReportRemote = (MaintenanceTwitterReportRemote) 
+				RecoverMaintenance.recoverMaintenance("TwitterReport");
+
+		MaintenanceTwitterStatusRemote twitterStatusRemote = (MaintenanceTwitterStatusRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatus");
+
+		MaintenanceTwitterStatusReportRemote twitterStatusReportRemote = (MaintenanceTwitterStatusReportRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatusReport");
+		
+		GenericDateInterval genericDateInterval = getTwitterReportDates(DASHBOARD_INSIGHTS_PERIOD);
+		
+		Calendar untilDateOld = Calendar.getInstance();
+		untilDateOld.setTimeInMillis((genericDateInterval.getDateFrom() - 86400L) * 1000L);
+		
+		GenericDateInterval genericDateIntervalOld = getTwitterReportDates(untilDateOld, DASHBOARD_INSIGHTS_PERIOD);
+		
+		reportTwitterDashboard.setDateFrom(genericDateInterval.getDateFrom());
+		reportTwitterDashboard.setDateUntil(genericDateInterval.getDateUntil());
+		
+		reportTwitterDashboard.setFollowersTotal(twitterReportRemote.getValue(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT_ALL));
+		
+		// Followers Statistics.
+		List<TwitterReport> followersByDayDTO = new ArrayList<TwitterReport>();
+		List<TwitterReport> followersByDay = twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT , genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long followersBalance = 0L;
+		for(TwitterReport twitterReport : followersByDay) {
+			
+			followersByDayDTO.add(twitterReport);
+			
+			followersBalance += twitterReport.getValue();
+		}
+		reportTwitterDashboard.setFollowersByDay(followersByDayDTO);
+		reportTwitterDashboard.setFollowersBalance(followersBalance);
+		
+		Long followersTotalOld = reportTwitterDashboard.getFollowersTotal() - followersBalance;
+		reportTwitterDashboard.setFollowersTotalOld(followersTotalOld);
+		
+		reportTwitterDashboard.setFollowersTotalPerformance(Calc.calcPercentageGrowth(followersTotalOld.doubleValue(), 
+				reportTwitterDashboard.getFollowersTotal().doubleValue(), 0).intValue());
+		
+		Long followersBalanceOld = twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT, genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil()); 
+		
+		reportTwitterDashboard.setFollowersBalancePerformance(Calc.calcPercentageGrowth(followersBalanceOld.doubleValue(), 
+				reportTwitterDashboard.getFollowersBalance().doubleValue(), 0).intValue());
+		
+		reportTwitterDashboard.setAverageFollowersPerDay(Calc.calcAverage(followersBalance.doubleValue(), 
+				followersByDay.size(), 0).longValue());
+		
+		// Interactions Statistics.
+		Map<Date, Long> tweetsInteractionsByDay = twitterReportRemote.getTweetsInteractionsByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long tweetsInteractions = 0L;
+		for(Map.Entry<Date, Long> tweetsInteractionDay : tweetsInteractionsByDay.entrySet()) {
+			tweetsInteractions += tweetsInteractionDay.getValue();
+		}
+		reportTwitterDashboard.setTweetsInteractionsByDay(tweetsInteractionsByDay);
+		reportTwitterDashboard.setTweetsInteractions(tweetsInteractions);
+		
+		Long tweetsInteractionsOld = twitterReportRemote.getTweetsInteractionsCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportTwitterDashboard.setTweetsInteractionsPerformance(Calc.calcPercentageGrowth(tweetsInteractionsOld.doubleValue(), 
+				reportTwitterDashboard.getTweetsInteractions().doubleValue(), 0).intValue());
+		
+		// Replies Statistics.
+		List<TwitterReport> repliesByDayDTO = new ArrayList<TwitterReport>();
+		List<TwitterReport> repliesByDay = twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), 
+				ReportTwitter.REPLIES_OF_ME, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long repliesTotal = 0L;
+		for (TwitterReport twitterReport : repliesByDay) {
+			
+			repliesByDayDTO.add(twitterReport);
+			
+			repliesTotal += twitterReport.getValue();
+		}
+		reportTwitterDashboard.setRepliesByDay(repliesByDayDTO);
+		reportTwitterDashboard.setRepliesTotal(repliesTotal);
+		
+		Long repliesTotalOld = twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.REPLIES_OF_ME, 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportTwitterDashboard.setRepliesTotalPerformance(Calc.calcPercentageGrowth(repliesTotalOld.doubleValue(), 
+				reportTwitterDashboard.getRepliesTotal().doubleValue(), 0).intValue());
+		
+		// Retweets Statistics.
+		List<TwitterReport> retweetsByDayDTO = new ArrayList<TwitterReport>();
+		List<TwitterReport> retweetsByDay = twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), 
+				ReportTwitter.RETWEETS_OF_ME, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long retweetsTotal = 0L;
+		for (TwitterReport twitterReport : retweetsByDay) {
+			
+			retweetsByDayDTO.add(twitterReport);
+			
+			retweetsTotal += twitterReport.getValue();
+		}
+		reportTwitterDashboard.setRetweetsByDay(retweetsByDayDTO);
+		reportTwitterDashboard.setRetweetsTotal(retweetsTotal);
+		
+		Long retweetsTotalOld = twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.RETWEETS_OF_ME, 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportTwitterDashboard.setRetweetsTotalPerformance(Calc.calcPercentageGrowth(retweetsTotalOld.doubleValue(), 
+				reportTwitterDashboard.getRetweetsTotal().doubleValue(), 0).intValue());
+		
+		// Mentions Statistics.
+		List<TwitterReport> mentionsByDayDTO = new ArrayList<TwitterReport>();
+		List<TwitterReport> mentionsByDay = twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), 
+				ReportTwitter.MENTIONS, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long mentionsTotal = 0L;
+		for (TwitterReport twitterReport : mentionsByDay) {
+			
+			mentionsByDayDTO.add(twitterReport);
+			
+			mentionsTotal += twitterReport.getValue();
+		}
+		reportTwitterDashboard.setMentionsByDay(mentionsByDayDTO);
+		reportTwitterDashboard.setMentionsTotal(mentionsTotal);
+		
+		Long mentionsTotalOld = twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.MENTIONS, 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportTwitterDashboard.setMentionsTotalPerformance(Calc.calcPercentageGrowth(mentionsTotalOld.doubleValue(), 
+				reportTwitterDashboard.getMentionsTotal().doubleValue(), 0).intValue());
+		
+		// Favorites Statistics.
+		List<TwitterReport> favoritesByDayDTO = new ArrayList<TwitterReport>();
+		List<TwitterReport> favoritesByDay = twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), 
+				ReportTwitter.FAVORITE_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+		
+		Long favoritesTotal = 0L;
+		for (TwitterReport twitterReport : favoritesByDay) {
+			
+			favoritesByDayDTO.add(twitterReport);
+			
+			favoritesTotal += twitterReport.getValue();
+		}
+		reportTwitterDashboard.setFavoritesByDay(favoritesByDayDTO);
+		reportTwitterDashboard.setFavoritesTotal(favoritesTotal);
+		
+		Long favoritesTotalOld = twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.FAVORITE_COUNT, 
+				genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportTwitterDashboard.setFavoritesTotalPerformance(Calc.calcPercentageGrowth(favoritesTotalOld.doubleValue(), 
+				reportTwitterDashboard.getFavoritesTotal().doubleValue(), 0).intValue());
+		
+		List<TwitterReportStatusDTO> twitterReportStatus = MountDTO.mountTwitterReportStatus(
+				twitterStatusRemote.getTwitterStatusMostEngaged(profile.getNetworkId(), 
+						genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400, 0, 12));
+
+		for(TwitterReportStatusDTO twitterReportStatusDTO : twitterReportStatus) {
+
+			twitterReportStatusDTO.setRepliesCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), ReportTwitter.REPLIES_OF_ME_COUNT_ALL));
+
+			twitterReportStatusDTO.setRetweetsCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), ReportTwitter.RETWEETS_OF_ME_COUNT_ALL));
+
+			twitterReportStatusDTO.setFavoriteCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), ReportTwitter.FAVORITE_COUNT_ALL));
+		}
+
+		reportTwitterDashboard.setTwitterReportStatus(twitterReportStatus);
+		
+		return reportTwitterDashboard;
+	}
+	
+	public static ReportFacebookDashboardDTO mountReportFacebookDashboardDTO(Profile profile) {
+		
+		ReportFacebookDashboardDTO reportFacebookDashboard = new ReportFacebookDashboardDTO();
+		
+		MaintenanceReportDetailedRemote reportDetailedRemote = (MaintenanceReportDetailedRemote)
+				RecoverMaintenance.recoverMaintenance("ReportDetailed");
+
+		MaintenanceFaceReportPostRemote faceReportPostRemote = (MaintenanceFaceReportPostRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportPost");
+		
+		MaintenanceFacebookPostInsightRemote facebookPostInsightRemote = (MaintenanceFacebookPostInsightRemote)
+				RecoverMaintenance.recoverMaintenance("FacebookPostInsight");
+		
+		GenericDateInterval genericDateInterval = getFacebookReportDates(DASHBOARD_INSIGHTS_PERIOD);
+		
+		Calendar untilDate = Calendar.getInstance();
+		untilDate.setTimeInMillis((genericDateInterval.getDateFrom() - 86400L) * 1000L);
+		
+		GenericDateInterval genericDateIntervalOld = getFacebookReportsDates(untilDate, DASHBOARD_INSIGHTS_PERIOD);
+		
+		reportFacebookDashboard.setDateFrom(genericDateInterval.getDateFrom());
+		reportFacebookDashboard.setDateUntil(genericDateInterval.getDateUntil());
+		
+		List<FanPageGrowth> fanPageGrowthDTO = new ArrayList<FanPageGrowth>();
+		List<FanPageGrowth> fanPageGrowth = reportDetailedRemote.getFanPageGrowth(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		for(FanPageGrowth pageGrowth : fanPageGrowth) {
+			fanPageGrowthDTO.add(pageGrowth);
+		}
+		
+		reportFacebookDashboard.setFanPageGrowth(fanPageGrowthDTO);
+		
+		reportFacebookDashboard.setFansUntilDateFrom(reportDetailedRemote.getCountFansBeforeDate(profile.getNetworkId(), genericDateInterval.getDateFrom()));
+		
+		List<FanPageGrowth> likesByDayDTO = new ArrayList<FanPageGrowth>();
+		List<FanPageGrowth> likesByDay = reportDetailedRemote.getLikesByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		Long likesTotal = 0L; 
+		for(FanPageGrowth pageGrowth : likesByDay) {
+			
+			likesByDayDTO.add(pageGrowth);
+			
+			likesTotal += pageGrowth.getSum();
+		}
+		reportFacebookDashboard.setLikesByDay(likesByDayDTO);
+
+		List<FanPageGrowth> unlikesByDayDTO = new ArrayList<FanPageGrowth>();
+		List<FanPageGrowth> unlikesByDay = reportDetailedRemote.getUnlikesByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		Long unlikesTotal = 0L;
+		for(FanPageGrowth pageGrowth : unlikesByDay) {
+			
+			unlikesByDayDTO.add(pageGrowth);
+			
+			unlikesTotal += pageGrowth.getSum(); 
+		}
+		reportFacebookDashboard.setUnlikesByDay(unlikesByDayDTO);
+		
+		reportFacebookDashboard.setBalanceFans(likesTotal - unlikesTotal);
+		
+		Long conqueredFansOld = reportDetailedRemote.getConqueredFans(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		Long lostFansOld = reportDetailedRemote.getLostFans(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil());
+		
+		reportFacebookDashboard.setBalanceFansPerformance(Calc.calcPercentageGrowth(Double.valueOf(conqueredFansOld - lostFansOld), 
+						reportFacebookDashboard.getBalanceFans().doubleValue(), 0).intValue());
+		
+		List<SumByDate> postsReachByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsReachByDay = facebookPostInsightRemote.getPostsReachByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		Long postsReachCount = 0L;
+		for(SumByDate sumByDate : postsReachByDay) {
+			postsReachByDayDTO.add(sumByDate);
+			postsReachCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsReachByDay(postsReachByDayDTO);
+		reportFacebookDashboard.setPostsReachCount(postsReachCount);
+		
+		Long postsReachCountOld = facebookPostInsightRemote.getPostsReachCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsReachPerformance(Calc.calcPercentageGrowth(postsReachCountOld.doubleValue(), 
+				reportFacebookDashboard.getPostsReachCount().doubleValue(), 0).intValue());
+		
+		Long postsReachViral = facebookPostInsightRemote.getPostsReachViralCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		Long postsReachOrganic = facebookPostInsightRemote.getPostsReachOrganicCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsReachOrganicCount(postsReachOrganic + postsReachViral);
+		reportFacebookDashboard.setPostsReachPaidCount(facebookPostInsightRemote.getPostsReachPaidCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		
+		List<SumByDate> postsImpressionsByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsImpressionsByDay = facebookPostInsightRemote.getPostsImpressionsByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		Long postsImpressionsCount = 0L;
+		for(SumByDate sumByDate : postsImpressionsByDay) {
+			postsImpressionsByDayDTO.add(sumByDate);
+			postsImpressionsCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsImpressionsByDay(postsImpressionsByDayDTO);
+		reportFacebookDashboard.setPostsImpressionsCount(postsImpressionsCount);
+		
+		Long postsImpressionsOld = facebookPostInsightRemote.getPostsImpressionsCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsImpressionsPerformance(Calc.calcPercentageGrowth(postsImpressionsOld.doubleValue(), 
+				reportFacebookDashboard.getPostsImpressionsCount().doubleValue(), 0).intValue());
+		
+		Long postsImpressionsViral = facebookPostInsightRemote.getPostsImpressionsViralCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		Long postsImpressionsOrganic = facebookPostInsightRemote.getPostsImpressionsOrganicCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400); 
+		
+		reportFacebookDashboard.setPostsImpressionsOrganicCount(postsImpressionsOrganic + postsImpressionsViral);
+		reportFacebookDashboard.setPostsImpressionsPaidCount(facebookPostInsightRemote.getPostsImpressionsPaidCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		
+		List<SumByDate> postsInteractionsByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsInteractionsByDay = facebookPostInsightRemote.getPostsInteractionsByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		
+		Long postsInteractionsCount = 0L;
+		for(SumByDate sumByDate : postsInteractionsByDay) {
+			postsInteractionsByDayDTO.add(sumByDate);
+			postsInteractionsCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsInteractionsByDay(postsInteractionsByDayDTO);
+		reportFacebookDashboard.setPostsInteractionsCount(postsInteractionsCount);
+		
+		Long postsInteractionsOld = facebookPostInsightRemote.getPostsInteractionsCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsInteractionsPerformance(Calc.calcPercentageGrowth(postsInteractionsOld.doubleValue(), 
+				reportFacebookDashboard.getPostsInteractionsCount().doubleValue(), 0).intValue());
+		
+		List<SumByDate> postsStoriesLikeByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsStoriesLikeByDay = facebookPostInsightRemote.getPostsStoriesLikeByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		
+		Long postsLikesCount = 0L;
+		for(SumByDate sumByDate : postsStoriesLikeByDay) {
+			postsStoriesLikeByDayDTO.add(sumByDate);
+			postsLikesCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsLikeByDay(postsStoriesLikeByDayDTO);
+		reportFacebookDashboard.setPostsLikeCount(postsLikesCount);
+		
+		Long postsStoriesLikeOld = facebookPostInsightRemote.getPostsStoriesLikeCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsLikesPerformance(Calc.calcPercentageGrowth(postsStoriesLikeOld.doubleValue(), 
+				reportFacebookDashboard.getPostsLikeCount().doubleValue(), 0).intValue()); 
+		
+		List<SumByDate> postsStoriesCommentByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsStoriesCommentByDay = facebookPostInsightRemote.getPostsStoriesCommentByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		
+		Long postsCommentsCount = 0L;
+		for(SumByDate sumByDate : postsStoriesCommentByDay) {
+			postsStoriesCommentByDayDTO.add(sumByDate);
+			postsCommentsCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsCommmentByDay(postsStoriesCommentByDayDTO);
+		reportFacebookDashboard.setPostsCommentCount(postsCommentsCount);
+		
+		Long postsStoriesCommentsOld = facebookPostInsightRemote.getPostsStoriesCommentCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsCommentsPerformance(Calc.calcPercentageGrowth(postsStoriesCommentsOld.doubleValue(), 
+				reportFacebookDashboard.getPostsCommentCount().doubleValue(), 0).intValue());
+		
+		List<SumByDate> postsStoriesShareByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsStoriesShareByDay = facebookPostInsightRemote.getPostsStoriesShareByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		
+		Long postsSharesCount = 0L;
+		for(SumByDate sumByDate : postsStoriesShareByDay) {
+			postsStoriesShareByDayDTO.add(sumByDate);
+			postsSharesCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsShareByDay(postsStoriesShareByDayDTO);
+		reportFacebookDashboard.setPostsShareCount(postsSharesCount);
+		
+		Long postsStoriesSharesOld = facebookPostInsightRemote.getPostsStoriesShareCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsSharesPerformance(Calc.calcPercentageGrowth(postsStoriesSharesOld.doubleValue(), 
+				reportFacebookDashboard.getPostsShareCount().doubleValue(), 0).intValue());
+		
+		List<SumByDate> postsConsumptionsClickByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsConsumptionsClickByDay = facebookPostInsightRemote.getPostsConsumptionsByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+		
+		Long postsClickCount = 0L;
+		for(SumByDate sumByDate : postsConsumptionsClickByDay) {
+			postsConsumptionsClickByDayDTO.add(sumByDate);
+			postsClickCount += sumByDate.getSum();
+		}
+		
+		reportFacebookDashboard.setPostsClickByDay(postsConsumptionsClickByDayDTO);
+		reportFacebookDashboard.setPostsClickCount(postsClickCount);
+		
+		Long postsClicksOld = facebookPostInsightRemote.getPostsConsumptionsCount(profile.getNetworkId(), genericDateIntervalOld.getDateFrom(), genericDateIntervalOld.getDateUntil() + 86400);
+		
+		reportFacebookDashboard.setPostsClicksPerformance(Calc.calcPercentageGrowth(postsClicksOld.doubleValue(), 
+				reportFacebookDashboard.getPostsClickCount().doubleValue(), 0).intValue());
+		
+		List<FaceReportPostDTO> postsMostEngagedDTO = new ArrayList<FaceReportPostDTO>();
+		List<FaceReportPost> postsMostEngaged = faceReportPostRemote.getTopPostsMostEngaged(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400, 10);
+
+		for(FaceReportPost faceReportPost : postsMostEngaged) {
+			
+			FaceReportPostDTO faceReportPostDTO = MountDTO.mountFaceReportPost(faceReportPost); 
+			faceReportPostDTO.setPostInsights(facebookPostInsightRemote.getPostInsightsDashboard(faceReportPostDTO.getPostId()));
+			
+			postsMostEngagedDTO.add(faceReportPostDTO);
+		}
+		
+		reportFacebookDashboard.setPostsMostEngaged(postsMostEngagedDTO);
+		
+		return reportFacebookDashboard;
+	}
+
+	public static ReportInstagramOverviewDTO mountReportInstagramOverviewDTO(Profile profile, GenericDateInterval genericDateInterval) {
+
+		ReportInstagramOverviewDTO reportInstagramOverview = new ReportInstagramOverviewDTO();
+
+		MaintenanceInstagramReportPostRemote instagramReportPostRemote = (MaintenanceInstagramReportPostRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramReportPost");
+
+		MaintenanceInstagramPostCommentRemote instagramPostCommentRemote = (MaintenanceInstagramPostCommentRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostComment");
+
+		MaintenanceInstagramPostLikeRemote instagramPostLikeRemote = (MaintenanceInstagramPostLikeRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostLike");
+
+		MaintenanceInstagramFollowerRemote instagramFollowerRemote = (MaintenanceInstagramFollowerRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramFollower");
+
+		MaintenanceInstagramReportRemote instagramReportRemote = (MaintenanceInstagramReportRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramReport");
+		
+		MaintenanceInstagramPostTagRemote instagramPostTagRemote = (MaintenanceInstagramPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostTag");
+
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote)
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+
+		reportInstagramOverview.setDateFrom(genericDateInterval.getDateFrom());
+		reportInstagramOverview.setDateUntil(genericDateInterval.getDateUntil());
+
+		Long firstDate = reportControlRemote.getFirstDate(profile.getNetworkId(), Profile.INSTAGRAM);
+		Long dateFromVerified = genericDateInterval.getDateFrom();
+		Long dateForFollowersTotal = genericDateInterval.getDateUntil() + 86400L;
+
+		if(genericDateInterval.getDateFrom() <= firstDate) {
+			dateFromVerified = firstDate + 86400L;
+		}
+		
+		if(genericDateInterval.getDateUntil() < firstDate) {
+			dateForFollowersTotal = firstDate + 86400L;
+		}
+		
+		reportInstagramOverview.setFollowers(instagramReportRemote.getEntityBeforeDate(profile.getNetworkId(), 
+				ReportInstagram.PROFILE_FOLLOWERS, dateForFollowersTotal).getValue());
+		
+		reportInstagramOverview.setInstagramFollowerTrends(instagramReportRemote.getInstagramFollowersTrends(profile.getNetworkId(), 
+				dateFromVerified, genericDateInterval.getDateUntil()));
+
+		reportInstagramOverview.setInstagramFollowerTrend(instagramReportRemote.getInstagramFollowersTrend(profile.getNetworkId(), 
+				dateFromVerified, genericDateInterval.getDateUntil()));
+
+		reportInstagramOverview.setLikesPerDay(instagramPostLikeRemote.getLikesPerDay(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		reportInstagramOverview.setLikes(instagramPostLikeRemote.getCountOfLikes(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		reportInstagramOverview.setCommentsPerDay(instagramPostCommentRemote.getCommentsPerDay(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		reportInstagramOverview.setComments(instagramPostCommentRemote.getCountOfComments(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		if(!reportInstagramOverview.getLikesPerDay().isEmpty()) {
+			reportInstagramOverview.setLikesAverage(
+					new BigDecimal(reportInstagramOverview.getLikes().doubleValue() / Double.valueOf(reportInstagramOverview.getLikesPerDay().size())).setScale(2, BigDecimal.ROUND_HALF_DOWN).doubleValue());
+		} else {
+			reportInstagramOverview.setLikesAverage(0D);
+		}
+
+		if(!reportInstagramOverview.getCommentsPerDay().isEmpty()) {
+			reportInstagramOverview.setCommentsAverage(
+					new BigDecimal(reportInstagramOverview.getComments().doubleValue() / Double.valueOf(reportInstagramOverview.getCommentsPerDay().size())).setScale(2, BigDecimal.ROUND_HALF_DOWN).doubleValue());
+		} else {
+			reportInstagramOverview.setCommentsAverage(0D);
+		}
+
+		//TO DO 
+		/*reportInstagramOverview.setPostsWithMoreLikes(instagramReportPostRemote.getPostsWithMoreLikes(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		reportInstagramOverview.setPostsWithMoreComments(instagramReportPostRemote.getPostsWithMoreComments(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		*/
+		List<InstagramEngagedFollower> instagramEngagedFollowers = instagramFollowerRemote.getMostEngagedFollowers(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setMostEngagedFollowers(
+				MountDTO.mountInstagramEngagedFollower(updateInstagramEngagedFollowers(instagramEngagedFollowers, profile)));
+
+		Object[] likesOrigin = instagramPostLikeRemote.getLikesOrigin(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setLikesFollowers(Calc.calcPercentageNormal(((Long) likesOrigin[1]).doubleValue(), 
+				((Long) likesOrigin[0]).doubleValue(), 0).intValue());
+
+		reportInstagramOverview.setLikesNoFollowers(Calc.calcPercentageNormal(((Long) likesOrigin[2]).doubleValue(), 
+				((Long) likesOrigin[0]).doubleValue(), 0).intValue());
+
+		Object[] commentsOrigin = instagramPostCommentRemote.getCommentsOrigin(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setCommentsFollowers(Calc.calcPercentageNormal(((Long) commentsOrigin[1]).doubleValue(), 
+				((Long) commentsOrigin[0]).doubleValue(), 0).intValue());
+
+		reportInstagramOverview.setCommentsNoFollowers(Calc.calcPercentageNormal(((Long) commentsOrigin[2]).doubleValue(), 
+				((Long) commentsOrigin[0]).doubleValue(), 0).intValue());
+
+		//TO DO
+		/*reportInstagramOverview.setInstagramTopPostTags(
+				instagramPostTagRemote.getInstagramTopPostTags(Long.valueOf(profile.getNetworkId()), 
+						genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()), 
+						reportInstagramOverview.getComments() + reportInstagramOverview.getLikes());
+		*/
+		reportInstagramOverview.setLikesPerHour(instagramPostLikeRemote.getLikesPerHour(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		Object[] timeWithMoreLikes = instagramPostLikeRemote.getTimeWithMoreLikes(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setTimeWithMoreLikes((Integer) timeWithMoreLikes[0]);
+		reportInstagramOverview.setTimeWithMoreLikesPerc((Integer) timeWithMoreLikes[1]);
+
+		Object[] timeWithLessLikes = instagramPostLikeRemote.getTimeWithLessLikes(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setTimeWithLessLikes((Integer) timeWithLessLikes[0]);
+		reportInstagramOverview.setTimeWithLessLikesPerc((Integer) timeWithLessLikes[1]);
+
+		reportInstagramOverview.setCommentsPerHour(instagramPostCommentRemote.getCommentsPerHour(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		Object[] timeWithMoreComments = instagramPostCommentRemote.getTimeWithMoreComments(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setTimeWithMoreComments((Integer) timeWithMoreComments[0]);
+		reportInstagramOverview.setTimeWithMoreCommentsPerc((Integer) timeWithMoreComments[1]);
+
+		Object[] timeWithLessComments = instagramPostCommentRemote.getTimeWithLessComments(Long.valueOf(profile.getNetworkId()), 
+				genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportInstagramOverview.setTimeWithLessComments((Integer) timeWithLessComments[0]);
+		reportInstagramOverview.setTimeWithLessCommentsPerc((Integer) timeWithLessComments[1]);
+
+		reportInstagramOverview.setInteractionsPerHour(UtilReports.getInteractionsPerHour(reportInstagramOverview.getLikesPerHour(), 
+				reportInstagramOverview.getCommentsPerHour()));
+
+		reportInstagramOverview.setInstagramInteractionsRanking(UtilReports.getInstagramInteractionsRanking(
+				reportInstagramOverview.getInteractionsPerHour()));
+
+		return reportInstagramOverview;
+	}
+
+	public static ReportInstagramHistoricalDTO mountReportInstagramHistoricalDTO(Profile profile) {
+
+		ReportInstagramHistoricalDTO reportInstagramHistorical = new ReportInstagramHistoricalDTO();
+
+		MaintenanceInstagramReportPostRemote instagramReportPostRemote = (MaintenanceInstagramReportPostRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramReportPost");
+
+		MaintenanceInstagramPostCommentRemote instagramPostCommentRemote = (MaintenanceInstagramPostCommentRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostComment");
+
+		MaintenanceInstagramPostLikeRemote instagramPostLikeRemote = (MaintenanceInstagramPostLikeRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostLike");
+
+		MaintenanceInstagramPostTagRemote instagramPostTagRemote = (MaintenanceInstagramPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramPostTag");
+		
+		MaintenanceInstagramReportRemote instagramReportRemote = (MaintenanceInstagramReportRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramReport");
+		
+		Calendar dateUntilFollowers = Calendar.getInstance();
+		dateUntilFollowers.add(Calendar.DATE, +1);
+
+		Long timestampUntilFollowers = UtilFunctions.getMidnightDateNoDaylightTime(dateUntilFollowers.getTime());
+		
+		reportInstagramHistorical.setFollowers(instagramReportRemote.getEntityBeforeDate(profile.getNetworkId(), 
+				ReportInstagram.PROFILE_FOLLOWERS, timestampUntilFollowers).getValue());
+
+		reportInstagramHistorical.setPosts(instagramReportPostRemote.getCountOfPosts(Long.valueOf(profile.getNetworkId())));
+		reportInstagramHistorical.setLikes(instagramReportPostRemote.getCountOfLikes(Long.valueOf(profile.getNetworkId())));
+		reportInstagramHistorical.setComments(instagramReportPostRemote.getCountOfComments(Long.valueOf(profile.getNetworkId())));
+
+		Object[] filterMostUsed = instagramReportPostRemote.getFilterMostUsed(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setFilterMostUsed((String) filterMostUsed[0]);
+		reportInstagramHistorical.setFilterMostUsedValue((Long) filterMostUsed[1]);
+
+		Object[] filterLessUsed = instagramReportPostRemote.getFilterLessUsed(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setFilterLessUsed((String) filterLessUsed[0]);
+		reportInstagramHistorical.setFilterLessUsedValue((Long) filterLessUsed[1]);
+
+		Calendar calendarDate = Calendar.getInstance();
+		calendarDate.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+
+		Integer currentYear = calendarDate.get(Calendar.YEAR);
+
+		InstagramPostsStatsYearDTO instagramPostsStatsYearFirst = new InstagramPostsStatsYearDTO();
+		instagramPostsStatsYearFirst.setYear(currentYear - 2);
+		instagramPostsStatsYearFirst.setPostsTotal(instagramReportPostRemote.getCountOfPosts(Long.valueOf(profile.getNetworkId()), currentYear - 2));
+		instagramPostsStatsYearFirst.setPostsPerMonth(instagramReportPostRemote.getPostsPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear - 2));
+		instagramPostsStatsYearFirst.setLikesPerMonth(instagramPostLikeRemote.getLikesPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear - 2));
+		instagramPostsStatsYearFirst.setCommentsPerMonth(instagramPostCommentRemote.getCommentsPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear - 2));
+
+		Object[] monthWithMorePostsYearFirst = instagramReportPostRemote.getMonthWithMorePosts(Long.valueOf(profile.getNetworkId()), currentYear - 2);
+
+		instagramPostsStatsYearFirst.setMonthWithMorePosts((Integer) monthWithMorePostsYearFirst[0]);
+		instagramPostsStatsYearFirst.setMonthWithMorePostsValue((Long) monthWithMorePostsYearFirst[1]);
+
+		reportInstagramHistorical.setInstagramPostsStatsYearFirst(instagramPostsStatsYearFirst);
+
+		InstagramPostsStatsYearDTO instagramPostsStatsYearSecond = new InstagramPostsStatsYearDTO();
+		instagramPostsStatsYearSecond.setYear(currentYear - 1);
+		instagramPostsStatsYearSecond.setPostsTotal(instagramReportPostRemote.getCountOfPosts(Long.valueOf(profile.getNetworkId()), currentYear - 1));
+		instagramPostsStatsYearSecond.setPostsPerMonth(instagramReportPostRemote.getPostsPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear - 1));
+		instagramPostsStatsYearSecond.setLikesPerMonth(instagramPostLikeRemote.getLikesPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear - 1));
+		instagramPostsStatsYearSecond.setCommentsPerMonth(instagramPostCommentRemote.getCommentsPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear - 1));
+
+		Object[] monthWithMorePostsYearSecond = instagramReportPostRemote.getMonthWithMorePosts(Long.valueOf(profile.getNetworkId()), currentYear - 1);
+
+		instagramPostsStatsYearSecond.setMonthWithMorePosts((Integer) monthWithMorePostsYearSecond[0]);
+		instagramPostsStatsYearSecond.setMonthWithMorePostsValue((Long) monthWithMorePostsYearSecond[1]);
+
+		reportInstagramHistorical.setInstagramPostsStatsYearSecond(instagramPostsStatsYearSecond);
+
+		InstagramPostsStatsYearDTO instagramPostsStatsYearThird = new InstagramPostsStatsYearDTO();
+		instagramPostsStatsYearThird.setYear(currentYear);
+		instagramPostsStatsYearThird.setPostsTotal(instagramReportPostRemote.getCountOfPosts(Long.valueOf(profile.getNetworkId()), currentYear));
+		instagramPostsStatsYearThird.setPostsPerMonth(instagramReportPostRemote.getPostsPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear));
+		instagramPostsStatsYearThird.setLikesPerMonth(instagramPostLikeRemote.getLikesPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear));
+		instagramPostsStatsYearThird.setCommentsPerMonth(instagramPostCommentRemote.getCommentsPerMonthYear(Long.valueOf(profile.getNetworkId()), currentYear));
+
+		Object[] monthWithMorePostsYearThird = instagramReportPostRemote.getMonthWithMorePosts(Long.valueOf(profile.getNetworkId()), currentYear);
+
+		instagramPostsStatsYearThird.setMonthWithMorePosts((Integer) monthWithMorePostsYearThird[0]);
+		instagramPostsStatsYearThird.setMonthWithMorePostsValue((Long) monthWithMorePostsYearThird[1]);
+
+		reportInstagramHistorical.setInstagramPostsStatsYearThird(instagramPostsStatsYearThird);
+
+		reportInstagramHistorical.setPostsPerWeekDay(instagramReportPostRemote.getPostsPerWeek(Long.valueOf(profile.getNetworkId())));
+
+		Object[] weekDayWithMorePosts = instagramReportPostRemote.getWeekDayWithMorePosts(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setWeekDayWithMorePosts((Integer) weekDayWithMorePosts[0]);
+		reportInstagramHistorical.setWeekDayWithMorePostsValue((Long) weekDayWithMorePosts[1]);
+
+		reportInstagramHistorical.setPostsPerHour(instagramReportPostRemote.getPostsPerHour(Long.valueOf(profile.getNetworkId())));
+
+		Object[] hourWithMorePosts = instagramReportPostRemote.getHourWithMorePosts(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setHourWithMorePosts((Integer) hourWithMorePosts[0]);
+		reportInstagramHistorical.setHourWithMorePostsValue((Long) hourWithMorePosts[1]);
+
+		if(!reportInstagramHistorical.getPosts().equals(0L)) {
+			reportInstagramHistorical.setLikesAverage(
+					new BigDecimal(reportInstagramHistorical.getLikes().doubleValue() / reportInstagramHistorical.getPosts().doubleValue()).setScale(2, BigDecimal.ROUND_HALF_DOWN).doubleValue());
+			reportInstagramHistorical.setCommentsAverage(
+					new BigDecimal(reportInstagramHistorical.getComments().doubleValue() / reportInstagramHistorical.getPosts().doubleValue()).setScale(2, BigDecimal.ROUND_HALF_DOWN).doubleValue());
+		} else {
+			reportInstagramHistorical.setLikesAverage(0D);
+			reportInstagramHistorical.setCommentsAverage(0D);
+		}
+
+		reportInstagramHistorical.setPostsWithMoreLikes(
+				MountDTO.mountInstagramReportPost(instagramReportPostRemote.getPostsWithMoreLikes(Long.valueOf(profile.getNetworkId()))));
+
+		reportInstagramHistorical.setPostsWithMoreComments(
+				MountDTO.mountInstagramReportPost(instagramReportPostRemote.getPostsWithMoreComments(Long.valueOf(profile.getNetworkId()))));
+
+		reportInstagramHistorical.setFiltersCounts(instagramReportPostRemote.getFiltersCounts(Long.valueOf(profile.getNetworkId())));
+
+		reportInstagramHistorical.setFiltersLikesComments(
+				MountDTO.mountFilterLikesComments(instagramReportPostRemote.getFilterLikesComments(Long.valueOf(profile.getNetworkId()))));
+
+		Object[] filterWithMoreLikes = instagramReportPostRemote.getFilterWithMoreLikes(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setFilterWithMoreLikes((String) filterWithMoreLikes[0]);
+		reportInstagramHistorical.setFilterWithMoreLikesValue((Long) filterWithMoreLikes[1]);
+
+		Object[] filterWithMoreComments = instagramReportPostRemote.getFilterWithMoreComments(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setFilterWithMoreComments((String) filterWithMoreComments[0]);
+		reportInstagramHistorical.setFilterWithMoreCommentsValue((Long) filterWithMoreComments[1]);
+
+		Object[] likesOrigin = instagramPostLikeRemote.getLikesOrigin(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setLikesFollowers(Calc.calcPercentageNormal(((Long) likesOrigin[1]).doubleValue(), 
+				((Long) likesOrigin[0]).doubleValue(), 0).intValue());
+
+		reportInstagramHistorical.setLikesNoFollowers(Calc.calcPercentageNormal(((Long) likesOrigin[2]).doubleValue(), 
+				((Long) likesOrigin[0]).doubleValue(), 0).intValue());
+
+		Object[] commentsOrigin = instagramPostCommentRemote.getCommentsOrigin(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setCommentsFollowers(Calc.calcPercentageNormal(((Long) commentsOrigin[1]).doubleValue(), 
+				((Long) commentsOrigin[0]).doubleValue(), 0).intValue());
+
+		reportInstagramHistorical.setCommentsNoFollowers(Calc.calcPercentageNormal(((Long) commentsOrigin[2]).doubleValue(), 
+				((Long) commentsOrigin[0]).doubleValue(), 0).intValue());
+
+		reportInstagramHistorical.setInstagramTopPostTags(MountDTO.mountInstagramTopPostTag(
+				instagramPostTagRemote.getInstagramTopPostTags(Long.valueOf(profile.getNetworkId())), 
+				reportInstagramHistorical.getComments() + reportInstagramHistorical.getLikes()));
+
+		reportInstagramHistorical.setLikesPerHour(instagramPostLikeRemote.getLikesPerHour(Long.valueOf(profile.getNetworkId())));
+
+		Object[] timeWithMoreLikes = instagramPostLikeRemote.getTimeWithMoreLikes(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setTimeWithMoreLikes((Integer) timeWithMoreLikes[0]);
+		reportInstagramHistorical.setTimeWithMoreLikesPerc((Integer) timeWithMoreLikes[1]);
+
+		Object[] timeWithLessLikes = instagramPostLikeRemote.getTimeWithLessLikes(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setTimeWithLessLikes((Integer) timeWithLessLikes[0]);
+		reportInstagramHistorical.setTimeWithLessLikesPerc((Integer) timeWithLessLikes[1]);
+
+		reportInstagramHistorical.setCommentsPerHour(instagramPostCommentRemote.getCommentsPerHour(Long.valueOf(profile.getNetworkId())));
+
+		Object[] timeWithMoreComments = instagramPostCommentRemote.getTimeWithMoreComments(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setTimeWithMoreComments((Integer) timeWithMoreComments[0]);
+		reportInstagramHistorical.setTimeWithMoreCommentsPerc((Integer) timeWithMoreComments[1]);
+
+		Object[] timeWithLessComments = instagramPostCommentRemote.getTimeWithLessComments(Long.valueOf(profile.getNetworkId()));
+
+		reportInstagramHistorical.setTimeWithLessComments((Integer) timeWithLessComments[0]);
+		reportInstagramHistorical.setTimeWithLessCommentsPerc((Integer) timeWithLessComments[1]);
+
+		reportInstagramHistorical.setInteractionsPerHour(UtilReports.getInteractionsPerHour(reportInstagramHistorical.getLikesPerHour(), 
+				reportInstagramHistorical.getCommentsPerHour()));
+
+		reportInstagramHistorical.setInstagramInteractionsRanking(UtilReports.getInstagramInteractionsRanking(
+				reportInstagramHistorical.getInteractionsPerHour()));
+
+		return reportInstagramHistorical;
+	}
+
+	public static ReportFacebookHistoricalDTO mountReportFacebookHistoricalDTO(Profile profile, Integer tableDataLimit) throws NamingException {
+
+		ReportFacebookHistoricalDTO reportFacebookHistorical = new ReportFacebookHistoricalDTO();
+
+		MaintenanceReportDetailedRemote reportDetailedRemote = (MaintenanceReportDetailedRemote)
+				RecoverMaintenance.recoverMaintenance("ReportDetailed");
+
+		MaintenanceFaceReportLocationRemote faceReportLocationRemote = (MaintenanceFaceReportLocationRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportLocation");
+
+		MaintenanceFaceReportPostRemote faceReportPostRemote = (MaintenanceFaceReportPostRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportPost");
+
+		MaintenanceFacebookInfluentialUserRemote facebookInfluentialUserRemote = (MaintenanceFacebookInfluentialUserRemote)
+				RecoverMaintenance.recoverMaintenance("FacebookInfluentialUser");
+
+		MaintenanceFacebookPostInsightRemote facebookPostInsightRemote = (MaintenanceFacebookPostInsightRemote)			
+				RecoverMaintenance.recoverMaintenance("FacebookPostInsight");
+		
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote)
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+
+		List<FanPageGrowthDTO> fanPageGrowthDTO = new ArrayList<FanPageGrowthDTO>();
+		List<FanPageGrowth> fanPageGrowth = reportDetailedRemote.getFanPageGrowth(profile.getNetworkId());
+
+		for(FanPageGrowth pageGrowth : fanPageGrowth) {
+			fanPageGrowthDTO.add(MountDTO.mountFanPageGrowth(pageGrowth));
+		}
+		reportFacebookHistorical.setFanPageGrowth(fanPageGrowthDTO);
+
+		reportFacebookHistorical.setFansUntilOneYearAgo(reportDetailedRemote.getCountFansBeforeDate(profile.getNetworkId(), UtilReports.getDateForFanPageGrowth()));
+
+		Long firstDate = reportControlRemote.getMinDate(profile.getNetworkId(), profile.getType(), ReportFacebook.GROUP_MAIN);
+		
+		reportFacebookHistorical.setMajorFanPageGrowth(getMajorFanPageGrowth(reportFacebookHistorical.getFanPageGrowth(), reportFacebookHistorical.getFansUntilOneYearAgo()));
+		reportFacebookHistorical.setMinorFanPageGrowth(getMinorFanPageGrowth(reportFacebookHistorical.getFanPageGrowth(), reportFacebookHistorical.getFansUntilOneYearAgo(), firstDate));
+
+		reportFacebookHistorical.setOrganicGrowthOrigin(reportDetailedRemote.getOrganicGrowthOrigin(profile.getNetworkId()));
+		reportFacebookHistorical.setPaidGrowthOrigin(reportDetailedRemote.getPaidGrowthOrigin(profile.getNetworkId()));
+
+		reportFacebookHistorical.setAboutYourFans(reportDetailedRemote.getAboutYourFansGender(profile.getNetworkId()));
+
+		reportFacebookHistorical.setMajorAgeGroupFans(MountDTO.mountAgeGroup(reportDetailedRemote.getMajorAgeGroupFans(profile.getNetworkId())));
+
+		Integer[] womenMenFansPerc = reportDetailedRemote.getWomenMenFansPerc(profile.getNetworkId());
+
+		reportFacebookHistorical.setMenFansPerc(womenMenFansPerc[0]);
+		reportFacebookHistorical.setWomenFansPerc(womenMenFansPerc[1]);
+
+		reportFacebookHistorical.setAboutReachedUsers(reportDetailedRemote.getAboutReachedUsers(profile.getNetworkId()));
+		reportFacebookHistorical.setMajorAgeGroupReacheUsers(MountDTO.mountAgeGroup(reportDetailedRemote.getMajorAgeGroupReachedUsers(profile.getNetworkId())));
+
+		Integer[] womenMenReachedUsersPerc = reportDetailedRemote.getWomenMenReachedUsersPerc(profile.getNetworkId());
+
+		reportFacebookHistorical.setMenReachedUsersPerc(womenMenReachedUsersPerc[0]);
+		reportFacebookHistorical.setWomenReachedUsersPerc(womenMenReachedUsersPerc[1]);
+
+		List<ReportFacebookCityDTO> citiesMoreFansDTO = new ArrayList<ReportFacebookCityDTO>();
+		List<ReportFacebookCity> citiesMoreFans = faceReportLocationRemote.getReportFacebookCityFan(profile.getNetworkId(), 0, tableDataLimit);
+
+		for(ReportFacebookCity reportFacebookCity : citiesMoreFans) {
+			citiesMoreFansDTO.add(MountDTO.mountReportFacebookCity(reportFacebookCity));
+		}
+		reportFacebookHistorical.setCitiesMoreFans(citiesMoreFansDTO);
+
+		List<ReportFacebookCityDTO> citiesMoreReachedDTO = new ArrayList<ReportFacebookCityDTO>();
+		List<ReportFacebookCity> citiesMoreReached = faceReportLocationRemote.getReportFacebookCityImp(profile.getNetworkId(), 0, tableDataLimit);
+
+		for(ReportFacebookCity reportFacebookCity : citiesMoreReached) {
+			citiesMoreReachedDTO.add(MountDTO.mountReportFacebookCity(reportFacebookCity));
+		}
+		reportFacebookHistorical.setCitiesMoreReached(citiesMoreReachedDTO);
+
+		List<FacebookInfluentialUserDTO> facebookInfluentialUsersDTO = new ArrayList<FacebookInfluentialUserDTO>();
+		List<FacebookInfluentialUser> facebookInfluentialUsers = facebookInfluentialUserRemote.getMostInfluentialFans(profile.getNetworkId(), 0, 100);
+
+		for(FacebookInfluentialUser facebookInfluentialUser : facebookInfluentialUsers) {
+			facebookInfluentialUsersDTO.add(MountDTO.mountFacebookInfluentialUser(facebookInfluentialUser, profile.getToken()));
+		}
+
+		reportFacebookHistorical.setMostInfluentialFans(facebookInfluentialUsersDTO);
+
+		List<SumByDate> singleReachDTO = new ArrayList<SumByDate>();
+		List<SumByDate> singleReach = reportDetailedRemote.getSingleReach(profile.getNetworkId());
+
+		for(SumByDate sumByDate : singleReach) {
+			singleReachDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookHistorical.setSingleReach(singleReachDTO);
+
+		List<SumByDate> totalImpressionsDTO = new ArrayList<SumByDate>();
+		List<SumByDate> totalImpressions = reportDetailedRemote.getTotalImpressions(profile.getNetworkId());
+
+		for(SumByDate sumByDate : totalImpressions) {
+			totalImpressionsDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookHistorical.setTotalImpressions(totalImpressionsDTO);
+
+		reportFacebookHistorical.setMostReachedMonth(MountDTO.mountSumByDate(reportDetailedRemote.getMostReachedMonth(profile.getNetworkId())));
+
+		List<SumByDate> commentsByMonthDTO = new ArrayList<SumByDate>();
+		List<SumByDate> commentsByMonth = facebookPostInsightRemote.getInsightsByMonth(profile.getNetworkId(), ReportFacebookPosts.POST_STORIES_BY_ACTION_TYPE_COMMENT);
+
+		for(SumByDate sumByDate : commentsByMonth) {
+			commentsByMonthDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookHistorical.setCommentsByMonth(commentsByMonthDTO);
+
+		List<SumByDate> likesByMonthDTO = new ArrayList<SumByDate>();
+		List<SumByDate> likesByMonth = facebookPostInsightRemote.getInsightsByMonth(profile.getNetworkId(), ReportFacebookPosts.POST_STORIES_BY_ACTION_TYPE_LIKE);
+
+		for(SumByDate sumByDate : likesByMonth) {
+			likesByMonthDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookHistorical.setLikesByMonth(likesByMonthDTO);
+
+		List<SumByDate> sharesByMonthDTO = new ArrayList<SumByDate>();
+		List<SumByDate> sharesByMonth = facebookPostInsightRemote.getInsightsByMonth(profile.getNetworkId(), ReportFacebookPosts.POST_STORIES_BY_ACTION_TYPE_SHARE);
+
+		for(SumByDate sumByDate : sharesByMonth) {
+			sharesByMonthDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookHistorical.setSharesByMonth(sharesByMonthDTO);
+
+		List<SumByDate> clicksByMonthDTO = new ArrayList<SumByDate>();
+		List<SumByDate> clicksByMonth = facebookPostInsightRemote.getInsightsByMonth(profile.getNetworkId(), ReportFacebookPosts.POST_CONSUMPTIONS);
+
+		for(SumByDate sumByDate : clicksByMonth) {
+			clicksByMonthDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookHistorical.setClicksByMonth(clicksByMonthDTO);
+
+		reportFacebookHistorical.setLikesPercentage(facebookPostInsightRemote.getPostsInteractionPercentage(profile.getNetworkId(), ReportFacebookPosts.POST_STORIES_BY_ACTION_TYPE_LIKE));
+		reportFacebookHistorical.setCommentsPercentage(facebookPostInsightRemote.getPostsInteractionPercentage(profile.getNetworkId(), ReportFacebookPosts.POST_STORIES_BY_ACTION_TYPE_COMMENT));
+		reportFacebookHistorical.setSharesPercentage(facebookPostInsightRemote.getPostsInteractionPercentage(profile.getNetworkId(), ReportFacebookPosts.POST_STORIES_BY_ACTION_TYPE_SHARE));
+		reportFacebookHistorical.setClicksPercentage(facebookPostInsightRemote.getPostsInteractionPercentage(profile.getNetworkId(), ReportFacebookPosts.POST_CONSUMPTIONS));
+
+		reportFacebookHistorical.setMostEngagementMonth(MountDTO.mountSumByDate(facebookPostInsightRemote.getMostEngagedMonth(profile.getNetworkId())));
+
+		List<FaceReportPostDTO> postsMostEngagedDTO = new ArrayList<FaceReportPostDTO>();
+		List<FaceReportPost> postsMostEngaged = faceReportPostRemote.getPostsMostEngaged(profile.getNetworkId(), 0, 10);
+
+		for(FaceReportPost faceReportPost : postsMostEngaged) {
+			postsMostEngagedDTO.add(MountDTO.mountFaceReportPost(faceReportPost));
+		}
+		reportFacebookHistorical.setPostsMostEngaged(postsMostEngagedDTO);
+
+		for (FaceReportPostDTO faceReportPost : reportFacebookHistorical.getPostsMostEngaged()) {
+			faceReportPost.setPostInsights(facebookPostInsightRemote.getPostInsightsHistorical(faceReportPost.getPostId()));
+		}
+
+		return reportFacebookHistorical;
+	}
+
+	public static ReportFacebookOverviewDTO mountReportFacebookOverviewDTO(Profile profile, GenericDateInterval genericDateInterval, Integer tableDataLimit) throws NamingException {
+
+		ReportFacebookOverviewDTO reportFacebookOverview = new ReportFacebookOverviewDTO();
+
+		MaintenanceReportDetailedRemote reportDetailedRemote = (MaintenanceReportDetailedRemote)
+				RecoverMaintenance.recoverMaintenance("ReportDetailed");
+
+		MaintenanceFaceReportLocationRemote faceReportLocationRemote = (MaintenanceFaceReportLocationRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportLocation");
+
+		MaintenanceFaceReportPostRemote faceReportPostRemote = (MaintenanceFaceReportPostRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportPost");
+
+		reportFacebookOverview.setDateFrom(genericDateInterval.getDateFrom());
+		reportFacebookOverview.setDateUntil(genericDateInterval.getDateUntil());
+
+		List<FanPageGrowthDTO> fanPageGrowthDTO = new ArrayList<FanPageGrowthDTO>();
+		List<FanPageGrowth> fanPageGrowth = reportDetailedRemote.getFanPageGrowth(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		for(FanPageGrowth pageGrowth : fanPageGrowth) {
+			fanPageGrowthDTO.add(MountDTO.mountFanPageGrowth(pageGrowth));
+		}
+		reportFacebookOverview.setFanPageGrowth(fanPageGrowthDTO);
+
+		reportFacebookOverview.setFansUntilDateFrom(reportDetailedRemote.getCountFansBeforeDate(profile.getNetworkId(), genericDateInterval.getDateFrom()));
+
+		List<FanPageGrowthDTO> likesByDayDTO = new ArrayList<FanPageGrowthDTO>();
+		List<FanPageGrowth> likesByDay = reportDetailedRemote.getLikesByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		for(FanPageGrowth pageGrowth : likesByDay) {
+			likesByDayDTO.add(MountDTO.mountFanPageGrowth(pageGrowth));
+		}
+		reportFacebookOverview.setLikesByDay(likesByDayDTO);
+
+		List<FanPageGrowthDTO> unlikesByDayDTO = new ArrayList<FanPageGrowthDTO>();
+		List<FanPageGrowth> unlikesByDay = reportDetailedRemote.getUnlikesByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		for(FanPageGrowth pageGrowth : unlikesByDay) {
+			unlikesByDayDTO.add(MountDTO.mountFanPageGrowth(pageGrowth));
+		}
+		reportFacebookOverview.setUnlikesByDay(unlikesByDayDTO);
+
+		reportFacebookOverview.setTotalOfFans(reportDetailedRemote.getCountFansBeforeDate(profile.getNetworkId(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookOverview.setMajorFanPageGrowth(getMajorFanPageGrowthDaySum(reportFacebookOverview.getFanPageGrowth(), reportFacebookOverview.getFansUntilDateFrom()));
+		reportFacebookOverview.setConqueredFans(reportDetailedRemote.getConqueredFans(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportFacebookOverview.setLostFans(reportDetailedRemote.getLostFans(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportFacebookOverview.setBalanceFans(reportFacebookOverview.getConqueredFans() - reportFacebookOverview.getLostFans());
+
+		reportFacebookOverview.setFansLikeSource(normalizeFansLikeSource(reportDetailedRemote.getFansLikeSource(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+
+		reportFacebookOverview.setAboutReachedUsers(reportDetailedRemote.getAboutReachedUsers(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportFacebookOverview.setMajorAgeGroupReacheUsers(MountDTO.mountAgeGroup(reportDetailedRemote.getMajorAgeGroupReachedUsers(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+
+		Integer[] womenMenReachedUsersPerc = reportDetailedRemote.getWomenMenReachedUsersPerc(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportFacebookOverview.setMenReachedUsersPerc(womenMenReachedUsersPerc[0]);
+		reportFacebookOverview.setWomenReachedUsersPerc(womenMenReachedUsersPerc[1]);
+
+		List<PostEngagementStatsDTO> postEngagementStatsDTO = new ArrayList<PostEngagementStatsDTO>();
+		List<PostEngagementStats> postEngagementStats = faceReportPostRemote.getPostsEngagementStats(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(PostEngagementStats engagementStats : postEngagementStats) {
+			postEngagementStatsDTO.add((PostEngagementStatsDTO) MountDTO.mountPostEngagementStats(engagementStats));
+		}
+		reportFacebookOverview.setPostEngagementStats(postEngagementStatsDTO);
+
+		reportFacebookOverview.setPostsEngagementTotalStats(faceReportPostRemote.getPostsEngagementTotalStats(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()  + 86400));
+
+		reportFacebookOverview.setOtherActivities(reportDetailedRemote.getOtherActivities(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportFacebookOverview.setExternalReferences(faceReportLocationRemote.getExternalReferences(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil(), 0, tableDataLimit));
+
+		return reportFacebookOverview;
+	}
+
+	public static ReportFacebookContentDTO mountReportFacebookContentDTO(Profile profile, GenericDateInterval genericDateInterval) throws NamingException {
+
+		ReportFacebookContentDTO reportFacebookContent = new ReportFacebookContentDTO();
+
+		MaintenanceReportDetailedRemote reportDetailedRemote = (MaintenanceReportDetailedRemote)
+				RecoverMaintenance.recoverMaintenance("ReportDetailed");
+
+		MaintenanceFaceReportPostRemote faceReportPostRemote = (MaintenanceFaceReportPostRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportPost");
+
+		MaintenanceFacebookPostInsightRemote facebookPostInsightRemote = (MaintenanceFacebookPostInsightRemote)
+				RecoverMaintenance.recoverMaintenance("FacebookPostInsight");
+
+		reportFacebookContent.setDateFrom(genericDateInterval.getDateFrom());
+		reportFacebookContent.setDateUntil(genericDateInterval.getDateUntil());
+
+		List<SumByDate> numberOfPostsDTO = new ArrayList<SumByDate>();
+		List<SumByDate> numberOfPosts = faceReportPostRemote.getNumberOfPosts(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : numberOfPosts) {
+			numberOfPostsDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setNumberOfPosts(numberOfPostsDTO);
+
+		reportFacebookContent.setAveragePostsPerDay(faceReportPostRemote.getAveragePostsPerDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAveragePostsReach(facebookPostInsightRemote.getAveragePostsReach(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setMajorPostsReachDay(MountDTO.mountSumByDate(facebookPostInsightRemote.getMajorPostsReachDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400)));
+		reportFacebookContent.setAveragePostsInteractions(facebookPostInsightRemote.getAveragePostsInteractions(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setMajorPostsInteractionsDay(MountDTO.mountSumByDate(facebookPostInsightRemote.getMajorPostsInteractionsDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400)));
+
+		List<SumByDate> postsReachPaidByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsReachPaidByDay = facebookPostInsightRemote.getPostsReachPaid(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsReachPaidByDay) {
+			postsReachPaidByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsReachPaidByDay(postsReachPaidByDayDTO);
+
+		List<SumByDate> postsReachOrganicByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsReachOrganicByDay = facebookPostInsightRemote.getPostsReachOrganic(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsReachOrganicByDay) {
+			postsReachOrganicByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsReachOrganicByDay(postsReachOrganicByDayDTO);
+
+		List<SumByDate> postsReachViralByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsReachViralByDay = facebookPostInsightRemote.getPostsReachViral(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsReachViralByDay) {
+			postsReachViralByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsReachViralByDay(postsReachViralByDayDTO);
+
+		reportFacebookContent.setPostsReachOrganicCount(facebookPostInsightRemote.getPostsReachOrganicCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsReachViralCount(facebookPostInsightRemote.getPostsReachViralCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsReachPaidCount(facebookPostInsightRemote.getPostsReachPaidCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsReachCount(facebookPostInsightRemote.getPostsReachCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAverageReachOfPostsPerDay(facebookPostInsightRemote.getAverageReachOfPostsPerDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+
+		List<SumByDate> postsImpressionsPaidByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsImpressionsPaidByDay = facebookPostInsightRemote.getPostsImpressionsPaid(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsImpressionsPaidByDay) {
+			postsImpressionsPaidByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsImpressionsPaidByDay(postsImpressionsPaidByDayDTO);
+
+		List<SumByDate> postsImpressionsOrganicByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsImpressionsOrganicByDay = facebookPostInsightRemote.getPostsImpressionsOrganic(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsImpressionsOrganicByDay) {
+			postsImpressionsOrganicByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsImpressionsOrganicByDay(postsImpressionsOrganicByDayDTO);
+
+		List<SumByDate> postsImpressionsViralByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsImpressionsViralByDay = facebookPostInsightRemote.getPostsImpressionsViral(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsImpressionsViralByDay) {
+			postsImpressionsViralByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsImpressionsViralByDay(postsImpressionsViralByDayDTO);
+
+		reportFacebookContent.setPostsImpressionsOrganicCount(facebookPostInsightRemote.getPostsImpressionsOrganicCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsImpressionsViralCount(facebookPostInsightRemote.getPostsImpressionsViralCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsImpressionsPaidCount(facebookPostInsightRemote.getPostsImpressionsPaidCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsImpressionsCount(facebookPostInsightRemote.getPostsImpressionsCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAverageImpressionsOfPostsPerDay(facebookPostInsightRemote.getAverageImpressionsOfPostsPerDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+
+		List<SumByDate> postsStoriesLikeByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsStoriesLikeByDay = facebookPostInsightRemote.getPostsStoriesLikeByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsStoriesLikeByDay) {
+			postsStoriesLikeByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsStoriesLikeByDay(postsStoriesLikeByDayDTO);
+
+		List<SumByDate> postsStoriesCommmentByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsStoriesCommmentByDay = facebookPostInsightRemote.getPostsStoriesCommentByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsStoriesCommmentByDay) {
+			postsStoriesCommmentByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsStoriesCommmentByDay(postsStoriesCommmentByDayDTO);
+
+		List<SumByDate> postsStoriesShareByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsStoriesShareByDay = facebookPostInsightRemote.getPostsStoriesShareByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsStoriesShareByDay) {
+			postsStoriesShareByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsStoriesShareByDay(postsStoriesShareByDayDTO);
+
+		reportFacebookContent.setPostsStoriesCount(facebookPostInsightRemote.getPostsStoriesCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsStoriesLikePercentage(facebookPostInsightRemote.getPostsStoriesLikePercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsStoriesCommentPercentage(facebookPostInsightRemote.getPostsStoriesCommentPercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsStoriesSharePercentage(facebookPostInsightRemote.getPostsStoriesSharePercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsStoriesLikeByStatusType(facebookPostInsightRemote.getPostsStoriesLikeByStatusType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsStoriesCommentByStatusType(facebookPostInsightRemote.getPostsStoriesCommentByStatusType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsStoriesShareByStatusType(facebookPostInsightRemote.getPostsStoriesShareByStatusType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+
+		List<SumByDate> postsConsumptionsPhotoViewByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsConsumptionsPhotoViewByDay = facebookPostInsightRemote.getPostsConsumptionsPhotoViewByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsConsumptionsPhotoViewByDay) {
+			postsConsumptionsPhotoViewByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsConsumptionsPhotoViewByDay(postsConsumptionsPhotoViewByDayDTO);
+
+		List<SumByDate> postsConsumptionsLinkClicksByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsConsumptionsLinkClicksByDay = facebookPostInsightRemote.getPostsConsumptionsLinkClicksByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsConsumptionsLinkClicksByDay) {
+			postsConsumptionsLinkClicksByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsConsumptionsLinkClicksByDay(postsConsumptionsLinkClicksByDayDTO);
+
+		List<SumByDate> postsConsumptionsVideoPlaysByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsConsumptionsVideoPlaysByDay = facebookPostInsightRemote.getPostsConsumptionsVideoPlaysByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsConsumptionsVideoPlaysByDay) {
+			postsConsumptionsVideoPlaysByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsConsumptionsVideoPlaysByDay(postsConsumptionsVideoPlaysByDayDTO);
+
+		List<SumByDate> postsConsumptionsOtherClicksByDayDTO = new ArrayList<SumByDate>();
+		List<SumByDate> postsConsumptionsOtherClicksByDay = facebookPostInsightRemote.getPostsConsumptionsOtherClicksByDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400);
+
+		for(SumByDate sumByDate : postsConsumptionsOtherClicksByDay) {
+			postsConsumptionsOtherClicksByDayDTO.add(MountDTO.mountSumByDate(sumByDate));
+		}
+		reportFacebookContent.setPostsConsumptionsOtherClicksByDay(postsConsumptionsOtherClicksByDayDTO);
+
+		reportFacebookContent.setPostsConsumptionsCount(facebookPostInsightRemote.getPostsConsumptionsCount(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsConsumptionsPhotoViewPercentage(facebookPostInsightRemote.getPostsConsumptionsPhotoViewPercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsConsumptionsLinkClicksPercentage(facebookPostInsightRemote.getPostsConsumptionsLinkClicksPercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsConsumptionsVideoPlaysPercentage(facebookPostInsightRemote.getPostsConsumptionsVideoPlaysPercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setPostsConsumptionsOtherClicksPercentage(facebookPostInsightRemote.getPostsConsumptionsOtherClicksPercentage(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAverageConsumptionsPhotoViewPerPost(facebookPostInsightRemote.getAverageConsumptionsPhotoViewPerPost(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAverageConsumptionsLinkClicksPerPost(facebookPostInsightRemote.getAverageConsumptionsLinkClicksPerPost(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAverageConsumptionsVideoPlaysPerPost(facebookPostInsightRemote.getAverageConsumptionsVideoPlaysPerPost(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookContent.setAverageConsumptionsOtherClicksPerPost(facebookPostInsightRemote.getAverageConsumptionsOtherClicksPerPost(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+
+		reportFacebookContent.setFansOnlinePerHour(reportDetailedRemote.getFansOnlinePerHour(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportFacebookContent.setAverageFansOnlinePerHour(reportDetailedRemote.getAverageFansOnlinePerHour(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportFacebookContent.setFansOnlinePerWeekDay(reportDetailedRemote.getFansOnlinePerWeekDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		Object[] timeWithMoreFansOnline = reportDetailedRemote.getTimeWithMoreFansOnline(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportFacebookContent.setTimeWithMoreFansOnline((String) timeWithMoreFansOnline[0]);
+		reportFacebookContent.setTimeWithMoreFansOnlinePercentage((Integer) timeWithMoreFansOnline[1]);
+
+		Object[] weekDayWithMoreFansOnline = reportDetailedRemote.getWeekDayWithMoreFansOnline(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportFacebookContent.setWeekDayWithMoreFansOnline((Integer) weekDayWithMoreFansOnline[0]);
+		reportFacebookContent.setWeekDayWithMoreFansOnlinePercentage((Integer) weekDayWithMoreFansOnline[1]);
+
+		return reportFacebookContent;
+	}
+
+	public static ReportFacebookPostCommentsDTO mountReportFacebookPostComments(FaceReportPostDTO faceReportPostDTO, GenericDateInterval genericDateInterval) {
+
+		MaintenanceFaceReportPostCommentRemote faceReportPostCommentRemote = (MaintenanceFaceReportPostCommentRemote)
+				RecoverMaintenance.recoverMaintenance("FaceReportPostComment");
+
+		ReportFacebookPostCommentsDTO reportFacebookPostComments = new ReportFacebookPostCommentsDTO();
+
+		reportFacebookPostComments.setDateFrom(genericDateInterval.getDateFrom());
+		reportFacebookPostComments.setDateUntil(genericDateInterval.getDateUntil());
+
+		reportFacebookPostComments.setFaceReportPostDTO(faceReportPostDTO);
+
+		reportFacebookPostComments.setComments(
+				MountDTO.mountFaceReportPostComment(faceReportPostCommentRemote.getComments(faceReportPostDTO.getPostId())));
+
+		return reportFacebookPostComments;
+	}
+
+	public static ReportFacebookPostToPostDTO mountReportFacebookPostToPost(Profile profile, GenericDateInterval genericDateInterval, boolean isPDF) throws NamingException {
+
+		ReportFacebookPostToPostDTO reportFacebookPostToPost = new ReportFacebookPostToPostDTO();
+
+		MaintenanceFaceReportPostRemote faceReportPostRemote = (MaintenanceFaceReportPostRemote) 
+				RecoverMaintenance.recoverMaintenance("FaceReportPost");
+
+		MaintenanceFacebookPostInsightRemote facebookPostInsightRemote = (MaintenanceFacebookPostInsightRemote)
+				RecoverMaintenance.recoverMaintenance("FacebookPostInsight");
+
+		reportFacebookPostToPost.setDateFrom(genericDateInterval.getDateFrom());
+		reportFacebookPostToPost.setDateUntil(genericDateInterval.getDateUntil());
+
+		reportFacebookPostToPost.setNumberOfPostsPerType(faceReportPostRemote.getNumberOfPostsPerType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookPostToPost.setAveragePostReachByPostType(facebookPostInsightRemote.getAveragePostReachByPostType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookPostToPost.setAveragePostInteractionsByPostType(facebookPostInsightRemote.getAveragePostInteractionsByPostType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+		reportFacebookPostToPost.setEngagementPercentageByPostType(facebookPostInsightRemote.getEngagementPercentageByPostType(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400));
+
+		List<FaceReportPostDTO> postsMostEngagedDTO = new ArrayList<FaceReportPostDTO>();
+		List<FaceReportPost> postsMostEngaged;
+		if(isPDF) {
+			postsMostEngaged = faceReportPostRemote.getPostsMostEngaged(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400, 0, null);
+		} else {
+			postsMostEngaged = faceReportPostRemote.getPostsMostEngaged(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400, 0, ReportFacebookPostToPostDTO.POSTS_PER_CALL);
+		}
+
+		for(FaceReportPost faceReportPost : postsMostEngaged) {
+
+			FaceReportPostDTO faceReportPostDTO = MountDTO.mountFaceReportPost(faceReportPost); 
+			faceReportPostDTO.setPostInsights(checkPostInsights(facebookPostInsightRemote.getPostInsights(faceReportPostDTO.getPostId())));
+			faceReportPostDTO.setTotalReach(faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_PAID_UNIQUE)
+					+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_ORGANIC_UNIQUE)
+					+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_IMPRESSIONS_VIRAL_UNIQUE));
+			faceReportPostDTO.setTotalInteractions(faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_COMMENT)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_SHARE)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_CONSUMPTIONS)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_ANGER_TOTAL)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_HAHA_TOTAL)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_LOVE_TOTAL)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_SORRY_TOTAL)
+				+ faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_WOW_TOTAL));
+
+			if(faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_LIKE_TOTAL) > 0) {
+				faceReportPostDTO.setTotalInteractions(faceReportPostDTO.getTotalInteractions() + 
+						faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_REACTIONS_LIKE_TOTAL));
+			} else {
+				faceReportPostDTO.setTotalInteractions(faceReportPostDTO.getTotalInteractions() + 
+						faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_LIKE));
+				faceReportPostDTO.getPostInsights().put(FaceReportPostDTO.POST_REACTIONS_LIKE_TOTAL, 
+						faceReportPostDTO.getPostInsights().get(FaceReportPostDTO.POST_STORIES_BY_ACTION_TYPE_LIKE));
+			}
+			
+			postsMostEngagedDTO.add(faceReportPostDTO);
+		}
+
+		reportFacebookPostToPost.setPostsMostEngaged(postsMostEngagedDTO);
+
+		return reportFacebookPostToPost;
+	}
+	
+	public static Map<String, Long> checkPostInsights(Map<String, Long> postInsights) {
+		
+		if(!postInsights.containsKey(FaceReportPostDTO.POST_REACTIONS_LIKE_TOTAL)) {
+			postInsights.put(FaceReportPostDTO.POST_REACTIONS_LIKE_TOTAL, 0L);
+		}
+		if(!postInsights.containsKey(FaceReportPostDTO.POST_REACTIONS_ANGER_TOTAL)) {
+			postInsights.put(FaceReportPostDTO.POST_REACTIONS_ANGER_TOTAL, 0L);
+		}
+		if(!postInsights.containsKey(FaceReportPostDTO.POST_REACTIONS_HAHA_TOTAL)) {
+			postInsights.put(FaceReportPostDTO.POST_REACTIONS_HAHA_TOTAL, 0L);
+		}
+		if(!postInsights.containsKey(FaceReportPostDTO.POST_REACTIONS_LOVE_TOTAL)) {
+			postInsights.put(FaceReportPostDTO.POST_REACTIONS_LOVE_TOTAL, 0L);
+		}
+		if(!postInsights.containsKey(FaceReportPostDTO.POST_REACTIONS_SORRY_TOTAL)) {
+			postInsights.put(FaceReportPostDTO.POST_REACTIONS_SORRY_TOTAL, 0L);
+		}
+		if(!postInsights.containsKey(FaceReportPostDTO.POST_REACTIONS_WOW_TOTAL)) {
+			postInsights.put(FaceReportPostDTO.POST_REACTIONS_WOW_TOTAL, 0L);
+		}
+		
+		return postInsights;
+	}
+
+	public static ReportTwitterOverviewDTO mountReportTwitterOverviewDTO(Profile profile, GenericDateInterval genericDateInterval, Integer tableDataLimit) {
+
+		ReportTwitterOverviewDTO reportTwitterOverview = new ReportTwitterOverviewDTO();
+
+		MaintenanceTwitterReportRemote twitterReportRemote = (MaintenanceTwitterReportRemote) 
+				RecoverMaintenance.recoverMaintenance("TwitterReport");
+
+		MaintenanceTwitterStatusRemote twitterStatusRemote = (MaintenanceTwitterStatusRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatus");
+
+		MaintenanceTwitterStatusReportRemote twitterStatusReportRemote = (MaintenanceTwitterStatusReportRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatusReport");
+
+		MaintenanceTwitterFollowerRemote twitterFollowerRemote = (MaintenanceTwitterFollowerRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterFollower");
+
+		MaintenanceTwitterFollowerReportRemote twitterFollowerReportRemote = (MaintenanceTwitterFollowerReportRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterFollowerReport");
+
+		reportTwitterOverview.setDateFrom(genericDateInterval.getDateFrom());
+		reportTwitterOverview.setDateUntil(genericDateInterval.getDateUntil());
+
+		reportTwitterOverview.setFollowersByDay(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT , genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setTotalOfFollowers(twitterReportRemote.getValue(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT_ALL));
+		reportTwitterOverview.setFollowersBalance(twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportTwitterOverview.setDayWithMoreFollowers(MountDTO.mountTwitterReport(twitterReportRemote.getDayWithMoreFollowers(profile.getNetworkId(), ReportTwitter.FOLLOWERS_COUNT , genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setFollowersGrowthRate(Calc.calcPercentageNormal(reportTwitterOverview.getFollowersBalance().doubleValue(), reportTwitterOverview.getTotalOfFollowers().doubleValue() - reportTwitterOverview.getFollowersBalance().doubleValue(), 2));
+
+		reportTwitterOverview.setTweetsSentWithText(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.MSG_SENT_WITH_TEXT_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setTweetsSentWithPhotoVideo(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.MSG_SENT_WITH_PHOTO_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setTweetsSentWithLink(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.MSG_SENT_WITH_LINK_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setAverageTweetsSentPerDay(twitterReportRemote.getAverageOfValues(profile.getNetworkId(), ReportTwitter.MESSAGES_SENT_BY_ME_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		reportTwitterOverview.setTweetsSentCountByType(twitterReportRemote.getSumsForProperties(profile.getNetworkId(), 
+				Arrays.asList(ReportTwitter.MSG_SENT_WITH_TEXT_COUNT, ReportTwitter.MSG_SENT_WITH_PHOTO_COUNT, ReportTwitter.MSG_SENT_WITH_LINK_COUNT), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		Object[] tweetTypeWithMoreTweets = twitterReportRemote.getTweetTypeWithMoreTweets(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportTwitterOverview.setTweetTypeWithMoreTweets((String) tweetTypeWithMoreTweets[0]);
+		reportTwitterOverview.setTweetTypeWithMoreTweetsPercentage((Integer) tweetTypeWithMoreTweets[1]);
+
+		reportTwitterOverview.setTweetsPerHour(twitterStatusRemote.getTweetsPerHour(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportTwitterOverview.setTweetsPerWeekDay(twitterStatusRemote.getTweetsPerWeekDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		Object[] timeWithMoreTweets = twitterStatusRemote.getTimeWithMoreTweets(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportTwitterOverview.setTimeWithMoreTweets((Integer) timeWithMoreTweets[0]);
+		reportTwitterOverview.setTimeWithMoreTweetsPercentage((Integer) timeWithMoreTweets[1]);
+
+		Object[] weekDayWithMorePosts = twitterStatusRemote.getWeekDayWithMoreTweets(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil());
+
+		reportTwitterOverview.setWeekDayWithMoreTweets((Integer) weekDayWithMorePosts[0]);
+		reportTwitterOverview.setWeekDayWithMoreTweetsPercentage((Integer) weekDayWithMorePosts[1]);
+
+		reportTwitterOverview.setRepliesByDay(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.REPLIES_OF_ME, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setRetweetsByDay(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.RETWEETS_OF_ME, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setMentionsByDay(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.MENTIONS, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+		reportTwitterOverview.setFavoritesByDay(mountTwitterReportsDTOList(
+				twitterReportRemote.getEntitiesByProfile(profile.getNetworkId(), ReportTwitter.FAVORITE_COUNT, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil())));
+
+		reportTwitterOverview.setEngagementPercentages(twitterReportRemote.getEngagementPercentages(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportTwitterOverview.setEngagementPeakDay(twitterReportRemote.getEngagementPeakDay(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+
+		reportTwitterOverview.setFollowersOfFollowers(twitterFollowerRemote.getFollowersOfFollowers(Long.valueOf(profile.getNetworkId())));
+
+		Integer[] womenMenFollowersPerc = twitterFollowerRemote.getWomenMenFollowersPerc(Long.valueOf(profile.getNetworkId()));
+
+		reportTwitterOverview.setWomenFollowersPerc(womenMenFollowersPerc[0]);
+		reportTwitterOverview.setMenFollowersPerc(womenMenFollowersPerc[1]);
+
+		reportTwitterOverview.setAverageFollowersOfFollowers(twitterFollowerRemote.getAverageFollowersOfFollowers(Long.valueOf(profile.getNetworkId())));
+		reportTwitterOverview.setRetweetCount(twitterReportRemote.getSumOfValues(profile.getNetworkId(), ReportTwitter.RETWEETS_OF_ME, genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportTwitterOverview.setPotentialReach(twitterFollowerRemote.getMedianFollowersOfFollowers(Long.valueOf(profile.getNetworkId())) * reportTwitterOverview.getRetweetCount());
+
+		reportTwitterOverview.setFollowersActivity(twitterFollowerRemote.getFollowersActivity(Long.valueOf(profile.getNetworkId())));
+		reportTwitterOverview.setFollowersEngagedCount(twitterFollowerReportRemote.getFollowersEngagedCount(Long.valueOf(profile.getNetworkId()), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportTwitterOverview.setFollowersEngagement(twitterFollowerReportRemote.getFollowersEngagement(Long.valueOf(profile.getNetworkId()), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil()));
+		reportTwitterOverview.setFollowersEngagementPercentage(Calc.calcPercentageNormal(reportTwitterOverview.getFollowersEngagedCount().doubleValue(), 
+				reportTwitterOverview.getFollowersEngagement().doubleValue(), 0).intValue());
+
+		if(!reportTwitterOverview.getFollowersActivity().isEmpty()) {
+
+			Entry<String, Long> entry = ((Entry<String, Long>)reportTwitterOverview.getFollowersActivity().entrySet().toArray()[0]);
+
+			reportTwitterOverview.setFollowersActivityBiggerPercentage(
+					Calc.calcPercentageNormal(entry.getValue().doubleValue(), 
+							reportTwitterOverview.getTotalOfFollowers().doubleValue(), 0).intValue());
+			reportTwitterOverview.setFollowersActivityBiggerPeriod(entry.getKey());
+
+		} else {
+
+			reportTwitterOverview.setFollowersActivityBiggerPercentage(0);
+			reportTwitterOverview.setFollowersActivityBiggerPeriod("1 dia");
+		}
+
+		if(tableDataLimit != null) {
+			reportTwitterOverview.setCitiesWithMoreFollowers(twitterFollowerRemote.getCitiesWithMoreFollowers(Long.valueOf(profile.getNetworkId()), 0, 5));
+		} else {
+			reportTwitterOverview.setCitiesWithMoreFollowers(twitterFollowerRemote.getCitiesWithMoreFollowers(Long.valueOf(profile.getNetworkId()), 0, 10));
+		}
+
+		reportTwitterOverview.setMostInfluentialFollowers(MountDTO.mountTwitterFollower(twitterFollowerRemote.getMostInfluentialFollowers(Long.valueOf(profile.getNetworkId()), 0, 100)));
+		reportTwitterOverview.setMostRecentFollowers(MountDTO.mountTwitterFollower(twitterFollowerRemote.getMostRecentFollowers(Long.valueOf(profile.getNetworkId()), 0, 100)));
+
+		List<TwitterReportStatusDTO> twitterReportStatus = MountDTO.mountTwitterReportStatus(
+				twitterStatusRemote.getTwitterStatus(profile.getNetworkId(), genericDateInterval.getDateFrom(), genericDateInterval.getDateUntil() + 86400, 0, tableDataLimit), 
+				profile);
+
+		for(TwitterReportStatusDTO twitterReportStatusDTO : twitterReportStatus) {
+
+			twitterReportStatusDTO.setRepliesCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), "repliesOfMeCountAll"));
+
+			twitterReportStatusDTO.setRetweetsCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), "retweetsOfMeCountAll"));
+
+			twitterReportStatusDTO.setFavoriteCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), ReportTwitter.FAVORITE_COUNT_ALL));
+		}
+
+		reportTwitterOverview.setTwitterReportStatus(twitterReportStatus);
+
+		return reportTwitterOverview;
+	}
+
+	public static List<TwitterReportDTO> mountTwitterReportsDTOList(List<TwitterReport> twitterReports) {
+
+		List<TwitterReportDTO> twitterReporstDTO = new ArrayList<TwitterReportDTO>();
+
+		for(TwitterReport twitterReport : twitterReports) {
+			twitterReporstDTO.add(MountDTO.mountTwitterReport(twitterReport));
+		}
+
+		return twitterReporstDTO;
+	}
+	
+	public static GenericDateInterval getTwitterReportDates(Calendar untilDate, int period) {
+
+		Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                untilDate.get(Calendar.MONTH),
+                untilDate.get(Calendar.DAY_OF_MONTH));
+		fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        return new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+    }
+	
+	public static GenericDateInterval getTwitterReportDates(int period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        return new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+    }
+	
+	public static GenericDateInterval getInstagramReportDates(Calendar untilDate, int period) {
+		
+		Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                untilDate.get(Calendar.MONTH),
+                untilDate.get(Calendar.DAY_OF_MONTH));
+		fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+		 return new GenericDateInterval(UtilFunctions.getMidnightDateNoDaylightTime(fromDate.getTime()), 
+	        		UtilFunctions.getMidnightDateNoDaylightTime(untilDate.getTime()));
+	}
+	
+	public static GenericDateInterval getInstagramReportDates(int period) {
+		
+		Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        return new GenericDateInterval(UtilFunctions.getMidnightDateNoDaylightTime(fromDate.getTime()), 
+        		UtilFunctions.getMidnightDateNoDaylightTime(untilDate.getTime()));
+	}
+	
+	public static GenericDateInterval getFacebookReportsDates(Calendar untilDate, int period) {
+		
+		Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                untilDate.get(Calendar.MONTH),
+                untilDate.get(Calendar.DAY_OF_MONTH));
+		fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+		
+    	return new GenericDateInterval(UtilFunctions.getDateForFacebookReport(fromDate), UtilFunctions.getDateForFacebookReport(untilDate));
+    }
+	
+	public static GenericDateInterval getFacebookReportDates(int period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 3);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        GenericDateInterval genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForFacebookReport(fromDate), UtilFunctions.getDateForFacebookReport(untilDate));
+        
+        return genericDateInterval;
+    }
+
+	public static Long getDateForFanPageGrowth() {
+
+		Calendar date = new GregorianCalendar();
+		date.add(Calendar.YEAR, - 1);
+		date.add(Calendar.MONTH, 1);
+		date.set(Calendar.DAY_OF_MONTH, 1);
+		date.setTimeZone(TimeZone.getTimeZone("America/Phoenix"));
+		date.set(Calendar.AM_PM, Calendar.AM);
+		date.set(Calendar.HOUR_OF_DAY, 0);
+		date.set(Calendar.MINUTE, 0);
+		date.set(Calendar.SECOND, 0);
+
+		return date.getTimeInMillis() / 1000L;
+	}
+
+	public static FanPageGrowthDTO getMajorFanPageGrowth(List<FanPageGrowthDTO> fanPageGrowthList, Long fansUntilOneYearAgo) {
+
+		FanPageGrowthDTO maxFanPageGrowth = null;
+
+		if(!fanPageGrowthList.isEmpty()) {
+
+			Long oldTotal = fansUntilOneYearAgo;
+			Long newTotal = oldTotal + fanPageGrowthList.get(0).getSum();
+
+			fanPageGrowthList.get(0).setGrowthRate(Calc.calcPercentageGrowth(oldTotal.doubleValue(), newTotal.doubleValue(), 0).intValue());
+
+			oldTotal = newTotal;
+
+			maxFanPageGrowth = fanPageGrowthList.get(0); 
+
+			for (int i = 1; i < fanPageGrowthList.size(); i++) {
+
+				newTotal = oldTotal + fanPageGrowthList.get(i).getSum();
+
+				fanPageGrowthList.get(i).setGrowthRate(Calc.calcPercentageGrowth(oldTotal.doubleValue(), newTotal.doubleValue(), 0).intValue());
+
+				if(fanPageGrowthList.get(i).getGrowthRate() >= maxFanPageGrowth.getGrowthRate()) {
+					maxFanPageGrowth = fanPageGrowthList.get(i);
+				}
+
+				oldTotal = newTotal;
+			}
+		} else {
+			maxFanPageGrowth = new FanPageGrowthDTO();
+			maxFanPageGrowth.setDay(1);
+			maxFanPageGrowth.setMonth(1);
+			maxFanPageGrowth.setYear(1);
+			maxFanPageGrowth.setSum(0L);
+		}
+
+		return maxFanPageGrowth;
+	}
+
+	public static FanPageGrowthDTO getMinorFanPageGrowth(List<FanPageGrowthDTO> fanPageGrowthList, Long fansUntilOneYearAgo, Long firstDate) {
+
+		FanPageGrowthDTO minFanPageGrowth = new FanPageGrowthDTO();
+		minFanPageGrowth.setGrowthRate(1000000000);
+		
+		Calendar firstDateCalendar = Calendar.getInstance();
+		firstDateCalendar.setTimeInMillis(firstDate * 1000L);
+		firstDateCalendar = UtilFunctions.getCalendarDateForFacebookReport(firstDateCalendar);
+
+		Long oldTotal = fansUntilOneYearAgo;
+		Long newTotal = oldTotal;
+
+		/* Importante manter fanPageGrowthList.size() - 1, pois exclui o mês corrente da análise, mês este que está em andamento 
+		 * e por isso não pode ser comparado com os meses que são "cheios", tornando assim a análise mais concisa */
+		for(int i = 0; i < fanPageGrowthList.size() - 1; i++) {
+
+			newTotal = oldTotal + fanPageGrowthList.get(i).getSum();
+
+			fanPageGrowthList.get(i).setGrowthRate(Calc.calcPercentageGrowth(oldTotal.doubleValue(), newTotal.doubleValue(), 0).intValue());
+
+			/* Verificação que mantêm os meses em que não conseguimos recuperar dados fora da análise de menor crescimento */
+			if(fanPageGrowthList.get(i).getGrowthRate() <= minFanPageGrowth.getGrowthRate() && 
+					((firstDateCalendar.get(Calendar.YEAR) == fanPageGrowthList.get(i).getYear() && 
+					fanPageGrowthList.get(i).getMonth() >= firstDateCalendar.get(Calendar.MONTH) + 1) || 
+					(fanPageGrowthList.get(i).getYear() > firstDateCalendar.get(Calendar.YEAR)))) {
+				minFanPageGrowth = fanPageGrowthList.get(i);
+			}
+
+			oldTotal = newTotal;
+		}
+
+		return minFanPageGrowth;
+	}
+
+	public static FanPageGrowthDTO getMajorFanPageGrowthDaySum(List<FanPageGrowthDTO> fanPageGrowthList, Long fansUntilOneYearAgo) {
+
+		FanPageGrowthDTO maxFanPageGrowth = null;
+
+		if(!fanPageGrowthList.isEmpty()) {
+
+			maxFanPageGrowth = fanPageGrowthList.get(0); 
+
+			for (int i = 1; i < fanPageGrowthList.size(); i++) {
+
+				if(fanPageGrowthList.get(i).getSum() >= maxFanPageGrowth.getSum()) {
+					maxFanPageGrowth = fanPageGrowthList.get(i);
+				}
+
+			}
+		} else {
+
+			maxFanPageGrowth = new FanPageGrowthDTO();
+			maxFanPageGrowth.setDate(new Date());
+			maxFanPageGrowth.setSum(0L);
+		}
+
+		return maxFanPageGrowth;
+	}
+
+	public static Map<Integer, Long> getInteractionsPerHour(Map<Integer, Long> likesPerHour, Map<Integer, Long> commentsPerHour) {
+
+		Map<Integer, Long> interactionsPerHour = new TreeMap<Integer, Long>();
+
+		for(int i = 0; i < 24; i++) {
+			interactionsPerHour.put(i, likesPerHour.get(i) + commentsPerHour.get(i));
+		}
+
+		return interactionsPerHour;
+	}
+
+	public static Long getInteractionsCount(Map<Integer, Long> interactionsPerHour) {
+
+		Long interactionsCount = 0L;
+
+		for(Map.Entry<Integer, Long> interactionPerHour : interactionsPerHour.entrySet()) {
+			interactionsCount += interactionPerHour.getValue();
+		}
+
+		return interactionsCount;
+	}
+
+	public static List<InstagramInteractionRankingDTO> getInstagramInteractionsRanking(Map<Integer, Long> interactionsPerHour) {
+
+		List<InstagramInteractionRankingDTO> instagramInteractionsRanking = new ArrayList<InstagramInteractionRankingDTO>();
+		Long interactionsCount = getInteractionsCount(interactionsPerHour);
+
+		for(Map.Entry<Integer, Long> interactionPerHour : interactionsPerHour.entrySet()) {
+
+			InstagramInteractionRankingDTO instagramInteractionRanking = new InstagramInteractionRankingDTO();
+			instagramInteractionRanking.setHour(interactionPerHour.getKey());
+			instagramInteractionRanking.setCount(interactionPerHour.getValue());
+			instagramInteractionRanking.setPercentage(Calc.calcPercentageNormal(interactionPerHour.getValue().doubleValue(), 
+					interactionsCount.doubleValue(), 2));
+
+			instagramInteractionsRanking.add(instagramInteractionRanking);
+		}
+
+		Collections.sort(instagramInteractionsRanking);
+		Collections.reverse(instagramInteractionsRanking);
+
+		return instagramInteractionsRanking;
+	}
+
+	/* TODO: Workaround para a atualização de informações(Nome do usuário, url da foto) sobre um perfil influente do Instagram,
+			 necessário para impedir informações desatualizadas sobre o perfil, como uma url de foto quebrada. */
+	public static List<InstagramEngagedFollower> updateInstagramEngagedFollowers(List<InstagramEngagedFollower> instagramEngagedFollowers, Profile profile) {
+
+		MaintenanceInstagramUserRemote instagramUserRemote = (MaintenanceInstagramUserRemote)
+				RecoverMaintenance.recoverMaintenance("InstagramUser");
+
+		InstagramIntegration instagramIntegration = new InstagramIntegration();
+
+		Long reportDateStamp = UtilFunctions.getMidnightDateNoDaylightTime(Calendar.getInstance().getTime());
+
+		for (InstagramEngagedFollower instagramEngagedFollower : instagramEngagedFollowers) {
+
+			InstagramUser instagramUser = new InstagramUser();
+
+			try {
+
+				instagramUser = instagramUserRemote.getById(instagramEngagedFollower.getInstagramFollower().getFollowerId());
+
+				if(instagramUser == null || (instagramUser != null && instagramUser.getLastUpdateDate() < reportDateStamp)) {
+
+					Instagram instagram = instagramIntegration.getInstagram(profile.getToken(), profile.getTokenSecret());
+
+					UserInfoData userInfoData = instagram.getUserInfo(instagramEngagedFollower.getInstagramFollower().getFollowerId().toString()).getData();
+
+					if(instagramUser == null) {
+
+						instagramUser = new InstagramUser();
+						instagramUser.setIdInstagramUser(Long.valueOf(userInfoData.getId()));
+						instagramUser.setUserName(userInfoData.getUsername());
+						instagramUser.setFullName(userInfoData.getFullName());
+						instagramUser.setProfilePicture(userInfoData.getProfilePicture());
+						instagramUser.setLastUpdateDate(new Date().getTime() / 1000L);
+
+					} else {
+
+						instagramUser.setUserName(userInfoData.getUsername());
+						instagramUser.setFullName(userInfoData.getFullName());
+						instagramUser.setProfilePicture(userInfoData.getProfilePicture());
+						instagramUser.setLastUpdateDate(new Date().getTime() / 1000L);
+					}
+					
+					instagramUserRemote.save(instagramUser);
+
+					instagramUser = instagramUserRemote.getById(instagramUser.getIdInstagramUser());
+				}
+
+			} catch (Exception e) {
+
+				e.printStackTrace();
+
+				MaintenanceInstagramFollowerRemote instagramFollowerRemote = (MaintenanceInstagramFollowerRemote)
+						RecoverMaintenance.recoverMaintenance("InstagramFollower");
+
+				InstagramFollowerId instagramFollowerId = new InstagramFollowerId();
+				instagramFollowerId.setFollowerId(instagramEngagedFollower.getInstagramFollower().getFollowerId());
+				instagramFollowerId.setIdProfile(instagramEngagedFollower.getInstagramFollower().getIdProfile());
+
+				InstagramFollower instagramFollower = instagramFollowerRemote.getById(instagramFollowerId);
+
+				if(instagramUser == null) {
+					instagramUser = new InstagramUser();
+				}
+				
+				instagramUser.setIdInstagramUser(instagramFollower.getFollowerId());
+				instagramUser.setUserName(instagramFollower.getUserName());
+				instagramUser.setFullName(instagramFollower.getFullName());
+				instagramUser.setProfilePicture(instagramFollower.getProfilePicture());
+				instagramUser.setLastUpdateDate(new Date().getTime() / 1000L);
+				
+				try {
+					
+					instagramUserRemote.save(instagramUser);
+
+					instagramUser = instagramUserRemote.getById(instagramUser.getIdInstagramUser());
+					
+					try {
+						
+						new URL(instagramEngagedFollower.getInstagramFollower().getProfilePicture().replace("https", "http"));
+						
+					} catch (Exception e1) {
+						instagramUser.setProfilePicture(Icons.AVATAR);
+						e1.printStackTrace();
+					}
+					
+				} catch (IllegalArgumentException e1) {
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+				
+			} finally {
+				instagramEngagedFollower.getInstagramFollower().setUserName(instagramUser.getUserName());
+				instagramEngagedFollower.getInstagramFollower().setProfilePicture(instagramUser.getProfilePicture());
+			}
+		}
+
+		return instagramEngagedFollowers;
+	}
+	
+	public static Map<String, Long> normalizeFansLikeSource(Map<String, Long> fansLikeSource) {
+		
+		Map<String, Long> fansLikeSourceNormalized = new HashMap<String, Long>();
+		
+		// Não contabilizar algumas origens.
+		fansLikeSource.remove(ReportFacebook.PAGE_FANS_PROFILE_CONNECT);
+		fansLikeSource.remove(ReportFacebook.PAGE_FANS_PAGE_BROWSER);
+		fansLikeSource.remove(ReportFacebook.PAGE_FANS_MOBILE_PAGE_BROWSER);
+		fansLikeSource.remove(ReportFacebook.PAGE_FANS_TICKER);
+		
+		// Normalizar valores "Páginas que curtiram outras páginas".
+		HashSet<String> pageFansFromPages = new HashSet<String>();
+		pageFansFromPages.add(ReportFacebook.PAGE_FANS_PAGE_INVITE);
+		pageFansFromPages.add(ReportFacebook.PAGE_FANS_FAVORITES);
+		
+		// Normalizar valores "Recomendações do Facebook".
+		HashSet<String> pageFansFromRecommendations = new HashSet<String>();
+		pageFansFromRecommendations.add(ReportFacebook.PAGE_FANS_RECOMMENDED_PAGES);
+		pageFansFromRecommendations.add(ReportFacebook.PAGE_FANS_FEED_CHAINING);
+		
+		// Normalizar valores "Sugestões ao curtir novas páginas".
+		HashSet<String> pageFansFromLikeSuggestions = new HashSet<String>();
+		pageFansFromLikeSuggestions.add(ReportFacebook.PAGE_FANS_ALL_CATEGORY_PYML);
+		pageFansFromLikeSuggestions.add(ReportFacebook.PAGE_FANS_PAGE_SUGGESTIONS_ON_LIKING);
+		pageFansFromLikeSuggestions.add(ReportFacebook.PAGE_FANS_MOBILE_PAGE_SUGGESTIONS_ON_LIKING);
+		
+		fansLikeSourceNormalized.put(PAGE_FANS_FROM_PAGES, 0L);
+		fansLikeSourceNormalized.put(PAGE_FANS_FROM_RECOMMENDATIONS, 0L);
+		fansLikeSourceNormalized.put(PAGE_FANS_FROM_LIKE_SUGGESTIONS, 0L);
+		
+		for(Map.Entry<String, Long> fanLikeSource : fansLikeSource.entrySet()) { 
+			
+			if(pageFansFromPages.contains(fanLikeSource.getKey())) {
+				fansLikeSourceNormalized.put(PAGE_FANS_FROM_PAGES, 
+						fansLikeSourceNormalized.get(PAGE_FANS_FROM_PAGES) + fanLikeSource.getValue());
+			} else if(pageFansFromRecommendations.contains(fanLikeSource.getKey())) {
+				fansLikeSourceNormalized.put(PAGE_FANS_FROM_RECOMMENDATIONS, 
+						fansLikeSourceNormalized.get(PAGE_FANS_FROM_RECOMMENDATIONS) + fanLikeSource.getValue());
+			} else if(pageFansFromLikeSuggestions.contains(fanLikeSource.getKey())) {
+				fansLikeSourceNormalized.put(PAGE_FANS_FROM_LIKE_SUGGESTIONS, 
+						fansLikeSourceNormalized.get(PAGE_FANS_FROM_LIKE_SUGGESTIONS) + fanLikeSource.getValue());
+			} else {
+				fansLikeSourceNormalized.put(fanLikeSource.getKey(), fanLikeSource.getValue());
+			}
+		}
+		
+		List<Map.Entry<String, Long>> entries =
+				new ArrayList<Map.Entry<String, Long>>(fansLikeSourceNormalized.entrySet());
+		
+		Collections.sort(entries, new Comparator<Map.Entry<String, Long>>() {
+			
+			public int compare(Map.Entry<String, Long> a, Map.Entry<String, Long> b) {
+				return b.getValue().compareTo(a.getValue());
+			}
+		});
+		
+		Map<String, Long> fansLikeSourceSorted = new LinkedHashMap<String, Long>();
+		for (Map.Entry<String, Long> entry : entries) {
+			fansLikeSourceSorted.put(entry.getKey(), entry.getValue());
+		}
+
+		return fansLikeSourceSorted;
+	}
+
+}

@@ -1,0 +1,287 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.io.File;
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.SendMail;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.emails.EmailSender;
+
+public class EmailsController {  
+
+	private Timer timer;
+
+	public EmailsController() {
+
+		timer = new Timer();
+
+		Calendar taskDate = Calendar.getInstance(); 
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.set(Calendar.HOUR_OF_DAY, 8);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+		Date taskTime = taskDate.getTime();
+
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+
+	class Task extends TimerTask {
+
+		public void run() {
+
+			// Emails de relacionamento WoopSocial.
+			sendRelationshipEmails();
+
+
+			// Emails de relacionamento OpSocial.
+			//    		sendEmail("Vamos falar sobre o OpSocial?", 2);
+			//    		sendEmail("O dia está perfeito para uma análise de dados", 4);
+			//    		sendEmail("Tudo tranquilo nos seus dias com o Op?", 5);
+			//    		sendEmail("Amanhã é seu último dia de teste no OpSocial", 6);
+			//    		sendEmail("Hoje é seu último dia de testes no OpSocial.", 7);
+			//    		sendEmail("Como está sua experiência?", 9);
+			//    		sendEmail("Hoje é seu último dia de testes no OpSocial. ", 13);
+			//    		sendEmail("Como você está? Vamos marcar um dia pra conversar? ", 14);
+			//    		sendProfileReconnectEmails();
+		}
+	}
+
+	private void sendRelationshipEmails() {
+
+		MaintenanceAccountRemote accountRemote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+
+		List<Account> accounts = accountRemote.listByPlanType(Account.FREEMIUM);
+		
+		for(Account account : accounts) {
+			
+			// First flow of relationship emails, when a user has a profile already inserted.
+			if(account.getFirstProfileDate() != null) {
+				
+				LocalDate today = LocalDate.now(ZoneId.of("UTC"));
+				LocalDate insertionDate = LocalDate.from(Instant.ofEpochSecond(account.getFirstProfileDate()).atZone(ZoneId.of("UTC")));
+				
+				Period period = Period.between(insertionDate, today);
+				
+				// Add +1 here because what we need here, is know if is the first day, second, thirdy... Not the period between the dates.
+				int day = period.getDays() + 1;
+				
+				if(day == 3) {
+
+					String subject = "You have 8 days left to access free advanced analytics";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-free-analytics.html");
+
+					sendEmailToAllUsers(account, email, subject);
+
+				} else if(day == 4) {
+
+					String subject = "Woop makes it easy to interact with your audiences in real time";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-makes-easy.html");
+
+					sendEmailToAllUsers(account, email, subject);
+
+				} else if(day == 6) {
+
+					String subject = "Finding the right path";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-finding-path.html");
+
+					sendEmailToAllUsers(account, email, subject);
+
+				} else if(day == 8) {
+
+					String subject = "Are we connected on our social channels?";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-social-channels.html");
+
+					sendEmailToAllUsers(account, email, subject);
+
+				} else if(day == 10) {
+
+					String subject = "Your free analitycs period has come to an end :(";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-end-analytics.html");
+
+					sendEmailToAllUsers(account, email, subject);
+				}
+				
+			} else { // Second flow of relationship emails, when a user does not have a profile already inserted.
+				
+				LocalDate today = LocalDate.now(ZoneId.of("UTC"));
+				LocalDate cadastreDate = LocalDate.from(Instant.ofEpochMilli(account.getCadastreDate().getTime()).atZone(ZoneId.of("UTC")));
+				
+				Period period = Period.between(cadastreDate, today);
+				
+				// Add +1 here because what we need here, is know if is the first day, second, thirdy... Not the period between the dates.
+				int day = period.getDays() + 1;
+	
+				if(day == 4) {
+					
+					String subject = "Are you out of time to manage your social networks?";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-out-of-time.html");
+
+					sendEmailToAllUsers(account, email, subject);
+					
+				} else if(day == 8) {
+					
+					String subject = "Easy scheduling for Instagram, stories, Facebook and Twitter";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-easy-scheduling.html");
+
+					sendEmailToAllUsers(account, email, subject);
+					
+				} else if(day == 12) {
+					
+					String subject = "Discover how analyzing your data can be a game changer";
+
+					File email = new File(Persistent.EMAILS_PATH + "freemium-discover-analyzing.html");
+
+					sendEmailToAllUsers(account, email, subject);
+				}  
+				
+			}
+		}
+	}
+
+	private void sendEmailToAllUsers(Account account, File emailFile, String subject) {
+
+		try {
+
+			MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+			Document doc = Jsoup.parse(emailFile, "UTF-8");
+
+			List<User> users = userRemote.listUsersByAccount(account.getIdAccount());
+
+			for(User user : users) {
+
+				try {
+
+					new SendMail(EmailSender.HELLO_WOOP_EMAIL, subject, user.getEmail(), doc.html(), EmailSender.HELLO_WOOP_PERSONAL);	
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	//    private void sendProfileReconnectEmails() {	
+	//
+	//		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+	//		
+	//		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+	//		
+	//		List<Profile> profiles = profileRemote.listInvalidTokenProfiles();
+	//		HashSet<Long> usersEmailSentIds = new HashSet<Long>();
+	//
+	//		for(Profile profile : profiles) {
+	//			
+	//			try {
+	//
+	//				List<User> users = userRemote.listUsersByAccount(profile.getAccount().getIdAccount());
+	//				
+	//				for(User user : users) {
+	//					
+	//					if(!usersEmailSentIds.contains(user.getIdUser())) {
+	//						
+	//						File email = new File(Persistent.EMAILS_PATH  + "reconnect-profiles.html");  
+	//						Document doc = Jsoup.parse(email, "UTF-8");
+	//						doc.getElementById("username").html("Oi " + user.getName() + "!");
+	//						
+	//						new SendMail("Seus perfis precisam ser reconectados!", user.getEmail(), doc.html());
+	//						
+	//						usersEmailSentIds.add(user.getIdUser());
+	//					}
+	//				}				
+	//
+	//			} catch (Exception e) {
+	//				e.printStackTrace();
+	//			}
+	//		}
+	//
+	//	}
+	//
+	//	private void sendEmail(String subject, Integer day) {
+	//		
+	//		Date date = new Date();
+	//		date.setDate(date.getDate() - day);
+	//		
+	//		Date dateInit = new Date(date.getTime());
+	//		dateInit.setTime(dateInit.getTime() / 1000 * 1000);
+	//		dateInit.setHours(0);
+	//		dateInit.setMinutes(0);
+	//		dateInit.setSeconds(0);
+	//		
+	//		Date dateEnd = new Date(date.getTime());
+	//		dateEnd.setHours(23);
+	//		dateEnd.setMinutes(59);
+	//		dateEnd.setSeconds(59);
+	//			
+	//		MaintenanceAccountRemote remote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+	//		
+	//		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+	//
+	//		List<Account> accounts = remote.listByCadastreDate(dateInit, dateEnd);
+	//		
+	//		for(Account account : accounts) { 
+	//			
+	//			boolean canContinue = true;
+	//			
+	//			if((day == 9 || day == 13) && account.getExtendTest().equals('F')) {
+	//				canContinue = false;
+	//			} else if(day == 14 && account.getClientType().equals('P')) {
+	//				canContinue = false;
+	//			}
+	//			
+	//			if(canContinue) {
+	//			
+	//				if(account.getPlanType().equals(Account.FREEMIUM)) {
+	//					
+	//					List<User> users = userRemote.listUsersByAccount(account.getIdAccount());
+	//					
+	//					for(User user : users) {
+	//						
+	//						try {
+	//							
+	//							File email = new File(Persistent.EMAILS_PATH + "dia-" + String.valueOf(day) + ".html");  
+	//							Document doc = Jsoup.parse(email, "UTF-8");
+	//							doc.getElementById("username").html("Oi " + user.getName().split(" ")[0]);
+	//							
+	//							if(day == 6 || day == 7) {
+	//								new SendMail(subject, user.getEmail(), doc.html().replace("extendTestAccount", String.valueOf(account.getIdAccount())));	
+	//							} else {
+	//								new SendMail(subject, user.getEmail(), doc.html());
+	//							}
+	//							
+	//						} catch (Exception e) {
+	//							e.printStackTrace();
+	//						}
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+}

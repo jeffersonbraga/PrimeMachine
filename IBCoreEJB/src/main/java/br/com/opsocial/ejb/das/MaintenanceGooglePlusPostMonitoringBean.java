@@ -1,0 +1,155 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.GooglePlusPostMonitoringDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.google.GooglePlusPostMonitoring;
+
+@Stateless
+public class MaintenanceGooglePlusPostMonitoringBean extends AbstractDASImpl<GooglePlusPostMonitoring> implements MaintenanceGooglePlusPostMonitoringRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	GooglePlusPostMonitoringDAO dao;
+
+	@Override
+	public GooglePlusPostMonitoringDAO getDAO() {
+		return dao;
+	}
+
+	@Override
+	public Long getCountOfPosts(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getCountOfPosts(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setDao(AbstractDAO<GooglePlusPostMonitoring> dao) {
+		this.dao = (GooglePlusPostMonitoringDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<GooglePlusPostMonitoring> getDao() {
+		return dao;
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listMostRecents(Long idMonitoring,
+			Integer maxResults) {
+		return dao.listMostRecents(idMonitoring, maxResults);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listMostRecents(Long published,
+			Long idMonitoring) {
+		return dao.listMostRecents(published, idMonitoring);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listElder(Long published,
+			Long idMonitoring, Integer maxResults) {
+		return dao.listElder(published, idMonitoring, maxResults);
+	}
+	
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfTermPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public List<Object[]> getCountOfPostsPerHourDay(Long idMonitoring, Long date) {
+		return dao.getCountOfPostsPerHourDay(idMonitoring, date);
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountQualificPostsPerDay(idMonitoring, date);
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountTagsPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> getByInterval(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		return dao.getByInterval(idMonitoring, startDate, endDate, qualification, monitoringTags, monitoringTerms, monitoringWords, offset, limit);
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate,
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+		return dao.getByIntervalCount(idMonitoring, startDate, endDate, qualification, monitoringTags, monitoringTerms, monitoringWords);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listPostsByActiveAccount(Date now,
+			Long from, Long until) {
+		return dao.listPostsByActiveAccount(now, from, until);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listByMonitoring(Long idMonitoring) {
+		return dao.listByMonitoring(idMonitoring);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listByTerm(String term,
+			Long idMonitoring) {
+		return dao.listByTerm(term, idMonitoring);
+	}
+
+	@Override
+	public GooglePlusPostMonitoring getByComposedId(Long idMonitoring,
+			String activityId, String term) {
+		return dao.getByComposedId(idMonitoring, activityId, term);
+	}
+
+	@Override
+	public Long getCountOfGarbagePostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfGarbagePostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public GooglePlusPostMonitoring getByComposedId(Long idMonitoring,
+			String activityId) {
+		return dao.getByComposedId(idMonitoring, activityId);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listSample(Long idMonitoring,
+			Long startDate, Long endDate, String qualification,
+			List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		return dao.listSample(idMonitoring, startDate, endDate, qualification, monitoringTags, sample, notIn);
+	}
+
+	@Override
+	public List<GooglePlusPostMonitoring> listSamePosts(Long idMonitoring, String activityId, String objectId) {
+		return dao.listSamePosts(idMonitoring, activityId, objectId);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+}

@@ -1,0 +1,165 @@
+<div class="core-rail linkedin-component">
+    <div class="relative">
+        <div class="occludable-update">
+            <article class="feed-s-update Elevation-2dp relative image">
+                <div class="feed-s-update-control-panel-trigger">
+                    <button>
+                        <span class="svg-icon-wrap">
+                            <li-icon type="ellipsis-horizontal-icon" size="small">
+                                <svg viewBox="0 0 24 24" width="24px" height="24px" x="0" y="0" preserveAspectRatio="xMinYMin meet" class="artdeco-icon">
+                                    <g class="small-icon" style="fill-opacity: 1">
+                                        <path d="M2,7H4V9H2V7ZM7,9H9V7H7V9Zm5-2V9h2V7H12Z"></path>
+                                    </g>
+                                </svg>
+                            </li-icon>
+                        </span>
+                    </button>
+                </div>
+                <div class="feed-s-post-meta">
+                    <a href="#" class="tap-target feed-s-post-meta__actor-link">
+                        <div class="feed-s-avatar-image b0">
+                            <img [src]="channel.avatar" class="avatar member EntityPhoto-circle-3">
+                        </div>
+                    </a>
+                    <a href="#" class="feed-s-post-meta__profile-link Sans-17px-black-85%-semibold tap-target">
+                        <h3 class="Sans-13px-black-55%">
+                            <span class="feed-s-post-meta__name Sans-15px-black-85%-semibold">
+                                {{ channel.screenName }}
+                            </span>
+                            <span class="feed-s-post-meta__headline Sans-13px-black-55%">
+                                <!--CIO on demand - IT manager |Driving results for companies through IT strategy-->
+                            </span>
+                            <time class="feed-s-post-meta__timestamp">2 d</time>
+                        </h3>
+                    </a>
+                </div>
+                <div [class.hiddenContent]="seeMore" class="feed-s-update__description feed-s-inline-show-more-text">
+                    <p dir="ltr" class="Sans-15px-black-70% feed-s-main-content">
+                        <span [innerHtml]="post.text | scapeBreakLines | urlfy" #textarea></span>
+                    </p>
+                    <button class="see-more Sans-15px-black-55%" *ngIf="viewHeight > 55 && seeMore" (click)="showHiddenContent()">…visualizar mais</button>
+                </div>
+                <div class="feed-s-update__update-content-wrapper Elevation-0dp" *ngIf="post.picture && !post.postsAttachments.length">
+                    <div class="feed-s-hero-entity--image-share feed-s-hero-entity--constrained feed-s-hero-entity--full-width">
+                        <div class="feed-s-hero-entity__image-container">
+                            <a href="post.link" target="_blank">
+                                <img class="_46-i img" [src]="post.picture">
+                                <article id="ember4602" class="feed-base-image-description ember-view">
+                                    <h2 class="feed-base-image-description__headline Sans-15px-black-85%-semibold">
+                                        {{ post.title }}
+                                    </h2>
+                                    <h3 class="feed-base-image-description__byline Sans-13px-black-55%">{{ post.link | unurlfy }}</h3>
+                                </article>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feed-s-update__update-content-wrapper Elevation-0dp" *ngIf="post.postsAttachments?.length">
+                    <div class="feed-s-hero-entity--image-share feed-s-hero-entity--constrained feed-s-hero-entity--full-width">
+                        <div class="feed-s-hero-entity__image-container">
+                            <a class="_4-eo" *ngIf="post.postsAttachments?.length">
+                                <div class="_46-h">
+                                    <img class="_46-i img" [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" *ngIf="post.postsAttachments[0].fileType === 'P'">
+                                    <video class="_46-i img cursor" *ngIf="post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)">
+                                        <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </a>
+                            <!-- <div *ngIf="post.postsAttachments?.length >= 2 && post.postsAttachments?.length <= 4" [ngClass]="{
+                                'two-images': post.postsAttachments.length == 2, 
+                                'three-images': post.postsAttachments.length == 3, 
+                                'four-images': post.postsAttachments.length == 4
+                            }">
+                                <a class="_4-eo" *ngFor="let image of post.postsAttachments, let i = index">
+                                    <div class="_46-h">
+                                        <img class="_46-i img" [src]="controlService.temp_image_path + image.fileName">
+                                    </div>
+                                </a>
+                            </div>
+                            <a class="_4-eo" *ngIf="post.postsAttachments?.length >= 5">
+                                <div class="collumn column1">
+                                    <div class="_46-h">
+                                        <img class="_46-i img" [src]="controlService.temp_image_path + post.postsAttachments[0].fileName">
+                                    </div>
+                                    <div class="_46-h">
+                                        <img class="_46-i img" [src]="controlService.temp_image_path + post.postsAttachments[1].fileName">
+                                    </div>
+                                </div>
+                                <div class="collumn column2">
+                                    <div class="_46-h">
+                                        <img class="_46-i img" [src]="controlService.temp_image_path + post.postsAttachments[2].fileName">
+                                    </div>
+                                    <div class="_46-h">
+                                        <img class="_46-i img" [src]="controlService.temp_image_path + post.postsAttachments[3].fileName">
+                                    </div>
+                                    <div class="_46-h">
+                                        <div class="mask" *ngIf="post.postsAttachments.length > 5">
+                                            <span>+{{ post.postsAttachments.length - 5 }}</span>
+                                        </div>
+                                        <img class="_46-i img" [src]="controlService.temp_image_path + post.postsAttachments[4].fileName">
+                                    </div>
+                                </div>
+                            </a> -->
+                        </div>
+                    </div>
+                </div>
+
+                <ul class="feed-s-social-counts">
+                    <li class="feed-s-social-counts__item">
+                        <button class="Sans-13px-black-55%">
+                            <span>1 Likes</span>
+                        </button>
+                    </li>
+                    <li class="feed-s-social-counts__item">
+                        <button class="Sans-13px-black-55%">
+                            <span>3 Comments</span>
+                        </button>
+                    </li>
+                </ul>
+                <div class="feed-s-social-action-bar">
+                    <button class="button feed-s-social-action-bar__action-btn">
+                        <span class="svg-icon-wrap">
+                            <li-icon type="like-icon" size="small">
+                                <svg viewBox="0 0 24 24" width="24px" height="24px" x="0" y="0" preserveAspectRatio="xMinYMin meet" class="artdeco-icon">
+                                    <path d="M11.6,7L9.7,3.8C9.4,3.3,9.2,2.7,9,2.1L8.8,1c0,0,0,0,0,0H7C5.9,1,5,1.9,5,3v0.4C5,4,5.1,4.7,5.3,5.3L5.5,6c0,0,0,0,0,0l-3,0C1.7,6,1,6.7,1,7.5c0,0.4,0.1,0.7,0.4,1c0,0,0,0,0,0C1.1,8.8,1,9.1,1,9.5c0,0.5,0.3,1,0.7,1.3c0,0,0,0,0,0c-0.1,0.2-0.2,0.5-0.2,0.7c0,0.8,0.6,1.4,1.3,1.5c0,0,0,0,0,0c-0.1,0.3-0.1,0.6,0,1c0.2,0.6,0.9,1,1.5,1H7c0.9,0,1.5-0.1,2.1-0.3l2.1-0.7c0,0,0,0,0,0H14c0,0,0,0,0,0V7c0,0,0,0,0,0L11.6,7C11.6,7,11.6,7,11.6,7zM3.4,10.1L3,9.6C2.9,9.4,2.8,9.2,2.9,8.9L3,8c0,0,0,0,0,0l5.1,0c0,0,0,0,0,0L7,4.7C6.9,4.3,6.9,3.8,6.9,3.4V3.1c0-0.2,0.2-0.4,0.4-0.4c0,0,0.1,0,0.1,0c0.1,0.7,0.4,1.5,0.7,2L10.7,9c0,0,0,0,0,0H12c0,0,0,0,0,0v3c0,0,0,0,0,0h-0.6c0,0,0,0,0,0l-2.5,0.8C8.5,12.9,8.1,13,7.7,13H4.9c-0.2,0-0.4-0.2-0.5-0.4l-0.1-0.5l-0.6-0.5c-0.2-0.2-0.4-0.5-0.3-0.8L3.4,10.1z"
+                                        class="small-icon" style="fill-opacity: 1"></path>
+                                </svg>
+                            </li-icon>
+                        </span>
+                        <span>Like</span>
+                    </button>
+                    <button class="button comment feed-s-social-action-bar__action-btn Sans-15px-black-55%-semibold">
+                        <span class="svg-icon-wrap">
+                            <li-icon type="speech-bubble-icon" size="small">
+                                <svg viewBox="0 0 24 24" width="24px" height="24px" x="0" y="0" preserveAspectRatio="xMinYMin meet">
+                                    <g class="small-icon" style="fill-opacity: 1">
+                                        <path d="M14,3H2A1,1,0,0,0,1,4v7a1,1,0,0,0,1,1h9l4,3V4A1,1,0,0,0,14,3ZM3,10V5H13v6.11L11.52,10H3ZM5,7h6V8H5V7Z"></path>
+                                    </g>
+                                </svg>
+                            </li-icon>
+                        </span>
+                        <span>Comment</span>
+                    </button>
+                    <button class="feed-s-social-action-bar__action-btn button">
+                        <span class="svg-icon-wrap">
+                            <li-icon type="share-linkedin-icon" size="small">
+                                <svg viewBox="0 0 24 24" width="24px" height="24px" x="0" y="0" preserveAspectRatio="xMinYMin meet">
+                                    <g class="small-icon" style="fill-opacity: 1">
+                                        <path d="M15.7,7.3L9,1v4H7c-3.9,0-7,3.1-7,7v3h1.4c0-2.2,1.9-4,4.1-4c0,0,0.1,0,0.1,0H9v4l0,0l6.7-6.3C16.1,8.4,16.1,7.7,15.7,7.3C15.7,7.3,15.7,7.3,15.7,7.3z M11,10.6V9H5.6c-1.2,0-2.4,0.4-3.4,1.1C3.1,8.2,4.9,7,7,7h4V5.4L13.7,8L11,10.6z"></path>
+                                    </g>
+                                </svg>
+                            </li-icon>
+                        </span>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </article>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="post.postsAttachments?.length > 1 && post.postsAttachments?.length !== oldValue" class="alert alert-warning m-t-10 m-b-0" role="alert" style="transition: none !important;">
+    <button class="close pointer" (click)="hideErrorMessage()"></button>
+    <strong>Ops! </strong>Ops! You can’t upload more than one image to your LinkedIn post
+</div>

@@ -1,0 +1,60 @@
+package br.com.opsocial;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.Gson;
+
+import br.com.opsocial.ejb.dao.ProfileDAOImpl;
+import br.com.opsocial.ejb.das.MaintenanceProfileBean;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Set;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("api")
+public class ServiceTeste {
+
+	@RequestMapping(value = "/pesquisar_aux",
+	    method = RequestMethod.GET,
+	    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> pesquisaGrid() {
+
+		MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+
+		Set set = remote.getById(new Long(8));
+		
+		return new ResponseEntity<>("{pesquisaGrid:ServiceTeste}", HttpStatus.OK);
+	}
+
+    @RequestMapping(value = "/excluir",
+        method = RequestMethod.POST,
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> excluirObjeto(@Valid @RequestBody Object objPersistir) throws Exception {
+		try {
+	    	
+			Gson gsonDeserializer = new Gson();
+	    	LinkedHashMap<String, Object> mpa = (LinkedHashMap) objPersistir;
+	    	Object entidade = Class.forName((String) mpa.get("classeJava")).newInstance();
+			return new ResponseEntity<>(objPersistir, HttpStatus.OK);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+
+			return new ResponseEntity<>(objPersistir, HttpStatus.NOT_MODIFIED);
+		}
+    }
+}

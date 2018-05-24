@@ -1,0 +1,46 @@
+package br.com.opsocial.ejb.das;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.TwitterFollowerControlDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.report.TwitterFollowerControl;
+
+@Stateless
+public class MaintenanceTwitterFollowerControlBean extends AbstractDASImpl<TwitterFollowerControl> implements MaintenanceTwitterFollowerControlRemote {
+
+	private static final long serialVersionUID = 1L;
+	
+	@EJB
+	TwitterFollowerControlDAO dao;
+
+	@Override
+	public void setDao(AbstractDAO<TwitterFollowerControl> dao) {
+		this.dao = (TwitterFollowerControlDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<TwitterFollowerControl> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO getDAO() {
+		return dao;
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

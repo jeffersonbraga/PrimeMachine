@@ -1,0 +1,37 @@
+package br.com.opsocial.server.actions.home;
+
+import das.MaintenanceUserRemote;
+import entity.application.User;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class LogoutAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/logout",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+ 		
+		User user = (User) getSession().getAttribute("user");
+		
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		if(user != null) {
+			user = remote.getById(user.getIdUser());
+			user.setSessionId(null);
+			
+			remote.save(user);
+		}
+		
+		getSession().removeAttribute("user");
+	}
+}

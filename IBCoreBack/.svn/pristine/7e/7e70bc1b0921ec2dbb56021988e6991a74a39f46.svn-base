@@ -1,0 +1,155 @@
+package br.com.opsocial.server.services;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.lang3.RandomStringUtils;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class UploadPicture extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+	private static final long SIZE_LIMIT = 2097152L;
+	private String contentType;
+	
+	private final static String IMG_JPEG = "image/jpeg";
+	private final static String IMG_PNG = "image/png";
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+		super.doGet(req, resp);
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		
+		String widths = "";
+		String heights = "";
+		String pictures = "";
+
+		boolean isMultiPart = ServletFileUpload
+				.isMultipartContent(new ServletRequestContext(request));
+
+		String tempPath = request.getSession().getServletContext().getInitParameter("uploadDirTemp");
+		String errors = "";
+		
+		if (isMultiPart) {
+
+			FileItemFactory factory = new DiskFileItemFactory();
+			ServletFileUpload upload = new ServletFileUpload(factory);
+
+			try {
+				List<FileItem> items = upload.parseRequest(request);
+				
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				
+				PrintWriter out = response.getWriter();
+
+				for (FileItem item : items) {
+
+					if (item.isFormField())
+						continue;
+
+					if(!item.getName().isEmpty()) {
+						
+						contentType = item.getContentType(); 
+
+						if(contentType.equals(IMG_JPEG) || contentType.equals(IMG_PNG)) {
+						
+							if (item.getSize() <= SIZE_LIMIT) {
+	
+								String fileName = RandomStringUtils.randomAlphanumeric(12) + "." + getImageExtension(contentType);
+	
+								File uploadedFile = new File(tempPath, fileName);
+	
+								if (uploadedFile.createNewFile()) {
+									
+									try {
+										item.write(uploadedFile);
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+									
+									Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
+									while (readers.hasNext()) {
+									    System.out.println("reader: " + readers.next());
+									}
+									
+									BufferedImage bufferedImage = ImageIO.read(uploadedFile);	
+																	
+									if(widths.isEmpty() && heights.isEmpty() && pictures.isEmpty()) {
+										widths = String.valueOf(bufferedImage.getWidth());
+										heights = String.valueOf(bufferedImage.getHeight());
+										pictures = Persistent.IMAGES_PATH + fileName;
+									} else {
+										widths += "§" + String.valueOf(bufferedImage.getWidth());
+										heights += "§" + String.valueOf(bufferedImage.getHeight());
+										pictures += "§" + Persistent.IMAGES_PATH + fileName;
+									}
+								} else {
+									System.out.println("Este arquivo já existe.: " + fileName);
+								}
+							} else {
+								errors += item.getName() + "§";
+								item.delete();
+							}
+						} else {
+							errors += item.getName() + "§";
+							item.delete();
+						}
+					}
+				}
+				
+				System.out.println("Fotos album: " + items.size());
+				
+				JsonObject object = new JsonObject();
+				
+				object.addProperty("widths", widths);
+				object.addProperty("heights", heights);
+				object.addProperty("pictures", pictures);
+				object.addProperty("errors", errors);
+				
+				out.print(object);
+				out.flush();
+
+			} catch (FileUploadException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private String getImageExtension(String contentType) {
+		
+		String imageExtension = "";
+		
+		if(contentType.equals(IMG_JPEG)) {
+			imageExtension = "jpg";
+		} else if(contentType.equals(IMG_PNG)) {
+			imageExtension = "png";
+		}
+		
+		return imageExtension;
+	}
+}

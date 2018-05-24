@@ -1,0 +1,43 @@
+package br.com.opsocial.server.actions.dashboard;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramDashboardDTO;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+public class DashboardReportInstagramAction extends ServerAction {
+
+	private Profile profile;
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceReportGenerateRemote reportGenerateRemote = (MaintenanceReportGenerateRemote)
+				RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		
+		profile = (Profile) getParameters().get("profile");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		profile.setReportState(reportGenerateRemote.getEntity(profile.getNetworkId(), Profile.INSTAGRAM).getState());
+		
+		ReportInstagramDashboardDTO reportInstagramDashboard;
+		
+		if(profile.getReportState().equals(Profile.REPORT_FINALIZED) || profile.getReportState().equals(Profile.REPORT_REFRESH_TOKEN)) {
+			reportInstagramDashboard = UtilReports.mountReportInstagramDashboard(profile);
+		} else {
+			reportInstagramDashboard = new ReportInstagramDashboardDTO();
+		}
+		
+		getParameters().put("reportInstagramDashboard", reportInstagramDashboard);
+		getParameters().put("profile", profile);
+		
+	}
+
+}

@@ -1,0 +1,29 @@
+<div class="panel panel-transparent m-b-0">
+  <div class="panel-heading">
+    <div class="panel-title">
+      ENCONTRAMOS ESTAS PAGINAS NO SEU PERFIL.<br />
+      selecione os canais QUE VOCÊ DESEJA ADICIONAR AO WOOPSOCIAL
+    </div>
+  </div>
+  <div class="panel-body p-b-0">
+    <div class="row">
+      <div *ngFor="let item of profiles; let i = index">
+        <div class="clearfix" *ngIf="i % 3 == 0"></div>
+        <div class="col-md-4">
+          <button_channels [isExcludable]="false" [isSelectable]="true" [profile]="item" 
+                           (objectChecked)="validate($event)"  [verifySelected]="true" [listCheckedProfiles]="checkedProfiles" 
+                           [singleSelect]="singleSelect" [isAddChannel]="true">
+          </button_channels>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="hasError" [class.invisible]="!hasError" class="alert alert-warning m-b-0" role="alert">
+      <button class="close" (click)="hideErrorMessage()"></button>
+      <strong>Ops! </strong>{{errorMessage}}
+    </div>
+    <div *ngIf="!disableBackButton" class="pull-right m-t-10 disable-float-sm disable-float-xs">
+      <button class="btn bg-master text-white pull-left m-r-10 btn-mobile" (click)="cancel()">Cancelar</button>
+      <button class="btn btn-primary pull-left btn-mobile" (click)="addFacebookChannels()">Adicionar páginas</button>
+    </div>
+  </div>
+</div>

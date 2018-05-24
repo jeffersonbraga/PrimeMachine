@@ -1,0 +1,192 @@
+<div *ngIf="post.link">
+    <div class="alert alert-warning m-t-10 m-b-0" role="alert" style="transition: none !important;">
+        <strong>Ops! </strong>The link your provided can’t be shortened
+    </div>
+</div>
+<div *ngIf="!post.link">
+    <section class="pi_section" *ngIf="!post.targetFeed || post.targetFeed == 'T'">
+        <article class="pi_article">
+            <header>
+                <a class="pi_profile_photo_link">
+                    <img class="pi_profile_photo" [src]="channel.avatar">
+                </a>
+                <div class="pi_container_data_profile">
+                    <a class="pi_profile_name" [title]="channel.screenName">{{ channel.screenName }}</a>
+                    <div class="pi_container_data_profile_company">
+                        <!--<a class="pi_data_profile_company" title="Viasoft Softwares Empresariais">Viasoft Softwares Empresariais</a>-->
+                    </div>
+                </div>
+            </header>
+            <img [alt]="post.description" class="pi_photo" [src]="post.picture" *ngIf="post.picture">
+            <div *ngIf="post.postsAttachments">
+                <img [alt]="post.text" class="pi_photo" [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" *ngIf="post.postsAttachments.length == 1 && post.postsAttachments[0].fileType === 'P'">
+                <video class="_46-i img cursor" *ngIf="post.postsAttachments.length == 1 && post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)">
+                    <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+                </video>
+
+                <div id="carousel-album-instagram" class="carousel slide" data-ride="carousel" *ngIf="post.postsAttachments.length > 1">
+                    <!-- Indicators -->
+                    <ol class="carousel-indicators">
+                        <li data-target="#carousel-album-instagram" [attr.data-slide-to]="i" [class.active]="!i" *ngFor="let image of post.postsAttachments, let i = index"></li>
+                    </ol>
+                    <!-- Wrapper for slides -->
+                    <div class="carousel-inner" role="listbox">
+                        <div class="item" [class.active]="!i" *ngFor="let image of post.postsAttachments, let i = index">
+                            <img [src]="controlService.temp_image_path + image.fileName" *ngIf="image.fileType === 'P'">
+                            <video class="_46-i img cursor" *ngIf="image.fileType === 'V'" width="100%" (click)="play($event.srcElement)">
+                                <source [src]="controlService.video_image_path + image.fileName"> Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    <a class="left carousel-control cursor" href="#carousel-album-instagram" role="button" data-slide="prev">
+                        <span class="fa fa-chevron-circle-left" aria-hidden="true"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="right carousel-control cursor" href="#carousel-album-instagram" role="button" data-slide="next">
+                        <span class="fa fa-chevron-circle-right" aria-hidden="true"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </div>
+            </div>
+            <div class="pi_social">
+                <section class="pi_container_icon">
+                    <a class="pi_link_icon" role="button" aria-disabled="false">
+                        <span class="pi_icon coreSpriteLikeHeartOpen">Like</span>
+                    </a>
+                    <a class="pi_link_icon" role="button">
+                        <span class="pi_icon coreSpriteComment">Comment</span>
+                    </a>
+                </section>
+                <div class="_31wak _rq3s7" *ngIf="post.text || post.hashtags">
+                    <ul class="_h3rdq">
+                        <li class="_99ch8" *ngIf="post.text">
+                            <a class="_4zhc5 notranslate _ebg8h" [title]="post.screenname">{{ channel.screenName }}</a>
+                            <span>
+                                <span>
+                                    <span [innerHtml]="post.text | scapeBreakLines"></span>
+                                </span>
+                            </span>
+                        </li>
+                        <li class="_99ch8" *ngIf="post.hashtags">
+                            <a class="_4zhc5 notranslate _ebg8h" [title]="post.screenname">{{ channel.screenName }}</a>
+                            <span>
+                                <span>
+                                    <span class="hashtags">{{ post.hashtags }}</span>
+                                </span>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <section class="_saf51 _tbt2l">
+                    <form class="_sk455">
+                        <input type="text" class="_2hc0g _qy55y" aria-label="Adicione um comentário..." placeholder="Add a comment..."
+                            value="" readonly>
+                    </form>
+                </section>
+            </div>
+            <div class="_ird5m _rmhrg">
+                <button class="_okg4g">
+                    <span class="coreSpriteOptionsEllipsis _soakw">More options</span>
+                </button>
+            </div>
+        </article>
+    </section>
+
+
+    <section class="instagram-story" *ngIf="post.targetFeed == 'S' && post.postsAttachments.length">
+        <article class="container-story ar-9-16" *ngIf="post.postsAttachments.length == 1">
+            <header class="header-story">
+                <a class="pi_profile_photo_link">
+                    <img class="pi_profile_photo" [src]="channel.avatar">
+                </a>
+                <div class="pi_container_data_profile">
+                    <a class="pi_profile_name" [title]="channel.screenName">{{ channel.screenName }}</a>
+                    <span class="thin">0h</span>
+                </div>
+                <div class="pi_close">
+                    <span class="fa fa-times"></span>
+                </div>
+            </header>
+
+            <img class="ar-content" [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" alt="" width="100%"  *ngIf="post.postsAttachments[0].fileType === 'P'">
+            <video class="ar-content cursor" *ngIf="post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)">
+                <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+            </video>
+
+            <footer>
+                <div class="pi_container_send_message">
+                    <a class="pi_send_message_word">Send message</a>
+                </div>
+                <div class="_ird5m _rmhrg">
+                    <button class="_okg4g">
+                        <span class="coreSpriteOptionsEllipsis _soakw">More options</span>
+                    </button>
+                </div>
+            </footer>
+        </article>
+
+        <div id="carousel-album-instagram" class="carousel slide" data-ride="carousel" *ngIf="post.postsAttachments.length > 1">
+            <header class="stories-header">
+                <a class="pi_profile_photo_link">
+                    <img class="pi_profile_photo" [src]="channel.avatar">
+                </a>
+                <div class="pi_container_data_profile">
+                    <a class="pi_profile_name" [title]="channel.screenName">{{ channel.screenName }}</a>
+                    <span class="thin">0h</span>
+                </div>
+                <div class="pi_close">
+                    <span class="fa fa-times"></span>
+                </div>
+            </header>
+            <!-- Indicators -->
+            <ol class="carousel-indicators">
+                <li data-target="#carousel-album-instagram" [attr.data-slide-to]="i" [class.active]="!i" *ngFor="let image of post.postsAttachments, let i = index"></li>
+            </ol>
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner" role="listbox">
+                <div class="item" [class.active]="!i" *ngFor="let image of post.postsAttachments, let i = index">
+                    <section class="instagram-story">
+                        <article class="container-story ar-9-16">
+                            <img class="ar-content" [src]="controlService.temp_image_path + image.fileName" alt="" width="100%" *ngIf="image.fileType === 'P'">
+                            <video class="ar-content cursor" *ngIf="image.fileType === 'V'" width="100%" (click)="play($event.srcElement)">
+                                <source [src]="controlService.video_image_path + image.fileName"> Your browser does not support the video tag.
+                            </video>
+                        </article>
+                    </section>
+                </div>
+            </div>
+
+            <footer>
+                <div class="pi_container_send_message">
+                    <a class="pi_send_message_word">Send a message</a>
+                </div>
+                <div class="_ird5m _rmhrg">
+                    <button class="_okg4g">
+                        <span class="coreSpriteOptionsEllipsis _soakw">More options</span>
+                    </button>
+                </div>
+            </footer>
+
+            <a class="left carousel-control" href="#carousel-album-instagram" role="button" data-slide="prev">
+                <span class="fa fa-chevron-circle-left" aria-hidden="true"></span>
+                <span class="sr-only">Previous</span>
+            </a>
+            <a class="right carousel-control" href="#carousel-album-instagram" role="button" data-slide="next">
+                <span class="fa fa-chevron-circle-right" aria-hidden="true"></span>
+                <span class="sr-only">Next</span>
+            </a>
+
+            <footer>
+                <div class="pi_container_send_message">
+                    <a class="pi_send_message_word">Send a message</a>
+                </div>
+                <div class="_ird5m _rmhrg">
+                    <button class="_okg4g">
+                        <span class="coreSpriteOptionsEllipsis _soakw">More options</span>
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </section>
+</div>

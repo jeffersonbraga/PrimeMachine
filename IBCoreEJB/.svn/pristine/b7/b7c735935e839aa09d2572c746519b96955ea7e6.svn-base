@@ -1,0 +1,156 @@
+package br.com.opsocial.ejb.entity.sets;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@Entity
+@Table(name="postsattachments", schema="opsocial")
+public class PostAttachment extends Persistent {
+	
+	private static final long serialVersionUID = 1L;
+	
+	public final static Character PHOTO = 'P';
+	public final static Character VIDEO = 'V';
+	
+	@Id
+	@Column(name = "idpostattachment")
+	@GeneratedValue(strategy = GenerationType.IDENTITY, generator = "postsattachments_idpostattachment_seq")
+	private Long idPostAttachment;
+	
+	@JoinColumn(name = "idpost", referencedColumnName = "idpost")
+	private Post post;
+	
+	@Column(name = "filename")
+	private String fileName;
+	
+	@Column(name = "filetype")
+	private Character fileType; 
+	
+	@Column(name = "height")
+	private Integer Height;
+
+	@Column(name = "width")
+	private Integer Width;
+	
+	@Column(name = "size")
+	private Long size;
+	
+	@Column(name = "extension")
+	private String extension;
+	
+	@Column(name = "videoduration")
+	private Double videoDuration;
+	
+	@Transient
+	private String uploadId;
+	
+	public PostAttachment() {
+	}
+
+	public Long getIdPostAttachment() {
+		return idPostAttachment;
+	}
+
+	public void setIdPostAttachment(Long idPostAttachment) {
+		this.idPostAttachment = idPostAttachment;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public Character getFileType() {
+		return fileType;
+	}
+
+	public void setFileType(Character fileType) {
+		this.fileType = fileType;
+	}
+	
+
+	public Integer getHeight() {
+		return Height;
+	}
+
+	public void setHeight(Integer height) {
+		Height = height;
+	}
+
+	public Integer getWidth() {
+		return Width;
+	}
+
+	public void setWidth(Integer width) {
+		Width = width;
+	}
+
+	public Long getSize() {
+		return size;
+	}
+
+	public void setSize(Long size) {
+		this.size = size;
+	}
+
+	public String getExtension() {
+		return extension;
+	}
+
+	public void setExtension(String extension) {
+		this.extension = extension;
+	}
+
+	public Double getVideoDuration() {
+		return videoDuration;
+	}
+
+	public void setVideoDuration(Double videoDuration) {
+		this.videoDuration = videoDuration;
+	}
+	
+	public String getUploadId() {
+		return uploadId;
+	}
+
+	public void setUploadId(String uploadId) {
+		this.uploadId = uploadId;
+	}
+
+	@Override
+	public Long getId() {
+		return idPostAttachment;
+	}
+	
+	@Override
+	public void setId(Long id) {
+		idPostAttachment = id;
+	}
+
+	public static Character getPhoto() {
+		return PHOTO;
+	}
+
+	public static Character getVideo() {
+		return VIDEO;
+	}
+
+	public Post getPost() {
+		return post;
+	}
+
+	public void setPost(Post post) {
+		this.post = post;
+	}
+}

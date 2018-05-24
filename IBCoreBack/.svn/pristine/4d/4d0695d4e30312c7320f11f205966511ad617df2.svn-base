@@ -1,0 +1,158 @@
+package br.com.opsocial.server.utils.pdf;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.ExceptionConverter;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfPageEventHelper;
+import com.itextpdf.text.pdf.PdfWriter;
+
+import br.com.opsocial.client.entity.report.ReportLogoDTO;
+import br.com.opsocial.client.utils.Icons;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.ServicesImpl;
+
+public class HeaderFooterPDF extends PdfPageEventHelper {
+
+	private PdfWriter writer;
+
+	private String header;
+	private String footer;
+	private ReportLogoDTO reportLogo;
+	
+	private static BaseFont sourceSansPro;
+	
+	private static final BaseColor BASE_COLOR_HEADER_TITLE = new BaseColor(52, 98, 144);
+
+	public HeaderFooterPDF() {
+		
+	}
+	
+	public HeaderFooterPDF(PdfWriter writer, String header, ReportLogoDTO reportLogo) {
+		
+		this.writer = writer;
+		
+		this.header = header;
+		this.reportLogo = reportLogo;
+	}
+	
+	static {
+
+		sourceSansPro = null;
+
+		try {
+			sourceSansPro = BaseFont.createFont(
+					Persistent.FONTS + "SourceSansPro-R.ttf", BaseFont.WINANSI, BaseFont.EMBEDDED);
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void setHeader(String header) {
+		this.header = header;
+	}
+
+	public void setFooter(String footer) {
+		this.footer = footer;
+	}
+
+	public void onEndPage(PdfWriter writer, Document document) {
+		this.writer = writer;
+		try {
+			createHeader();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		createFooter();
+	}
+
+	private void createHeader() throws MalformedURLException, IOException {
+
+		PdfPTable table = new PdfPTable(2);
+
+		try {
+			
+			table.setTotalWidth(new float[]{264, 263});
+			table.getDefaultCell().setVerticalAlignment(Element.ALIGN_MIDDLE);
+			table.setLockedWidth(true);
+			table.getDefaultCell().setBorder(Rectangle.NO_BORDER);
+
+			if(reportLogo == null || reportLogo.getLogo() == null) {
+				
+				table.getDefaultCell().setFixedHeight(30);
+				
+				Image imgLogo = Image.getInstance(Icons.PDF_OP_LOGO);
+				imgLogo.scalePercent(table.getDefaultCell().getFixedHeight()/((float)imgLogo.getWidth())*100);
+				
+				table.addCell(imgLogo);
+			} else {
+				
+				String reportsLogoPath = ServicesImpl.context.getInitParameter("uploadDirReports");
+				Image imgLogo = Image.getInstance(reportsLogoPath + "/" + reportLogo.getLogo());
+				
+				table.getDefaultCell().setFixedHeight(55);
+				
+				table.addCell(imgLogo);
+			}
+
+			table.getDefaultCell().setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+			Phrase phraseReport = new Phrase(header, new Font(sourceSansPro, 13, Font.BOLD, BASE_COLOR_HEADER_TITLE));
+
+			table.addCell(phraseReport);
+
+			table.writeSelectedRows(0, -1, 34, 823, writer.getDirectContent());
+		}
+		catch(DocumentException de) {
+			throw new ExceptionConverter(de);
+		}
+	}
+
+	private void createFooter() {
+
+		try {
+
+			PdfPTable table = new PdfPTable(2);
+			table.setWidths(new int[]{300, 25});
+			table.setTotalWidth(527);
+			table.setLockedWidth(true);
+			table.getDefaultCell().setBorder(Rectangle.NO_BORDER);
+
+			Font fontFooter = new Font(sourceSansPro, 9, Font.NORMAL, BASE_COLOR_HEADER_TITLE);
+
+			if(reportLogo == null || reportLogo.getFooterText() == null) {
+				footer = "Opsocial - Plataforma de Controle de Mídias Sociais | www.opsocial.com.br";
+			} else {
+				footer =  reportLogo.getFooterText();
+			}
+			
+			Phrase phraseFooter = new Phrase(footer, fontFooter);
+			Phrase phrasePage = new Phrase(String.valueOf(writer.getPageNumber()), fontFooter);
+
+			table.addCell(phraseFooter);
+			table.getDefaultCell().setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+			table.addCell(phrasePage);
+
+			table.writeSelectedRows(0, -1, 34, 25, writer.getDirectContent());
+
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+	}
+
+}

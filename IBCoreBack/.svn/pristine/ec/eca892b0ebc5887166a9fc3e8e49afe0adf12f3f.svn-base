@@ -1,0 +1,39 @@
+package br.com.opsocial.server.actions.reports.instagram;
+
+import javax.persistence.OptimisticLockException;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramHistoricalDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportInstagramHistoricalAction extends ServerAction {
+
+	@CrossOrigin
+	@RequestMapping(value = "/report_instagram_historical",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ReportInstagramHistoricalDTO> doAction(@Valid @RequestBody Profile profile) throws Exception, OptimisticLockException {
+
+		ReportInstagramHistoricalDTO reportInstagramHistorical = UtilReports.mountReportInstagramHistoricalDTO(profile);
+		return new ResponseEntity<>(reportInstagramHistorical, HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+	}
+
+}

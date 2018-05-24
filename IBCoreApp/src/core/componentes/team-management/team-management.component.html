@@ -1,0 +1,102 @@
+<div class="panel panel-transparent">
+	<header>
+		<div class="panel-heading">
+			<div class="panel-title">Convidar Novo Usuário</div>
+			<p>Você pode convidar um novo usuário via e-mail. Ele receberá um e-mail com um link para finalizar o cadastro e ficará associado
+				a sua conta.</p>
+		</div>
+		<div class="row m-r-0 m-l-0">
+			<div class="col-lg-5">
+				<div class="form-group form-group-default">
+					<input #E="ngModel" type="email" placeholder="E-mail do novo usuário" name="email" id="email" class="form-control" [(ngModel)]="email"
+					 (focus)="emailInvalid = false">
+					<label *ngIf="emailInvalid" class="error" for="email">Informe um e-mail válido.</label>
+				</div>
+			</div>
+			<div class="col-lg-4">
+				<div class="form-group">
+					<div class="radio radio-success">
+						<input type="radio" value="A" name="typeuser" id="typeuserA" (click)="typeUser = 'A'">
+						<label for="typeuserA">Administrador</label>
+						<input type="radio" checked value="N" name="typeuser" id="typeuserB" (click)="typeUser = 'N'">
+						<label for="typeuserB">Usuário</label>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3">
+				<div class="form-group">
+					<button (click)="addNewUser()" data-dismiss="modal" class="btn btn-success">
+						<i *ngIf="!adding" class="fa fa-user-plus" aria-hidden="true"></i>
+						<span *ngIf="!adding">Adicionar</span>
+						<i *ngIf="adding" class="fa fa-spinner fa-spin" aria-hidden="true"> </i>
+						<span *ngIf="adding"> Adding</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div [class.invisible]="!hasError" class="alert alert-warning m-t-0 m-b-0" role="alert" style="transition: none !important;">
+			<button class="close" (click)="hideErrorMessage()"></button>
+			<strong>Ops! </strong>{{errorMessage}}
+		</div>
+	</header>
+
+	<section>
+		<article>
+			<div class="panel-heading">
+				<div class="panel-title">Administradores</div>
+				<p>Somente administradores podem adicionar ou remover usuários.</p>
+
+				<div class="row p-t-10 p-b-10 user-container relative" *ngFor="let admin of admins, let i = index">
+					<div class="overlay-mask" *ngIf="actioning && index == i && (action == 'updateToAnalyst' || action == 'deleteAdmin')">
+						<div class="text-center">
+							<div class="actioning absolute-center"></div>
+						</div>
+					</div>
+					<div class="pull-left">
+						<span class="thumbnail-wrapper d32 circular inline m-t-5">
+							<img [src]="admin?.avatar ? ControlService.avatar_path + admin?.avatar : 'assets/img/profiles/avatar.png'" width="32" height="32">
+						</span>
+						<span class="m-l-15 name-user">{{ admin.name }}</span>
+					</div>
+					<div class="pull-right" *ngIf="!(index == i && (action == 'updateToAnalyst' || action == 'deleteAdmin'))">
+						<span class="hint-text m-r-15" *ngIf="admin.active != 'T'" >(Pending activation)</span>
+						<button class="btn btn-success" (click)="setAction('updateToAnalyst', i)">Change to analyst</button>
+						<i class="fa fa-trash fs-20 m-l-20 m-r-20 cursor" *ngIf="admins.length > 1" aria-hidden="true" (click)="setAction('deleteAdmin', i)"></i>
+					</div>
+					<div class="pull-right" *ngIf="index == i && (action == 'updateToAnalyst' || action == 'deleteAdmin')">
+						<button class="btn btn-info text-white" (click)="cancelAction()">Cancel</button>
+						<button class="btn btn-success text-white" (click)="confirmAction()">Confirm</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="panel-heading">
+				<div class="panel-title">Analysts</div>
+
+				<div class="row p-t-10 p-b-10 user-container relative" *ngFor="let analyst of analysts, let i = index">
+					<div class="overlay-mask" *ngIf="actioning && index == i && (action == 'updateToAdmin' || action == 'deleteAnalyst')">
+						<div class="text-center">
+							<div class="actioning absolute-center"></div>
+						</div>
+					</div>
+					<div class="pull-left">
+						<span class="thumbnail-wrapper d32 circular inline m-t-5">
+							<img [src]="analyst?.avatar ? ControlService.avatar_path + analyst?.avatar : 'assets/img/profiles/avatar.png'" width="32"
+							 height="32">
+						</span>
+						<span class="m-l-15 name-user">{{ analyst.name }}</span>
+					</div>
+					<div class="pull-right" *ngIf="!(index == i && (action == 'updateToAdmin' || action == 'deleteAnalyst'))">
+						<span class="hint-text m-r-15" *ngIf="analyst.active != 'T'" >(Pending activation)</span>
+						<button class="btn btn-complete" (click)="setAction('updateToAdmin', i)">Change to admin</button>
+						<i class="fa fa-trash fs-22 m-l-20 m-r-20 cursor" aria-hidden="true" (click)="setAction('deleteAnalyst', i)"></i>
+					</div>
+					<div class="pull-right" *ngIf="index == i && (action == 'updateToAdmin' || action == 'deleteAnalyst')">
+						<button class="btn btn-info text-white" (click)="cancelAction()">Cancel</button>
+						<button class="btn btn-success text-white" (click)="confirmAction()">Confirm</button>
+					</div>
+				</div>
+			</div>
+		</article>
+	</section>
+</div>

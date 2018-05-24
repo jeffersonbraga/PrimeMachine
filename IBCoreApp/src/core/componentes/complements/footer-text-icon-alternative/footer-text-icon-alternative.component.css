@@ -1,0 +1,15 @@
+p{
+    font-size: 12px;
+}
+
+header, h4, p{
+    text-align: center;
+}
+
+small{
+    font-size: 60%;
+}
+
+.color-black {
+    color: #2c2c2c!important;
+}

@@ -1,0 +1,21 @@
+<div class="m-r-0 m-l-0 m-b-5 aside-content clearfix">
+	<header>
+		<h5 [ngClass]="{'center' : data.orientation == 'center'}" class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">
+			<i class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#666'}"></i>			{{ data.title }}
+		</h5>
+	</header>
+
+	<article [ngClass]="{'center' : data.orientation == 'center'}">
+		<div class="pull-left">
+			<pie-chart #pieChart [isDonut]="data.chart.isDonut" [data]="data.chart.data" [height]="data.chart.height" [width]="data.chart.width"></pie-chart>
+		</div>
+		<div class="pull-left legend" [ngStyle]="{'height': data.chart.height + 'px'}">
+			<div class="legend-item" *ngFor="let legend of data.chart.legend">
+				<i class="fa {{ legend.icon.icon }}" [ngStyle]="{'color': legend.icon.color}" aria-hidden="true"></i>
+				<span >{{ legend.legend }}</span>
+				<span [class.value]="legend.legend"><strong>{{ legend.value }}</strong></span>
+			</div>
+		</div>
+		<p class="hint-text small p-t-12">{{ data.text }}</p>
+	</article>
+</div>

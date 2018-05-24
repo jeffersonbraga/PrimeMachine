@@ -1,0 +1,52 @@
+package br.com.opsocial.ejb.das;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.TwitterPagingDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.twitter.TwitterPaging;
+
+@Stateless
+public class MaintenanceTwitterPagingBean extends AbstractDASImpl<TwitterPaging> implements MaintenanceTwitterPagingRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	TwitterPagingDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<TwitterPaging> dao) {
+		this.dao = (TwitterPagingDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<TwitterPaging> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<TwitterPaging> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public TwitterPaging getEntity(Long idMonitoring, String term) {
+		return dao.getEntity(idMonitoring, term);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

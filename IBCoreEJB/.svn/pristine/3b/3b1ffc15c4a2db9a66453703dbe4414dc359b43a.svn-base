@@ -1,0 +1,468 @@
+package br.com.opsocial.ejb.dao;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.annotation.Resource;
+import javax.ejb.Stateless;
+import javax.naming.InitialContext;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+import javax.transaction.UserTransaction;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostComment;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+
+@Stateless
+public class InstagramPostCommentDAOImpl extends AbstractDAOImpl<InstagramPostComment> implements InstagramPostCommentDAO {
+	/*
+    @Resource
+    private UserTransaction userTransaction;
+*/
+	@Override
+	public InstagramPostComment save(InstagramPostComment instagramPostComment) throws Exception {
+		
+		try {
+			
+			InstagramPostComment objTmp = getById(instagramPostComment.getIdComment());
+			
+			if(objTmp != null) {
+				
+				try {
+					validateVersion(objTmp, instagramPostComment);
+				} catch (IllegalStateException ex) {
+					throw new OptimisticLockException();
+				}
+
+				em.merge(instagramPostComment);
+				this.flush(instagramPostComment);
+			} else {
+				
+				em.persist(instagramPostComment);
+				
+				this.flush(instagramPostComment);
+			}
+			
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+		
+		return instagramPostComment;
+	}
+
+	@Override
+	public Map<Integer, Long> getCommentsPerMonthYear(String idInstagramUser, Integer year) {
+		
+		sql = "SELECT CAST(date_part('month', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) AS month, " +
+				"COALESCE(SUM(irp.comments), 0) AS sumcomments FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND " +
+				"CAST(date_part('year', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) = " + year + " " +
+				"GROUP BY month " +
+				"ORDER BY month";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<Integer, Long> sumsByProperty = new TreeMap<Integer, Long>();
+		for(Object[] object : result) {
+			sumsByProperty.put((Integer)object[0], (Long)object[1]);
+		}
+		
+		return sumsByProperty;
+	}
+
+	@Override
+	public Map<String, Long> getCommentsPerDay(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT extract('epoch' from date_trunc('day', TO_TIMESTAMP(irp.createtime)::timestamp with time zone))::bigint AS day, " +
+				"COALESCE(SUM(irp.comments), 0) AS sumcomments FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400) " +
+				"GROUP BY day " +
+				"ORDER BY day";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<String, Long> commentCounts = new LinkedHashMap<String, Long>();
+		for(Object[] object : result) {
+			commentCounts.put(new SimpleDateFormat("dd/MM").format(new Date((Long) object[0] * 1000L)), (Long)object[1]);
+		}
+		
+		return commentCounts;
+	}
+
+	@Override
+	public Long getCountOfComments(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT COALESCE(SUM(irp.comments), 0) AS sumcomments FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' " +
+				"AND (irp.createtime > " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400)";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+
+	@Override
+	public Object[] getCommentsOrigin(String idInstagramUser) {
+		
+		sql = "SELECT iduser, CAST(SUM(countcomments) AS bigint) AS totalcomments, CAST(SUM(countcommentsfollowers) AS bigint) AS commentsfollowers, CAST(SUM(countcommentsnofollowers) AS bigint) AS commentsnofollowers FROM ( " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countcomments, 0 AS countcommentsfollowers, COUNT(*) AS countcommentsnofollowers FROM opsocial.instagramreportsposts AS irp " +
+					"INNER JOIN opsocial.instagrampostscomments AS ipc ON " +
+					"ipc.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND NOT EXISTS ( " +
+					    "SELECT 1 " +
+					    "FROM opsocial.instagramfollowers AS ifl " +
+					    "WHERE ifl.idprofile = '" + idInstagramUser + "' AND CAST(ifl.followerid AS VARCHAR) = ipc.idinstagramuser " +
+					 ") " +
+				"GROUP BY iduser " +
+				"UNION ALL " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countcomments, COUNT(*) AS countcommentsfollowers, 0 AS countcommentsnofollowers FROM opsocial.instagramreportsposts AS irp " + 
+					"INNER JOIN opsocial.instagrampostscomments AS ipc ON " +
+					"ipc.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND ipc.idinstagramuser " + 
+				"IN (SELECT CAST(ifl.followerid AS VARCHAR)  FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = '" + idInstagramUser + "') " +
+				"GROUP BY iduser) AS commentsorigin " +
+				"GROUP BY iduser";
+
+		query = em.createNativeQuery(sql);
+
+		Object[] commentsOrigin = null;
+		Object[] result = null;
+		try {
+
+			result = (Object[]) query.getSingleResult();
+			
+			commentsOrigin = new Object[3];
+			commentsOrigin[0] = result[1];
+			commentsOrigin[1] = result[2];
+			commentsOrigin[2] = result[3];
+
+		} catch (NoResultException e) {
+
+			commentsOrigin = new Object[3];
+			commentsOrigin[0] = 0L;
+			commentsOrigin[1] = 0L;
+			commentsOrigin[2] = 0L;
+		}
+
+		return commentsOrigin;
+	}
+
+	@Override
+	public Object[] getCommentsOrigin(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT iduser, CAST(SUM(countcomments) AS bigint) AS totalcomments, CAST(SUM(countcommentsfollowers) AS bigint) AS commentsfollowers, CAST(SUM(countcommentsnofollowers) AS bigint) AS commentsnofollowers FROM ( " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countcomments, 0 AS countcommentsfollowers, COUNT(*) AS countcommentsnofollowers FROM opsocial.instagramreportsposts AS irp " +
+					"INNER JOIN opsocial.instagrampostscomments AS ipc ON " +
+					"ipc.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND NOT EXISTS ( " +
+					    "SELECT 1 " +
+					    "FROM opsocial.instagramfollowers AS ifl " +
+					    "WHERE ifl.idprofile = '" + idInstagramUser + "' AND CAST(ifl.followerid AS VARCHAR) = ipc.idinstagramuser " +
+					 ") " +
+				"AND (CAST(ipc.createtime AS bigint) >= " + dateFrom + " AND CAST(ipc.createtime AS bigint) < (" + dateUntil + " + 86400)) " + 
+				"GROUP BY iduser " +
+				"UNION ALL " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countcomments, COUNT(*) AS countcommentsfollowers, 0 AS countcommentsnofollowers FROM opsocial.instagramreportsposts AS irp " + 
+					"INNER JOIN opsocial.instagrampostscomments AS ipc ON " +
+					"ipc.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND ipc.idinstagramuser " + 
+				"IN (SELECT CAST(ifl.followerid AS VARCHAR)  FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = '" + idInstagramUser + "') " +
+				"AND (CAST(ipc.createtime AS bigint) >= " + dateFrom + " AND CAST(ipc.createtime AS bigint) < (" + dateUntil + " + 86400)) " +
+				"GROUP BY iduser) AS commentsorigin " +
+				"GROUP BY iduser";
+
+		query = em.createNativeQuery(sql);
+
+		Object[] commentsOrigin = null;
+		Object[] result = null;
+		try {
+
+			result = (Object[]) query.getSingleResult();
+			
+			commentsOrigin = new Object[3];
+			commentsOrigin[0] = result[1];
+			commentsOrigin[1] = result[2];
+			commentsOrigin[2] = result[3];
+
+		} catch (NoResultException e) {
+
+			commentsOrigin = new Object[3];
+			commentsOrigin[0] = 0L;
+			commentsOrigin[1] = 0L;
+			commentsOrigin[2] = 0L;
+		}
+
+		return commentsOrigin;
+	}
+
+	@Override
+	public Map<Integer, Long> getCommentsPerHour(String idInstagramUser) {
+		
+		sql = "SELECT series.hour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS BIGINT) FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(*), 0) AS BIGINT) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+					"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+					"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' " +
+					"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY series.hour " +
+				"ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<Integer, Long> commentsPerHour = new TreeMap<Integer, Long>();
+		for(Object[] object : result) {
+			commentsPerHour.put((Integer)object[0], (Long)object[1]);
+		}
+		
+		return commentsPerHour;
+	}
+
+	@Override
+	public Object[] getTimeWithMoreComments(String idInstagramUser) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countcomments / " +
+				"NULLIF((SELECT CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "'), 0)), 0) AS integer) " +
+						"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS NUMERIC) AS countcomments FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+						"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' " +
+						"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countcomments DESC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS ipca";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Object[] getTimeWithLessComments(String idInstagramUser) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countcomments / " +
+				"NULLIF((SELECT CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "'), 0)), 0) AS integer) " +
+						"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS NUMERIC) AS countcomments FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+						"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' " +
+						"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countcomments ASC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS ipca";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Map<Integer, Long> getCommentsPerHour(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT series.hour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS BIGINT) FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(*), 0) AS BIGINT) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+					"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+					"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' AND (ipc.createtime >= " + dateFrom + " AND ipc.createtime < " + dateUntil + " + 86400) " +
+					"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY series.hour " +
+				"ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<Integer, Long> commentsPerHour = new TreeMap<Integer, Long>();
+		for(Object[] object : result) {
+			commentsPerHour.put((Integer)object[0], (Long)object[1]);
+		}
+		
+		return commentsPerHour;
+	}
+
+	@Override
+	public Object[] getTimeWithMoreComments(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countcomments / " +
+				"NULLIF((SELECT CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' AND (ipc.createtime >= " + dateFrom + " AND ipc.createtime < " + dateUntil + " + 86400)), 0)), 0) AS integer) " +
+						"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS NUMERIC) AS countcomments FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+						"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' AND (ipc.createtime >= " + dateFrom + " AND ipc.createtime < " + dateUntil + " + 86400) " +
+						"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countcomments DESC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS ipca";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Object[] getTimeWithLessComments(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countcomments / " +
+				"NULLIF((SELECT CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' AND (ipc.createtime >= " + dateFrom + " AND ipc.createtime < " + dateUntil + " + 86400)), 0)), 0) AS integer) " +
+						"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS NUMERIC) AS countcomments FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+						"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(ipc.*), 0) AS NUMERIC) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+						"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+						"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' AND (ipc.createtime >= " + dateFrom + " AND ipc.createtime < " + dateUntil + " + 86400) " +
+						"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countcomments ASC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS ipca";
+		
+		query = em.createNativeQuery(sql);
+
+		Object[] result = null;
+		try {
+
+			result = (Object[]) query.getSingleResult();
+
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+
+		} catch (NoResultException e) {
+
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+
+		return result;
+	}
+
+	@Override
+	public List<InstagramSimpleDataDTO> getCommentsPerMonthYearSimpleData(String idInstagramUser, Integer year) {
+
+		sql = "SELECT CAST(date_part('month', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) AS month, " +
+				"COALESCE(SUM(irp.comments), 0) AS sumcomments FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND " +
+				"CAST(date_part('year', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) = " + year + " " +
+				"GROUP BY month " +
+				"ORDER BY month";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+		List<InstagramSimpleDataDTO> dataReport = new ArrayList<InstagramSimpleDataDTO>();
+
+		for (Object[] o : result) {
+
+			InstagramSimpleDataDTO item = new InstagramSimpleDataDTO();
+			item.setKey(o[0]);
+			item.setValue(o[1]);			
+			dataReport.add(item);
+		}
+
+		return dataReport;
+	}
+
+
+	@Override
+	public List<InstagramSimpleDataDTO> getCommentsPerHourSimpleData(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT series.hour, CAST(COALESCE(SUM(ipc.sumcomments), 0) AS BIGINT) FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT ipc.createtime, CAST(COALESCE(COUNT(*), 0) AS BIGINT) AS sumcomments FROM opsocial.instagrampostscomments AS ipc " + 
+					"INNER JOIN opsocial.instagramreportsposts AS irp ON " +
+					"ipc.idmedia = irp.idmedia AND irp.idinstagramuser = '" + idInstagramUser + "' AND (ipc.createtime >= " + dateFrom + " AND ipc.createtime < " + dateUntil + " + 86400) " +
+					"GROUP BY ipc.createtime) AS ipc ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(ipc.createtime)::timestamp with time zone) " +
+				"GROUP BY series.hour " +
+				"ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+		List<InstagramSimpleDataDTO> dataReport = new ArrayList<InstagramSimpleDataDTO>();
+
+		for (Object[] o : result) {
+
+			InstagramSimpleDataDTO item = new InstagramSimpleDataDTO();
+			item.setKey(o[0]);
+			item.setValue(o[1]);			
+			dataReport.add(item);
+		}
+
+		return dataReport;
+	}
+
+}

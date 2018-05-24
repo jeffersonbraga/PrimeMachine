@@ -1,0 +1,50 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.sets.Post;
+//import br.com.opsocial.ejb.entity.sets.Set;
+
+@Stateless
+public class PostDAOImpl extends AbstractDAOImpl<Post> implements PostDAO {
+	@Override
+	public List<Post> listSchedulings(ArrayList<Integer> idProfiles, Long idAccount, Character status, Integer offset, Integer limit) {
+
+		sql = "SELECT p FROM Post p";
+		
+		sql += " WHERE (";
+		boolean first = true;
+		for(Integer idProfile : idProfiles) {
+			if(first) {
+				sql += "p.profile.idProfile = "+idProfile;
+				first = false;
+			} else {
+				sql += " or p.profile.idProfile = "+idProfile;
+			}
+		}
+		sql += ")";
+		
+		if(!status.equals('A')) {
+			sql += " AND p.posted = :status ";
+		}
+				
+		sql += " ORDER BY p.postDate ";
+		
+		query = em.createQuery(sql);
+		if(!status.equals('A')) {
+			query.setParameter("status", status);
+		}
+		query.setFirstResult(offset);
+		query.setMaxResults(limit);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Post>();
+		}
+	}
+}

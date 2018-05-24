@@ -1,0 +1,88 @@
+#ngBoxLoading{
+    text-align: center;
+    z-index: 10001;
+    width: 100%;
+    height: 100%;
+    color: white;
+    position: fixed;
+    top: 46%;
+    font-size: 20px;
+}
+#ngBoxWrapper {
+    background-color: rgba(0, 0, 0, 0.9);
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    text-align: center;
+    z-index: 10000;
+    width: 100%;
+    height: 100%;
+}
+
+#ngBoxWrapper #ngBoxContent img {
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+}
+
+#ngBoxContent {
+    display: block;
+}
+
+button {
+    font-size: 12px;
+}
+
+iframe {
+    max-width: 100%;
+    max-height: 100%;
+}
+#buttons{
+    position: relative;
+    margin: 5px auto;
+    text-align: right;
+}
+#buttons p{
+    float: left;
+    color: white;
+    text-align: left;
+    margin: 0 50px 0 0;
+    font-size: 12px;
+    font-family: sans-serif;
+}
+#buttons span.title{
+    display: block;
+    height: 18px;
+    overflow: hidden;
+}
+#closeButton{
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    cursor: pointer;
+}
+.left{
+    position: fixed;
+    left: 20px;
+    margin-top: -42px;
+    cursor: pointer;
+    top: 50%;
+}
+.right{
+    position: fixed;
+    right: 20px;
+    margin-top: -42px;
+    cursor: pointer;
+    top: 50%;
+}
+
+.closeModal {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    color: white;
+    font-size: 40px;
+    font-weight: 100;
+	cursor: pointer;
+    z-index: 100000;
+}

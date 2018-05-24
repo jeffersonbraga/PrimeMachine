@@ -1,0 +1,64 @@
+package br.com.opsocial.server.actions.config;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class ConfigAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		User user = (User) getSession().getAttribute("user");
+		
+		List<Character> types = new ArrayList<Character>();
+		types.add(Profile.FACEBOOK);
+		types.add(Profile.FACEBOOK_PAGE);
+		types.add(Profile.TWITTER);
+		types.add(Profile.INSTAGRAM);
+
+		List<Profile> profiles = remote.getEntityByNetworkType(types, user.getAccount().getIdAccount());
+
+		List<Profile> profileDTOs = new ArrayList<Profile>();
+		
+		for(Profile profile : profiles) {
+			profileDTOs.add(profile);			
+		}
+		
+		getParameters().put("profiles", profileDTOs);
+		
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		List<User> admins = userRemote.listUsersByAccount(getUser().getAccount().getIdAccount(), User.ADMINISTRATOR, getUser().getIdUser());
+		
+		List<User> adminsDTOs = new ArrayList<User>();
+		
+		for(User admin : admins) {
+			adminsDTOs.add(admin);
+		}
+		
+		List<User> analysts = userRemote.listUsersByAccount(getUser().getAccount().getIdAccount(), User.ANALYST, getUser().getIdUser());
+
+		List<User> analystsDTOs = new ArrayList<User>();
+		
+		for(User analyst : analysts) {
+			analystsDTOs.add(analyst);
+		}
+
+		getParameters().put("admins", adminsDTOs);
+		getParameters().put("analysts", analystsDTOs);
+	}
+}

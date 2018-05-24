@@ -1,0 +1,80 @@
+package br.com.opsocial.client.entity.report.instagram;
+
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class InstagramPostsStatsYearDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private Integer year;
+	private Long postsTotal;
+	private Map<Integer, Long> postsPerMonth;
+	private Integer monthWithMorePosts;
+	private Long monthWithMorePostsValue;
+	
+	private Map<Integer, Long> likesPerMonth;
+	private Map<Integer, Long> commentsPerMonth;
+	
+	public InstagramPostsStatsYearDTO() {
+		
+	}
+
+	public Integer getYear() {
+		return year;
+	}
+
+	public void setYear(Integer year) {
+		this.year = year;
+	}
+
+	public Long getPostsTotal() {
+		return postsTotal;
+	}
+
+	public void setPostsTotal(Long postsTotal) {
+		this.postsTotal = postsTotal;
+	}
+
+	public Map<Integer, Long> getPostsPerMonth() {
+		return postsPerMonth;
+	}
+
+	public void setPostsPerMonth(Map<Integer, Long> postsPerMonth) {
+		this.postsPerMonth = postsPerMonth;
+	}
+
+	public Integer getMonthWithMorePosts() {
+		return monthWithMorePosts;
+	}
+
+	public void setMonthWithMorePosts(Integer monthWithMorePosts) {
+		this.monthWithMorePosts = monthWithMorePosts;
+	}
+
+	public Long getMonthWithMorePostsValue() {
+		return monthWithMorePostsValue;
+	}
+
+	public void setMonthWithMorePostsValue(Long monthWithMorePostsValue) {
+		this.monthWithMorePostsValue = monthWithMorePostsValue;
+	}
+
+	public Map<Integer, Long> getLikesPerMonth() {
+		return likesPerMonth;
+	}
+
+	public void setLikesPerMonth(Map<Integer, Long> likesPerMonth) {
+		this.likesPerMonth = likesPerMonth;
+	}
+
+	public Map<Integer, Long> getCommentsPerMonth() {
+		return commentsPerMonth;
+	}
+
+	public void setCommentsPerMonth(Map<Integer, Long> commentsPerMonth) {
+		this.commentsPerMonth = commentsPerMonth;
+	}
+	
+}

@@ -1,0 +1,49 @@
+package br.com.opsocial.server.actions.monitorings.facebookgroups;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import entity.application.Profile;
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import das.MaintenanceProfileRemote;
+
+@RestController
+@RequestMapping("opsocial")
+public class DeleteFacebookGroupsAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/delete_facebook_groups",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		PersistentList<Profile> groups = (PersistentList<Profile>) getParameters().get("groups");
+		List<Profile> deletedGroupsDtos = new ArrayList<Profile>();
+		
+		if(!groups.getPersistences().isEmpty()) {
+			
+			for(Profile group : groups.getPersistences()) {
+				if(group.getIdProfile() != null) {
+					remote.delete(MountDTO.mountProfile(group));
+					group.setIdProfile(null);
+					deletedGroupsDtos.add(group);
+				}	
+			}
+		}
+		
+		getParameters().put("groups", deletedGroupsDtos);
+	}
+
+}

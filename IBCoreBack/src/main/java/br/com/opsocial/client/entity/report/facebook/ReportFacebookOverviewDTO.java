@@ -1,0 +1,473 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.report.AgeGroup;
+import br.com.opsocial.ejb.entity.report.FanPageGrowth;
+import br.com.opsocial.ejb.entity.report.ReportFacebookLocation;
+
+public class ReportFacebookOverviewDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+
+	private Long dateFrom;
+	private Long dateUntil;
+	
+	private List<FanPageGrowth> reachByDay;
+	private Long totalReach;
+	private Integer totalReachPerformance;
+	
+	private List<FanPageGrowth> impressionsByDay;
+	private Long totalImpressions;
+	private Integer totalImpressionsPerformance;
+	
+	private List<FanPageGrowth> engagementByDay;
+	private Long totalEngagement;
+	private Integer totalEngagementPerformance;
+	
+	private List<FanPageGrowth> fanPageGrowth;
+	private Long fansUntilDateFrom;
+	
+	private List<FanPageGrowth> likesByDay;
+	private List<FanPageGrowth> unlikesByDay;
+	private List<FanPageGrowth> likesBalanceByDay;
+	
+	private Long totalOfFans;
+	private FanPageGrowth majorFanPageGrowth;
+	private Long conqueredFans;
+	private Long lostFans;
+	private Long balanceFans;
+	private Integer balanceFansPerformance;
+	
+	private List<ReportFacebookLocation> fansLikeSource;
+	
+	private Map<String, Long> aboutReachedUsers;
+	private List<AgeGroup> aboutReachedMaleUsers;
+	private List<AgeGroup> aboutReachedFemaleUsers;
+	private AgeGroup majorAgeGroupReachedUsers;
+	private Integer womenReachedUsersPerc;
+	private Integer menReachedUsersPerc;
+	
+	private Map<String, Long> aboutYourFans;
+	private List<AgeGroup> aboutYourMaleFans;
+	private List<AgeGroup> aboutYourFemaleFans;
+	private AgeGroup majorAgeGroupFans;
+	private Integer womenFansPerc;
+	private Integer menFansPerc;
+	
+	private List<FacebookInfluentialUserDTO> mostInfluentialFans;
+	
+	private List<FanPageGrowth> fansOnlinePerHour;
+	private List<FanPageGrowth> averageFansOnlinePerHour;
+	private List<FanPageGrowth> fansOnlinePerWeekDay;
+	private Integer timeWithMoreFansOnlinePercentage;
+	private Integer timeWithMoreFansOnline;
+	private Integer weekDayWithMoreFansOnline;
+	private Integer weekDayWithMoreFansOnlinePercentage;
+	
+	private List<ReportFacebookLocation> citiesMoreFans;
+	private List<ReportFacebookLocation> citiesMoreReached;
+	
+	private List<ReportFacebookLocation> countriesMoreFans;
+	private List<ReportFacebookLocation> countriesMoreReached;
+	
+	private List<ReportFacebookLocation> otherActivities;
+	private List<ReportFacebookLocation> externalReferences;
+	
+	public ReportFacebookOverviewDTO() {
+	}
+
+	public Long getDateFrom() {
+		return dateFrom;
+	}
+
+	public void setDateFrom(Long dateFrom) {
+		this.dateFrom = dateFrom;
+	}
+
+	public Long getDateUntil() {
+		return dateUntil;
+	}
+
+	public void setDateUntil(Long dateUntil) {
+		this.dateUntil = dateUntil;
+	}
+
+	public Long getTotalReach() {
+		return totalReach;
+	}
+
+	public void setTotalReach(Long totalReach) {
+		this.totalReach = totalReach;
+	}
+
+	public Integer getTotalReachPerformance() {
+		return totalReachPerformance;
+	}
+
+	public void setTotalReachPerformance(Integer totalReachPerformance) {
+		this.totalReachPerformance = totalReachPerformance;
+	}
+
+	public Long getTotalImpressions() {
+		return totalImpressions;
+	}
+
+	public void setTotalImpressions(Long totalImpressions) {
+		this.totalImpressions = totalImpressions;
+	}
+
+	public Integer getTotalImpressionsPerformance() {
+		return totalImpressionsPerformance;
+	}
+
+	public void setTotalImpressionsPerformance(Integer totalImpressionsPerformance) {
+		this.totalImpressionsPerformance = totalImpressionsPerformance;
+	}
+
+	public List<FanPageGrowth> getEngagementByDay() {
+		return engagementByDay;
+	}
+
+	public void setEngagementByDay(List<FanPageGrowth> engagementByDay) {
+		this.engagementByDay = engagementByDay;
+	}
+
+	public Long getTotalEngagement() {
+		return totalEngagement;
+	}
+
+	public void setTotalEngagement(Long totalEngagement) {
+		this.totalEngagement = totalEngagement;
+	}
+
+	public Integer getTotalEngagementPerformance() {
+		return totalEngagementPerformance;
+	}
+
+	public void setTotalEngagementPerformance(Integer totalEngagementPerformance) {
+		this.totalEngagementPerformance = totalEngagementPerformance;
+	}
+
+	public List<FanPageGrowth> getReachByDay() {
+		return reachByDay;
+	}
+
+	public void setReachByDay(List<FanPageGrowth> reachByDay) {
+		this.reachByDay = reachByDay;
+	}
+
+	public List<FanPageGrowth> getImpressionsByDay() {
+		return impressionsByDay;
+	}
+
+	public void setImpressionsByDay(List<FanPageGrowth> impressionsByDay) {
+		this.impressionsByDay = impressionsByDay;
+	}
+
+	public List<FanPageGrowth> getFanPageGrowth() {
+		return fanPageGrowth;
+	}
+
+	public void setFanPageGrowth(List<FanPageGrowth> fanPageGrowth) {
+		this.fanPageGrowth = fanPageGrowth;
+	}
+
+	public Long getFansUntilDateFrom() {
+		return fansUntilDateFrom;
+	}
+
+	public void setFansUntilDateFrom(Long fansUntilDateFrom) {
+		this.fansUntilDateFrom = fansUntilDateFrom;
+	}
+
+	public List<FanPageGrowth> getLikesByDay() {
+		return likesByDay;
+	}
+
+	public void setLikesByDay(List<FanPageGrowth> likesByDay) {
+		this.likesByDay = likesByDay;
+	}
+
+	public List<FanPageGrowth> getUnlikesByDay() {
+		return unlikesByDay;
+	}
+
+	public void setUnlikesByDay(List<FanPageGrowth> unlikesByDay) {
+		this.unlikesByDay = unlikesByDay;
+	}
+
+	public List<FanPageGrowth> getLikesBalanceByDay() {
+		return likesBalanceByDay;
+	}
+
+	public void setLikesBalanceByDay(List<FanPageGrowth> likesBalanceByDay) {
+		this.likesBalanceByDay = likesBalanceByDay;
+	}
+
+	public Long getTotalOfFans() {
+		return totalOfFans;
+	}
+
+	public void setTotalOfFans(Long totalOfFans) {
+		this.totalOfFans = totalOfFans;
+	}
+
+	public FanPageGrowth getMajorFanPageGrowth() {
+		return majorFanPageGrowth;
+	}
+
+	public void setMajorFanPageGrowth(FanPageGrowth majorFanPageGrowth) {
+		this.majorFanPageGrowth = majorFanPageGrowth;
+	}
+
+	public Long getConqueredFans() {
+		return conqueredFans;
+	}
+
+	public void setConqueredFans(Long conqueredFans) {
+		this.conqueredFans = conqueredFans;
+	}
+
+	public Long getLostFans() {
+		return lostFans;
+	}
+
+	public void setLostFans(Long lostFans) {
+		this.lostFans = lostFans;
+	}
+
+	public Long getBalanceFans() {
+		return balanceFans;
+	}
+
+	public void setBalanceFans(Long balanceFans) {
+		this.balanceFans = balanceFans;
+	}
+
+	public Integer getBalanceFansPerformance() {
+		return balanceFansPerformance;
+	}
+
+	public void setBalanceFansPerformance(Integer balanceFansPerformance) {
+		this.balanceFansPerformance = balanceFansPerformance;
+	}
+
+	public List<ReportFacebookLocation> getFansLikeSource() {
+		return fansLikeSource;
+	}
+
+	public void setFansLikeSource(List<ReportFacebookLocation> fansLikeSource) {
+		this.fansLikeSource = fansLikeSource;
+	}
+
+	public Map<String, Long> getAboutReachedUsers() {
+		return aboutReachedUsers;
+	}
+
+	public void setAboutReachedUsers(Map<String, Long> aboutReachedUsers) {
+		this.aboutReachedUsers = aboutReachedUsers;
+	}
+
+	public List<AgeGroup> getAboutReachedMaleUsers() {
+		return aboutReachedMaleUsers;
+	}
+
+	public void setAboutReachedMaleUsers(List<AgeGroup> aboutReachedMaleUsers) {
+		this.aboutReachedMaleUsers = aboutReachedMaleUsers;
+	}
+
+	public List<AgeGroup> getAboutReachedFemaleUsers() {
+		return aboutReachedFemaleUsers;
+	}
+
+	public void setAboutReachedFemaleUsers(List<AgeGroup> aboutReachedFemaleUsers) {
+		this.aboutReachedFemaleUsers = aboutReachedFemaleUsers;
+	}
+
+	public AgeGroup getMajorAgeGroupReachedUsers() {
+		return majorAgeGroupReachedUsers;
+	}
+
+	public void setMajorAgeGroupReachedUsers(AgeGroup majorAgeGroupReachedUsers) {
+		this.majorAgeGroupReachedUsers = majorAgeGroupReachedUsers;
+	}
+
+	public Integer getWomenReachedUsersPerc() {
+		return womenReachedUsersPerc;
+	}
+
+	public void setWomenReachedUsersPerc(Integer womenReachedUsersPerc) {
+		this.womenReachedUsersPerc = womenReachedUsersPerc;
+	}
+
+	public Integer getMenReachedUsersPerc() {
+		return menReachedUsersPerc;
+	}
+
+	public void setMenReachedUsersPerc(Integer menReachedUsersPerc) {
+		this.menReachedUsersPerc = menReachedUsersPerc;
+	}
+
+	public Map<String, Long> getAboutYourFans() {
+		return aboutYourFans;
+	}
+
+	public void setAboutYourFans(Map<String, Long> aboutYourFans) {
+		this.aboutYourFans = aboutYourFans;
+	}
+
+	public List<AgeGroup> getAboutYourMaleFans() {
+		return aboutYourMaleFans;
+	}
+
+	public void setAboutYourMaleFans(List<AgeGroup> aboutYourMaleFans) {
+		this.aboutYourMaleFans = aboutYourMaleFans;
+	}
+
+	public List<AgeGroup> getAboutYourFemaleFans() {
+		return aboutYourFemaleFans;
+	}
+
+	public void setAboutYourFemaleFans(List<AgeGroup> aboutYourFemaleFans) {
+		this.aboutYourFemaleFans = aboutYourFemaleFans;
+	}
+
+	public AgeGroup getMajorAgeGroupFans() {
+		return majorAgeGroupFans;
+	}
+
+	public void setMajorAgeGroupFans(AgeGroup majorAgeGroupFans) {
+		this.majorAgeGroupFans = majorAgeGroupFans;
+	}
+
+	public Integer getWomenFansPerc() {
+		return womenFansPerc;
+	}
+
+	public void setWomenFansPerc(Integer womenFansPerc) {
+		this.womenFansPerc = womenFansPerc;
+	}
+
+	public Integer getMenFansPerc() {
+		return menFansPerc;
+	}
+
+	public void setMenFansPerc(Integer menFansPerc) {
+		this.menFansPerc = menFansPerc;
+	}
+
+	public List<FacebookInfluentialUserDTO> getMostInfluentialFans() {
+		return mostInfluentialFans;
+	}
+
+	public void setMostInfluentialFans(List<FacebookInfluentialUserDTO> mostInfluentialFans) {
+		this.mostInfluentialFans = mostInfluentialFans;
+	}
+
+	public List<FanPageGrowth> getFansOnlinePerHour() {
+		return fansOnlinePerHour;
+	}
+
+	public void setFansOnlinePerHour(List<FanPageGrowth> fansOnlinePerHour) {
+		this.fansOnlinePerHour = fansOnlinePerHour;
+	}
+
+	public List<FanPageGrowth> getAverageFansOnlinePerHour() {
+		return averageFansOnlinePerHour;
+	}
+
+	public void setAverageFansOnlinePerHour(List<FanPageGrowth> averageFansOnlinePerHour) {
+		this.averageFansOnlinePerHour = averageFansOnlinePerHour;
+	}
+
+	public List<FanPageGrowth> getFansOnlinePerWeekDay() {
+		return fansOnlinePerWeekDay;
+	}
+
+	public void setFansOnlinePerWeekDay(List<FanPageGrowth> fansOnlinePerWeekDay) {
+		this.fansOnlinePerWeekDay = fansOnlinePerWeekDay;
+	}
+
+	public Integer getTimeWithMoreFansOnline() {
+		return timeWithMoreFansOnline;
+	}
+
+	public void setTimeWithMoreFansOnline(Integer timeWithMoreFansOnline) {
+		this.timeWithMoreFansOnline = timeWithMoreFansOnline;
+	}
+
+	public Integer getTimeWithMoreFansOnlinePercentage() {
+		return timeWithMoreFansOnlinePercentage;
+	}
+
+	public void setTimeWithMoreFansOnlinePercentage(Integer timeWithMoreFansOnlinePercentage) {
+		this.timeWithMoreFansOnlinePercentage = timeWithMoreFansOnlinePercentage;
+	}
+
+	public Integer getWeekDayWithMoreFansOnline() {
+		return weekDayWithMoreFansOnline;
+	}
+
+	public void setWeekDayWithMoreFansOnline(Integer weekDayWithMoreFansOnline) {
+		this.weekDayWithMoreFansOnline = weekDayWithMoreFansOnline;
+	}
+
+	public Integer getWeekDayWithMoreFansOnlinePercentage() {
+		return weekDayWithMoreFansOnlinePercentage;
+	}
+
+	public void setWeekDayWithMoreFansOnlinePercentage(Integer weekDayWithMoreFansOnlinePercentage) {
+		this.weekDayWithMoreFansOnlinePercentage = weekDayWithMoreFansOnlinePercentage;
+	}
+
+	public List<ReportFacebookLocation> getCitiesMoreFans() {
+		return citiesMoreFans;
+	}
+
+	public void setCitiesMoreFans(List<ReportFacebookLocation> citiesMoreFans) {
+		this.citiesMoreFans = citiesMoreFans;
+	}
+
+	public List<ReportFacebookLocation> getCountriesMoreFans() {
+		return countriesMoreFans;
+	}
+
+	public void setCountriesMoreFans(List<ReportFacebookLocation> countriesMoreFans) {
+		this.countriesMoreFans = countriesMoreFans;
+	}
+
+	public List<ReportFacebookLocation> getCitiesMoreReached() {
+		return citiesMoreReached;
+	}
+
+	public void setCitiesMoreReached(List<ReportFacebookLocation> citiesMoreReached) {
+		this.citiesMoreReached = citiesMoreReached;
+	}
+
+	public List<ReportFacebookLocation> getCountriesMoreReached() {
+		return countriesMoreReached;
+	}
+
+	public void setCountriesMoreReached(List<ReportFacebookLocation> countriesMoreReached) {
+		this.countriesMoreReached = countriesMoreReached;
+	}
+
+	public List<ReportFacebookLocation> getOtherActivities() {
+		return otherActivities;
+	}
+
+	public void setOtherActivities(List<ReportFacebookLocation> otherActivities) {
+		this.otherActivities = otherActivities;
+	}
+
+	public List<ReportFacebookLocation> getExternalReferences() {
+		return externalReferences;
+	}
+
+	public void setExternalReferences(List<ReportFacebookLocation> externalReferences) {
+		this.externalReferences = externalReferences;
+	}
+}

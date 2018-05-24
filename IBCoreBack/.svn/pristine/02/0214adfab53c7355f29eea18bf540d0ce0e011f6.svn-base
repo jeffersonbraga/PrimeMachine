@@ -1,0 +1,141 @@
+package br.com.opsocial.server.actions.mailbox;
+
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+import javax.persistence.OptimisticLockException;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.NameValuePair;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.face4j.facebook.enums.HttpClientType;
+import com.face4j.facebook.http.APICallerFactory;
+import com.face4j.facebook.http.APICallerInterface;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import br.com.opsocial.client.entity.mailbox.ConversationDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenanceMessageRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.mailbox.Message;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.DirectMessage;
+import twitter4j.Twitter;
+
+@RestController
+@RequestMapping("opsocial")
+public class SendMessageAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/send_message",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		ConversationDTO conversationDTO = (ConversationDTO) getParameters().get("conversation");
+		StringUtil text = (StringUtil) getParameters().get("message");
+		
+		if(conversationDTO.getProfile().getType().equals(Profile.FACEBOOK_PAGE)) {
+		
+			HttpClient client = new HttpClient();
+			
+			PostMethod method = new PostMethod("https://graph.facebook.com/v2.6/" + conversationDTO.getNetworkConversationId() + 
+					"/messages?message=" + URLEncoder.encode(text.getValue(),"UTF-8") + "&access_token=" + conversationDTO.getProfile().getToken().replace("|", "%7C"));
+			
+			int statusCode = client.executeMethod(method);
+		
+			if (statusCode != HttpStatus.SC_OK) {
+			  System.err.println("Method failed: " + method.getStatusLine());
+			} else {
+				
+				byte[] responseBody = method.getResponseBody();  
+				String response = new String(responseBody, "UTF-8");
+				
+				JsonParser parser = new JsonParser();		
+				
+				String fields = "id,created_time,message,from";
+				
+				NameValuePair[] nameValuePairs = {new NameValuePair("access_token",conversationDTO.getProfile().getToken()),
+												  new NameValuePair("format", "JSON"),
+												  new NameValuePair("fields", fields)};
+				APICallerInterface caller = APICallerFactory.getAPICallerInstance(HttpClientType.APACHE_HTTP_CLIENT);
+				
+				String idMessage = parser.parse(response).getAsJsonObject().get("id").getAsString(); 
+	
+				String jsonResponse = caller.getData("https://graph.facebook.com/v2.6/" + idMessage, nameValuePairs);
+				
+				MaintenanceMessageRemote remote = (MaintenanceMessageRemote) RecoverMaintenance.recoverMaintenance("Message");
+	
+				JsonObject obj = parser.parse(jsonResponse).getAsJsonObject();
+	
+				Message message = new Message();
+				
+				message.setConversation(MountDTO.mountConversation(conversationDTO));
+				
+				try {
+					Date createTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.ROOT)
+						.parse(obj.getAsJsonObject().get("created_time").getAsString().replaceAll("\\+0([0-9]){1}\\:00", "+0$100"));
+					message.setCreatedTime(createTime.getTime());
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				
+				message.setNetworkMessageId(obj.getAsJsonObject().get("id").getAsString());
+				message.setMessage(obj.getAsJsonObject().get("message").getAsString());
+				message.setUserId(obj.getAsJsonObject().get("from").getAsJsonObject().get("id").getAsString());
+				message.setUserName(obj.getAsJsonObject().get("from").getAsJsonObject().get("name").getAsString());
+				
+				try {
+					message = remote.save(message);
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				getParameters().put("message", MountDTO.mountMessage(message));
+			}
+		} else if(conversationDTO.getProfile().getType().equals(Profile.TWITTER)) {
+
+			TwitterIntegration twitterIntegration = new TwitterIntegration();
+
+			Twitter twitter = twitterIntegration.getTwitter(
+					conversationDTO.getProfile().getToken(), conversationDTO.getProfile().getTokenSecret());
+			
+			DirectMessage directMessage = twitter.sendDirectMessage(Long.valueOf(conversationDTO.getUserId()), text.getValue());
+			
+			MaintenanceMessageRemote remote = (MaintenanceMessageRemote) RecoverMaintenance.recoverMaintenance("Message");
+			
+			Message message = new Message();
+			message.setNetworkMessageId(String.valueOf(directMessage.getId()));
+			message.setConversation(MountDTO.mountConversation(conversationDTO));
+			message.setCreatedTime(directMessage.getCreatedAt().getTime());
+			message.setMessage(directMessage.getText());
+			message.setUserId(String.valueOf(directMessage.getSenderId()));
+			message.setUserName(directMessage.getSenderScreenName());
+			
+			try {
+				message = remote.save(message);
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			getParameters().put("message", MountDTO.mountMessage(message));
+		}
+	}
+}

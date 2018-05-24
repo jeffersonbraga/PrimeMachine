@@ -1,0 +1,60 @@
+package br.com.opsocial.server.actions.mailbox;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.mailbox.ConversationDTO;
+import br.com.opsocial.client.entity.mailbox.MessageDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceConversationRemote;
+import br.com.opsocial.ejb.das.MaintenanceMessageRemote;
+import br.com.opsocial.ejb.entity.mailbox.Conversation;
+import br.com.opsocial.ejb.entity.mailbox.Message;
+
+@RestController
+@RequestMapping("woopsocial")
+public class UpdateConversationAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/update_conversation",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		MaintenanceConversationRemote conversationRemote = 
+				(MaintenanceConversationRemote) RecoverMaintenance.recoverMaintenance("Conversation");
+		
+		ConversationDTO conversationDTO = (ConversationDTO) getParameters().get("conversation");
+		
+		Conversation conversation = conversationRemote.getById(conversationDTO.getIdConversation());
+		conversation.setUnread(false);		
+		conversation = conversationRemote.save(conversation);
+		
+		final MaintenanceMessageRemote messageRemote = 
+				(MaintenanceMessageRemote) RecoverMaintenance.recoverMaintenance("Message");
+		
+		conversation.setMessages(messageRemote.listByConversation(
+				conversation.getIdConversation()));
+		
+		List<MessageDTO> messageDTOs = new ArrayList<MessageDTO>();
+		
+		for(Message message : conversation.getMessages()) {
+			messageDTOs.add(MountDTO.mountMessage(message));
+		}
+		
+		conversationDTO = MountDTO.mountConversation(conversation);
+		
+		conversationDTO.setMessages(messageDTOs);
+		
+		getParameters().put("conversation", conversationDTO);
+	}
+}

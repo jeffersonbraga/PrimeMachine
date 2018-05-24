@@ -1,0 +1,13 @@
+#alert-dialog{
+	background-color: rgba(0,0,0,0.5);
+}
+
+.confirm-icon{
+	font-size: 30px;
+	color: #999;
+}
+
+.confirm-message {
+	font-size: 16px;
+	margin: 20px 0;
+}

@@ -1,0 +1,52 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.AuthFacebookCallbackServlet;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.Twitter;
+import twitter4j.auth.RequestToken;
+
+@RestController
+@RequestMapping("woopsocial")
+public class RefreshTokenByTwitterAction {
+
+	@CrossOrigin
+	@RequestMapping(value = "/refresh_tokenby_twitter",
+    method = RequestMethod.PUT,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> doAction(@Valid @RequestBody Profile profile, HttpSession session, HttpServletRequest request) throws Exception {
+		
+		session.setAttribute("twitter_auth_action", AuthFacebookCallbackServlet.REFRESH_TOKEN);
+		session.setAttribute("alr_rec_twitter", new Boolean(false));
+		session.setAttribute("profile_twitter_reconnect", profile);
+		
+		Twitter systemTwitter = new TwitterIntegration().getSystemTwitter();
+		
+		session.setAttribute("twitterSystem", systemTwitter);
+		
+        StringBuffer callbackURL = request.getRequestURL();
+        int index = callbackURL.lastIndexOf("/");
+        callbackURL.replace(index, callbackURL.length(), "").append("/callback");
+
+        RequestToken requestToken = systemTwitter.getOAuthRequestToken(callbackURL.toString());
+        session.setAttribute("requestToken", requestToken);
+        
+        String authenticationURL = requestToken.getAuthenticationURL().toString();
+
+        return new ResponseEntity<String>(authenticationURL, HttpStatus.OK);
+	}
+
+}

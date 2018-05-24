@@ -1,0 +1,54 @@
+package br.com.opsocial.server.utils.networksintegrations;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.utils.linkedin.OAuth2Details;
+
+public class LinkedinIntegration {
+
+	// OpSocial (Development)
+	public static final String CLIENT_ID = "78br1nnake1pin";
+	public static final String CLIENT_SECRET = "T7mBXSnd7sI4BKqY";
+	public static final String STATE = "a1z2x77777773s4c5";			
+	
+	// WoopSocial (Production)
+//	public static final String CLIENT_ID = "77o6xqpp4uffjp";	
+//	public static final String CLIENT_SECRET = "j23goSobhuwCDgNR";
+//	public static final String STATE = "dFGdj2387sdlkas1209FU8";
+		
+	// Common to all apps
+	public static final String APPROVAL_PROMPT_KEY = "prompt";
+	public static final String APPROVAL_PROMPT_VALUE = "login consent";
+	public static final String ACCESS_TYPE_KEY = "access_type";
+	public static final String ACCESS_TYPE_VALUE = "offline";
+			
+	public static final String AUTHENTICATION_SERVER_URL = "https://www.linkedin.com/oauth/v2/authorization";
+	public static final String TOKEN_ENDPOINT_URL = "https://www.linkedin.com/oauth/v2/accessToken";
+	public static final String APP_PERMISSIONS = "r_basicprofile r_emailaddress rw_company_admin w_share";
+	public static final String GRANT_TYPE = "authorization_code";
+	
+	public LinkedinIntegration() {
+		
+	}
+	
+	public OAuth2Details createOAuthDetails() {
+		
+		OAuth2Details oauthDetails = new OAuth2Details();
+		oauthDetails.setGrantType(GRANT_TYPE);
+		oauthDetails.setClientId((CLIENT_ID));
+		oauthDetails.setClientSecret(CLIENT_SECRET);
+		oauthDetails.setScope(APP_PERMISSIONS);
+		oauthDetails.setAuthenticationServerUrl(AUTHENTICATION_SERVER_URL);
+		oauthDetails.setTokenEndpointUrl(TOKEN_ENDPOINT_URL);
+		oauthDetails.setRedirectURI(Persistent.SERVER_PATH + "/opsocial/authLinkedInCallback");
+		oauthDetails.setState(STATE);
+		oauthDetails.setApprovalPromptKey(APPROVAL_PROMPT_KEY);
+		oauthDetails.setApprovalPromptValue(APPROVAL_PROMPT_VALUE);
+		oauthDetails.setAccessTypeKey(ACCESS_TYPE_KEY);
+		oauthDetails.setAccessTypeValue(ACCESS_TYPE_VALUE);
+
+		return oauthDetails;
+	}
+	
+	
+	
+}

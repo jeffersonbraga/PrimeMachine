@@ -1,0 +1,51 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.MonitoringLocationReportDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringLocationReport;
+
+@Stateless
+public class MaintenanceMonitoringLocationReportBean extends AbstractDASImpl<MonitoringLocationReport> implements MaintenanceMonitoringLocationReportRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	MonitoringLocationReportDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<MonitoringLocationReport> dao) {
+		this.dao = (MonitoringLocationReportDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringLocationReport> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringLocationReport> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public boolean hasEntity(Long idMonitoring, String location, Long date) {
+		return dao.hasEntity(idMonitoring, location, date);
+	}
+
+	@Override
+	public MonitoringLocationReport getEntity(Long idMonitoring, String location, Long date) {
+		return dao.getEntity(idMonitoring, location, date);
+	}
+
+	@Override
+	public Map<String, Long> getPostsCitiesCount(Long idMonitoring, Long dateFrom, Long dateUntil, Integer offset, Integer limit) {
+		return dao.getPostsCitiesCount(idMonitoring, dateFrom, dateUntil, offset, limit);
+	}
+
+}

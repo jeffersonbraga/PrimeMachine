@@ -1,0 +1,132 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+
+import javax.ejb.EJB;
+import javax.ejb.SessionContext;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.NewsPostMonitoringDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.news.NewsPostMonitoring;
+
+@Stateless
+public class MaintenanceNewsPostMonitoringBean extends AbstractDASImpl<NewsPostMonitoring> implements MaintenanceNewsPostMonitoringRemote {
+	
+private static final long serialVersionUID = 1L;
+	
+	@EJB
+	NewsPostMonitoringDAO dao;
+	
+	@Override
+	public NewsPostMonitoring save(NewsPostMonitoring object) throws IllegalArgumentException, Exception {
+		return dao.save(object);
+	}
+	
+	@Override
+	public void setDao(AbstractDAO<NewsPostMonitoring> dao) {
+		this.dao = (NewsPostMonitoringDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<NewsPostMonitoring> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> listMostRecents(Long idMonitoring,
+			Integer maxResults) {
+		return dao.listMostRecents(idMonitoring, maxResults);
+	}
+
+	@Override
+	public List<NewsPostMonitoring> listMostRecents(Long createdTime,
+			Long idMonitoring) {
+		return dao.listMostRecents(createdTime, idMonitoring);
+	}
+
+	@Override
+	public List<NewsPostMonitoring> listElder(Long createdTime,
+			Long idMonitoring, Integer maxResults) {
+		return dao.listElder(createdTime, idMonitoring, maxResults);
+	}
+
+	@Override
+	public List<NewsPostMonitoring> getByInterval(Long idMonitoring,
+			Long startDate, Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		return dao.getByInterval(idMonitoring, startDate, endDate, qualification, monitoringTags, monitoringTerms, monitoringWords, offset, limit);
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate,
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+		return dao.getByIntervalCount(idMonitoring, startDate, endDate, qualification, monitoringTags, monitoringTerms, monitoringWords);
+	}
+
+	@Override
+	public NewsPostMonitoring getByComposedId(Long idMonitoring, Long idNewsPost, String term) {
+		return dao.getByComposedId(idMonitoring, idNewsPost, term);
+	}
+
+	@Override
+	public List<NewsPostMonitoring> listByTerm(String term,
+			Long idMonitoring) {
+		return dao.listByTerm(term, idMonitoring);
+	}
+	
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfTermPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfPostsPerDay(idMonitoring, date);
+	}
+	
+	@Override
+	public Long getCountOfGarbagePostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountOfGarbagePostsPerDay(idMonitoring, date);
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountQualificPostsPerDay(idMonitoring, date);
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		return dao.getCountTagsPostsPerDay(idMonitoring, date);
+	}
+
+	@Override
+	public NewsPostMonitoring getByComposedId(Long idMonitoring, Long idNewsPost) {
+		return dao.getByComposedId(idMonitoring, idNewsPost);
+	}
+
+	@Override
+	public List<NewsPostMonitoring> listSample(Long idMonitoring,
+			Long startDate, Long endDate, String qualification,
+			List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		return dao.listSample(idMonitoring, startDate, endDate, qualification, monitoringTags, sample, notIn);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+}

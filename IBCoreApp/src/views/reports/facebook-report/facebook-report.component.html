@@ -1,0 +1,66 @@
+<div class="panel panel-opsocial panel-transparent">
+	<ul class="nav nav-tabs nav-tabs-opsocial hidden-print" data-init-reponsive-tabs="dropdownfx">
+		<li class="active">
+			<a data-toggle="tab" href="#overview" aria-expanded="true" (click)="changeReportTab('O')"><span> Visão Geral</span></a>
+		</li>
+		<li class="">
+			<a data-toggle="tab" href="#content" aria-expanded="true" (click)="changeReportTab('C')"><span> Conteúdo</span></a>
+		</li>
+		<li class="hidden-xs hidden-sm">
+			<a data-toggle="tab" href="#posttopost" aria-expanded="true" (click)="changeReportTab('P')"><span> Post a Post</span></a>
+		</li>
+		<li class="">
+			<a data-toggle="tab" href="#historical" aria-expanded="true" (click)="changeReportTab('H')"><span> Histórico</span></a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div class="tab-pane slide-left active" id="overview">
+			<div class="col-sm-12 text-center" *ngIf="isLoading">
+				<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'G'" >
+				<p class="small hint-text">Aguarde um momento, gerando relatórios de sua página.</p>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'U'" >
+				<p class="small hint-text">Ops! Facebook only provides data for pages with more than 30 fans.</p>
+			</div>
+			<facebook-report-overview *ngIf="reportType == 'O' && !isLoading && (reportState == 'F' || reportState == 'R')" [dateFrom]="dateFrom" [dateUntil]="dateUntil" [profile]="profile" [reportFacebookOverview]="reportFacebookOverview" [period]="period"></facebook-report-overview>
+		</div>
+    <div class="tab-pane slide-left" id="content">
+			<div class="col-sm-12 text-center" *ngIf="isLoading">
+				<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'G'" >
+				<p class="small hint-text">Aguarde um momento, gerando relatórios de sua página.</p>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'U'" >
+				<p class="small hint-text">Ops! Facebook only provides data for pages with more than 30 fans.</p>
+			</div>
+			<facebook-report-content *ngIf="reportType == 'C' && !isLoading && (reportState == 'F' || reportState == 'R')" [dateFrom]="dateFrom" [dateUntil]="dateUntil" [profile]="profile" [reportFacebookContent]="reportFacebookContent" [period]="period"></facebook-report-content>
+		</div>
+    <div class="tab-pane slide-left" id="posttopost">
+			<div class="col-sm-12 text-center" *ngIf="isLoading">
+				<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'G'" >
+				<p class="small hint-text">Aguarde um momento, gerando relatórios de sua página.</p>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'U'" >
+				<p class="small hint-text">Ops! Facebook only provides data for pages with more than 30 fans.</p>
+			</div>
+			<facebook-report-post-to-post *ngIf="reportType == 'P' && !isLoading && (reportState == 'F' || reportState == 'R')" [dateFrom]="dateFrom" [dateUntil]="dateUntil" [profile]="profile" [reportFacebookPostToPost]="reportFacebookPostToPost"></facebook-report-post-to-post>
+		</div>
+    <div class="tab-pane slide-left" id="historical">
+			<div class="col-sm-12 text-center" *ngIf="isLoading">
+				<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'G'" >
+				<p class="small hint-text">Aguarde um momento, gerando relatórios de sua página.</p>
+			</div>
+			<div class="col-sm-12 text-center p-t-30" *ngIf="!isLoading && reportState == 'U'" >
+				<p class="small hint-text">Ops! Facebook only provides data for pages with more than 30 fans.</p>
+			</div>
+			<facebook-report-historical *ngIf="reportType == 'H' && !isLoading && (reportState == 'F' || reportState == 'R')" [profile]="profile" [reportFacebookHistorical]="reportFacebookHistorical"></facebook-report-historical>
+		</div>
+	</div>
+</div>

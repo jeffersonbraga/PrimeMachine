@@ -1,0 +1,133 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.persistence.NoResultException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+import br.com.opsocial.ejb.utils.reports.UtilReports;
+
+@Stateless
+public class InstagramReportDAOImpl extends AbstractDAOImpl<InstagramReport> implements InstagramReportDAO {
+
+	@Override
+	public InstagramReport getEntity(String idInstagramUser, String property, Long date) {
+		
+		sql = "SELECT ir FROM InstagramReport ir WHERE ir.idInstagramUser = :idInstagramUser " +
+				"AND ir.property = :property " +
+				"AND ir.date = :date";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", idInstagramUser);
+		query.setParameter("property", property);
+		query.setParameter("date", date);
+
+		try {
+			return (InstagramReport) query.getSingleResult();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	@Override
+	public InstagramReport getEntityBeforeDate(String idInstagramUser, String property, Long date) {
+		
+		sql = "SELECT ir FROM InstagramReport ir WHERE ir.idInstagramUser = :idInstagramUser " +
+				"AND ir.property = :property " +
+				"AND ir.date < :date " +
+				"ORDER BY ir.date DESC";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", idInstagramUser);
+		query.setParameter("property", property);
+		query.setParameter("date", date);
+		query.setFirstResult(0);
+		query.setMaxResults(1);
+		
+		try {
+			return (InstagramReport) query.getSingleResult();
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramFollowerTrend> getInstagramFollowersTrends(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT date, ir.value FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_ADDS + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ") " +
+				"ORDER BY ir.date";
+		
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> resultFollowersAdds = query.getResultList();
+		
+		sql = "SELECT date, ir.value FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_REMOVES + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ") " +
+				"ORDER BY ir.date";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> resultFollowersRemoves = query.getResultList();
+		
+		List<InstagramFollowerTrend> instagramFollowerTrends = new ArrayList<InstagramFollowerTrend>();
+		
+		int x = 0;
+		for (Object[] object : resultFollowersAdds) {
+			
+			InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+			instagramFollowerTrend.setDate((Long) object[0]);
+			instagramFollowerTrend.setNewFollowers(((Integer) object[1]).longValue());
+			instagramFollowerTrend.setUnfollowers(((Integer) resultFollowersRemoves.get(x)[1]).longValue());
+			instagramFollowerTrend.setBalanceFollowers(instagramFollowerTrend.getNewFollowers() - instagramFollowerTrend.getUnfollowers());
+			
+			instagramFollowerTrends.add(instagramFollowerTrend);
+			x++;
+		}
+		
+		return instagramFollowerTrends;
+	}
+
+	@Override
+	public InstagramFollowerTrend getInstagramFollowersTrend(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT SUM(ir.value) FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_ADDS + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ")";
+		
+		query = em.createNativeQuery(sql);
+		
+		Long followersAdds = (Long) query.getSingleResult();
+		
+		sql = "SELECT SUM(ir.value) FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_REMOVES + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ")";
+
+		query = em.createNativeQuery(sql);
+		
+		Long followersRemoves = (Long) query.getSingleResult();
+		
+		InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+		try {
+			
+			instagramFollowerTrend.setNewFollowers(followersAdds);
+			instagramFollowerTrend.setUnfollowers(followersRemoves);
+			instagramFollowerTrend.setBalanceFollowers(followersAdds - followersRemoves);
+
+		} catch (Exception e) {
+
+			instagramFollowerTrend.setNewFollowers(0L);
+			instagramFollowerTrend.setUnfollowers(0L);
+			instagramFollowerTrend.setBalanceFollowers(0L);
+		}
+		
+		return instagramFollowerTrend;
+	}
+
+}

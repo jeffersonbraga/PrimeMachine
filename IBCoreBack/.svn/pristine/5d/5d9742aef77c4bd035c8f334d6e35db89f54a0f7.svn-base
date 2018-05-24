@@ -1,0 +1,690 @@
+package br.com.opsocial.server.utils;
+
+import br.com.opsocial.ejb.dao.AccountDAOImpl;
+import br.com.opsocial.ejb.dao.AnniversarieDAOImpl;
+import br.com.opsocial.ejb.dao.BlogPostDAOImpl;
+import br.com.opsocial.ejb.dao.BlogPostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.ColorTagDAOImpl;
+import br.com.opsocial.ejb.dao.ConversationDAOImpl;
+import br.com.opsocial.ejb.dao.ExceptionDAOImpl;
+import br.com.opsocial.ejb.dao.FacePostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.FaceReportLocationDAOImpl;
+import br.com.opsocial.ejb.dao.FaceReportPostCommentDAOImpl;
+import br.com.opsocial.ejb.dao.FaceReportPostDAOImpl;
+import br.com.opsocial.ejb.dao.FacebookInfluentialUserDAOImpl;
+import br.com.opsocial.ejb.dao.FacebookPostDAOImpl;
+import br.com.opsocial.ejb.dao.FacebookPostInsightDAOImpl;
+import br.com.opsocial.ejb.dao.GooglePagingDAOImpl;
+import br.com.opsocial.ejb.dao.GooglePlusPostDAOImpl;
+import br.com.opsocial.ejb.dao.GooglePlusPostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramDeviceDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramFollowerDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramPostCommentDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramPostDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramPostLikeDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramPostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramPostTagDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramReportDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramReportPostDAOImpl;
+import br.com.opsocial.ejb.dao.InstagramUserDAOImpl;
+import br.com.opsocial.ejb.dao.MessageDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringGroupReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringHashTagDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringInfluentialUserDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringLinkDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringLocationDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringLocationReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringLogReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringPostLocationDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringPostTagDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringQualificationReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringReportControlDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringSearchDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringTagDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringTagReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringTermReportDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringUserDAOImpl;
+import br.com.opsocial.ejb.dao.MonitoringUserReportDAOImpl;
+import br.com.opsocial.ejb.dao.NewsPostDAOImpl;
+import br.com.opsocial.ejb.dao.NewsPostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.NotificationDAOImpl;
+import br.com.opsocial.ejb.dao.ObjectAttachmentDAOImpl;
+import br.com.opsocial.ejb.dao.PostDAOImpl;
+import br.com.opsocial.ejb.dao.ProfileDAOImpl;
+import br.com.opsocial.ejb.dao.ProfileUserDashboardDAOImpl;
+import br.com.opsocial.ejb.dao.RateLimitStatusDAOImpl;
+import br.com.opsocial.ejb.dao.ReclameAquiPostDAOImpl;
+import br.com.opsocial.ejb.dao.ReclameAquiPostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.ReportControlDAOImpl;
+import br.com.opsocial.ejb.dao.ReportDetailedDAOImpl;
+import br.com.opsocial.ejb.dao.ReportGenerateDAOImpl;
+import br.com.opsocial.ejb.dao.ReportLogoDAOImpl;
+import br.com.opsocial.ejb.dao.SampleDAOImpl;
+import br.com.opsocial.ejb.dao.SamplePostDAOImpl;
+import br.com.opsocial.ejb.dao.SampleReportDAOImpl;
+import br.com.opsocial.ejb.dao.SetDAOImpl;
+import br.com.opsocial.ejb.dao.SuggestionDAOImpl;
+import br.com.opsocial.ejb.dao.TrendingTopicDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterFollowerControlDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterFollowerDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterFollowerReportDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterPagingDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterPostDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterPostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterPostURLDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterReportDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterStatusDAOImpl;
+import br.com.opsocial.ejb.dao.TwitterStatusReportDAOImpl;
+import br.com.opsocial.ejb.dao.UserDAOImpl;
+import br.com.opsocial.ejb.dao.YoutubePostDAOImpl;
+import br.com.opsocial.ejb.dao.YoutubePostMonitoringDAOImpl;
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.das.*;
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+
+public abstract class RecoverMaintenance {
+
+	public static AbstractDAS recoverMaintenance(String entity) {
+
+		if (entity.equals("User")) {
+
+			MaintenanceUserRemote remote = null;
+
+			remote = new MaintenanceUserBean();
+			remote.setDao(new UserDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("FaceReportLocation")) {
+
+			MaintenanceFaceReportLocationRemote remote = null;
+
+			remote = new MaintenanceFaceReportLocationBean();
+			remote.setDao(new FaceReportLocationDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("FaceReportPost")) {
+
+			MaintenanceFaceReportPostRemote remote = null;
+			remote = new MaintenanceFaceReportPostBean();
+			remote.setDao(new FaceReportPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("InstagramPost")) {
+
+			MaintenanceInstagramPostRemote remote = null;
+			remote = new MaintenanceInstagramPostBean();
+			remote.setDao(new InstagramPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Monitoring")) {
+
+			MaintenanceMonitoringRemote remote = null;
+			remote = new MaintenanceMonitoringBean();
+			remote.setDao(new MonitoringDAOImpl());
+			return remote;
+
+		} else if (entity.equals("Notification")) {
+
+			MaintenanceNotificationRemote remote = null;
+			remote = new MaintenanceNotificationBean();
+			remote.setDao(new NotificationDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Profile")) {
+
+			MaintenanceProfileRemote remote = null;
+			remote = new MaintenanceProfileBean();
+			remote.setDao(new ProfileDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("ReportControl")) {
+
+			MaintenanceReportControlRemote remote = null;
+			remote = new MaintenanceReportControlBean();
+			remote.setDao(new ReportControlDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("ReportDetailed")) {
+
+			MaintenanceReportDetailedRemote remote = null;
+			remote = new MaintenanceReportDetailedBean();
+			remote.setDao(new ReportDetailedDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("ReportGenerate")) {
+
+			MaintenanceReportGenerateRemote remote = null;
+			remote = new MaintenanceReportGenerateBean();
+			remote.setDao(new ReportGenerateDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Set")) {
+
+			MaintenanceSetRemote remote = null;
+			remote = new MaintenanceSetBean();
+			remote.setDao(new SetDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Post")) {
+
+			MaintenancePostRemote remote = null;
+			remote = new MaintenancePostBean();
+			remote.setDao(new PostDAOImpl());
+			return remote;
+
+		} else if (entity.equals("TwitterReport")) {
+
+			MaintenanceTwitterReportRemote remote = null;
+			remote = new MaintenanceTwitterReportBean();
+			remote.setDao(new TwitterReportDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("TwitterStatus")) {
+
+			MaintenanceTwitterStatusRemote remote = null;
+			remote = new MaintenanceTwitterStatusBean();
+			remote.setDao(new TwitterStatusDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("TwitterStatusReport")) {
+
+			MaintenanceTwitterStatusReportRemote remote = null;
+			remote = new MaintenanceTwitterStatusReportBean();
+			remote.setDao(new TwitterStatusReportDAOImpl());
+			return remote;
+
+		} else if (entity.equals("FacebookPost")) {
+
+			MaintenanceFacebookPostRemote remote = null;
+			remote = new MaintenanceFacebookPostBean();
+			remote.setDao(new FacebookPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("FacePostMonitoring")) {
+
+			MaintenanceFacePostMonitoringRemote remote = null;
+			remote = new MaintenanceFacePostMonitoringBean();
+			remote.setDao(new FacePostMonitoringDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("GooglePlusPost")) {
+
+			MaintenanceGooglePlusPostRemote remote = null;
+			remote = new MaintenanceGooglePlusPostBean();
+			remote.setDao(new GooglePlusPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("GooglePlusPostMonitoring")) {
+
+			MaintenanceGooglePlusPostMonitoringRemote remote = null;
+			remote = new MaintenanceGooglePlusPostMonitoringBean();
+			remote.setDao(new GooglePlusPostMonitoringDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("ObjectAttachment")) {
+
+			MaintenanceObjectAttachmentRemote remote = null;
+			remote = new MaintenanceObjectAttachmentBean();
+			remote.setDao(new ObjectAttachmentDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("RateLimitStatus")) {
+
+			MaintenanceRateLimitStatusRemote remote = null;
+			remote = new MaintenanceRateLimitStatusBean();
+			remote.setDao(new RateLimitStatusDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("TwitterPost")) {
+
+			MaintenanceTwitterPostRemote remote = null;
+			remote = new MaintenanceTwitterPostBean();
+			remote.setDao(new TwitterPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("TwitterPostMonitoring")) {
+
+			MaintenanceTwitterPostMonitoringRemote remote = null;
+			remote = new MaintenanceTwitterPostMonitoringBean();
+			remote.setDao(new TwitterPostMonitoringDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("YoutubePost")) {
+
+			MaintenanceYoutubePostRemote remote = null;
+			remote = new MaintenanceYoutubePostBean();
+			remote.setDao(new YoutubePostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("YoutubePostMonitoring")) {
+
+			MaintenanceYoutubePostMonitoringRemote remote = null;
+			remote = new MaintenanceYoutubePostMonitoringBean();
+			remote.setDao(new YoutubePostMonitoringDAOImpl());
+			return remote;
+
+		} else if (entity.equals("MonitoringReport")) {
+
+			MaintenanceMonitoringReportRemote remote = null;
+			remote = new MaintenanceMonitoringReportBean();
+			remote.setDao(new MonitoringReportDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("FacebookInfluentialUser")) {
+
+			MaintenanceFacebookInfluentialUserRemote remote = null;
+			remote = new MaintenanceFacebookInfluentialUserBean();
+			remote.setDao(new FacebookInfluentialUserDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Suggestion")) {
+
+			MaintenanceSuggestionRemote remote = null;
+			remote = new MaintenanceSuggestionBean();
+			remote.setDao(new SuggestionDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Anniversarie")) {
+
+			MaintenanceAnniversarieRemote remote = null;
+			remote = new MaintenanceAnniversarieBean();
+			remote.setDao(new AnniversarieDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Account")) {
+
+			MaintenanceAccountRemote remote = null;
+			remote = new MaintenanceAccountBean();
+			remote.setDao(new AccountDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("InstagramPostMonitoring")) {
+
+			MaintenanceInstagramPostMonitoringRemote remote = null;
+			remote = new MaintenanceInstagramPostMonitoringBean();
+			remote.setDao(new InstagramPostMonitoringDAOImpl());
+
+			return remote;
+		} else if (entity.equals("FacebookPostInsight")) {
+
+			MaintenanceFacebookPostInsightRemote remote = null;
+			remote = new MaintenanceFacebookPostInsightBean();
+			remote.setDao(new FacebookPostInsightDAOImpl());
+
+			return remote;
+		} else if (entity.equals("TwitterFollower")) {
+
+			MaintenanceTwitterFollowerRemote remote = null;
+			remote = new MaintenanceTwitterFollowerBean();
+			remote.setDao(new TwitterFollowerDAOImpl());
+
+			return remote;
+		} else if (entity.equals("TwitterFollowerControl")) {
+
+			MaintenanceTwitterFollowerControlRemote remote = null;
+			remote = new MaintenanceTwitterFollowerControlBean();
+			remote.setDao(new TwitterFollowerControlDAOImpl());
+
+			return remote;
+		} else if (entity.equals("TwitterFollowerReport")) {
+
+			MaintenanceTwitterFollowerReportRemote remote = null;
+			remote = new MaintenanceTwitterFollowerReportBean();
+			remote.setDao(new TwitterFollowerReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringUser")) {
+
+			MaintenanceMonitoringUserRemote remote = null;
+			remote = new MaintenanceMonitoringUserBean();
+			remote.setDao(new MonitoringUserDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringInfluentialUser")) {
+
+			MaintenanceMonitoringInfluentialUserRemote remote = null;
+			remote = new MaintenanceMonitoringInfluentialUserBean();
+			remote.setDao(new MonitoringInfluentialUserDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("ReclameAquiPost")) {
+
+			MaintenanceReclameAquiPostRemote remote = null;
+			remote = new MaintenanceReclameAquiPostBean();
+			remote.setDao(new ReclameAquiPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("ReclameAquiPostMonitoring")) {
+
+			MaintenanceReclameAquiPostMonitoringRemote remote = null;
+			remote = new MaintenanceReclameAquiPostMonitoringBean();
+			remote.setDao(new ReclameAquiPostMonitoringDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringPostTag")) {
+
+			MaintenanceMonitoringPostTagRemote remote = null;
+			remote = new MaintenanceMonitoringPostTagBean();
+			remote.setDao(new MonitoringPostTagDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringTag")) {
+
+			MaintenanceMonitoringTagRemote remote = null;
+			remote = new MaintenanceMonitoringTagBean();
+			remote.setDao(new MonitoringTagDAOImpl());
+
+			return remote;
+		} else if (entity.equals("ColorTag")) {
+
+			MaintenanceColorTagRemote remote = null;
+			remote = new MaintenanceColorTagBean();
+			remote.setDao(new ColorTagDAOImpl());
+
+			return remote;
+		} else if (entity.equals("NewsPost")) {
+
+			MaintenanceNewsPostRemote remote = null;
+			remote = new MaintenanceNewsPostBean();
+			remote.setDao(new NewsPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("NewsPostMonitoring")) {
+
+			MaintenanceNewsPostMonitoringRemote remote = null;
+			remote = new MaintenanceNewsPostMonitoringBean();
+			remote.setDao(new NewsPostMonitoringDAOImpl());
+
+			return remote;
+		} else if (entity.equals("BlogPost")) {
+
+			MaintenanceBlogPostRemote remote = null;
+			remote = new MaintenanceBlogPostBean();
+			remote.setDao(new BlogPostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("BlogPostMonitoring")) {
+
+			MaintenanceBlogPostMonitoringRemote remote = null;
+			remote = new MaintenanceBlogPostMonitoringBean();
+			remote.setDao(new BlogPostMonitoringDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramReportPost")) {
+
+			MaintenanceInstagramReportPostRemote remote = null;
+			remote = new MaintenanceInstagramReportPostBean();
+			remote.setDao(new InstagramReportPostDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramPostComment")) {
+
+			MaintenanceInstagramPostCommentRemote remote = null;
+			remote = new MaintenanceInstagramPostCommentBean();
+			remote.setDao(new InstagramPostCommentDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramPostLike")) {
+
+			MaintenanceInstagramPostLikeRemote remote = null;
+			remote = new MaintenanceInstagramPostLikeBean();
+			remote.setDao(new InstagramPostLikeDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramPostTag")) {
+
+			MaintenanceInstagramPostTagRemote remote = null;
+			remote = new MaintenanceInstagramPostTagBean();
+			remote.setDao(new InstagramPostTagDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramFollower")) {
+
+			MaintenanceInstagramFollowerRemote remote = null;
+			remote = new MaintenanceInstagramFollowerBean();
+			remote.setDao(new InstagramFollowerDAOImpl());
+
+			return remote;
+		} else if (entity.equals("ReportLogo")) {
+
+			MaintenanceReportLogoRemote remote = null;
+			remote = new MaintenanceReportLogoBean();
+			remote.setDao(new ReportLogoDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Conversation")) {
+
+			MaintenanceConversationRemote remote = null;
+			remote = new MaintenanceConversationBean();
+			remote.setDao(new ConversationDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("Message")) {
+
+			MaintenanceMessageRemote remote = null;
+			remote = new MaintenanceMessageBean();
+			remote.setDao(new MessageDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringLocation")) {
+
+			MaintenanceMonitoringLocationRemote remote = null;
+			remote = new MaintenanceMonitoringLocationBean();
+			remote.setDao(new MonitoringLocationDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringPostLocation")) {
+
+			MaintenanceMonitoringPostLocationRemote remote = null;
+			remote = new MaintenanceMonitoringPostLocationBean();
+			remote.setDao(new MonitoringPostLocationDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringHashTag")) {
+
+			MaintenanceMonitoringHashTagRemote remote = null;
+			remote = new MaintenanceMonitoringHashTagBean();
+			remote.setDao(new MonitoringHashTagDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringLink")) {
+
+			MaintenanceMonitoringLinkRemote remote = null;
+			remote = new MaintenanceMonitoringLinkRemoteBean();
+			remote.setDao(new MonitoringLinkDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringQualificationReport")) {
+
+			MaintenanceMonitoringQualificationReportRemote remote = null;
+			remote = new MaintenanceMonitoringQualificationReportBean();
+			remote.setDao(new MonitoringQualificationReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringReportControl")) {
+
+			MaintenanceMonitoringReportControlRemote remote = null;
+			remote = new MaintenanceMonitoringReportControlBean();
+			remote.setDao(new MonitoringReportControlDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringTagReport")) {
+
+			MaintenanceMonitoringTagReportRemote remote = null;
+			remote = new MaintenanceMonitoringTagReportBean();
+			remote.setDao(new MonitoringTagReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("Sample")) {
+
+			MaintenanceSampleRemote remote = null;
+			remote = new MaintenanceSampleBean();
+			remote.setDao(new SampleDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("SamplePost")) {
+
+			MaintenanceSamplePostRemote remote = null;
+			remote = new MaintenanceSamplePostBean();
+			remote.setDao(new SamplePostDAOImpl());
+
+			return remote;
+
+		} else if (entity.equals("SampleReport")) {
+
+			MaintenanceSampleReportRemote remote = null;
+			remote = new MaintenanceSampleReportBean();
+			remote.setDao(new SampleReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringTermReport")) {
+
+			MaintenanceMonitoringTermReportRemote remote = null;
+			remote = new MaintenanceMonitoringTermReportBean();
+			remote.setDao(new MonitoringTermReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringUserReport")) {
+
+			MaintenanceMonitoringUserReportRemote remote = null;
+			remote = new MaintenanceMonitoringUserReportBean();
+			remote.setDao(new MonitoringUserReportDAOImpl());
+			return remote;
+		} else if (entity.equals("MonitoringLocationReport")) {
+
+			MaintenanceMonitoringLocationReportRemote remote = null;
+			remote = new MaintenanceMonitoringLocationReportBean();
+			remote.setDao(new MonitoringLocationReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("Exception")) {
+
+			MaintenanceExceptionRemote remote = null;
+			remote = new MaintenanceExceptionBean();
+			remote.setDao(new ExceptionDAOImpl());
+
+			return remote;
+		} else if (entity.equals("FaceReportPostComment")) {
+
+			MaintenanceFaceReportPostCommentRemote remote = null;
+			remote = new MaintenanceFaceReportPostCommentBean();
+			remote.setDao(new FaceReportPostCommentDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringLogReport")) {
+
+			MaintenanceMonitoringLogReportRemote remote = null;
+			remote = new MaintenanceMonitoringLogReportBean();
+			remote.setDao(new MonitoringLogReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringGroupReport")) {
+
+			MaintenanceMonitoringGroupReportRemote remote = null;
+			remote = new MaintenanceMonitoringGroupReportBean();
+			remote.setDao(new MonitoringGroupReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("TwitterPostURL")) {
+
+			MaintenanceTwitterPostURLRemote remote = null;
+			remote = new MaintenanceTwitterPostURLBean();
+			remote.setDao(new TwitterPostURLDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramUser")) {
+
+			MaintenanceInstagramUserRemote remote = null;
+			remote = new MaintenanceInstagramUserBean();
+			remote.setDao(new InstagramUserDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramReport")) {
+
+			MaintenanceInstagramReportRemote remote = null;
+			remote = new MaintenanceInstagramReportBean();
+			remote.setDao(new InstagramReportDAOImpl());
+
+			return remote;
+		} else if (entity.equals("TwitterPaging")) {
+
+			MaintenanceTwitterPagingRemote remote = null;
+			remote = new MaintenanceTwitterPagingBean();
+			remote.setDao(new TwitterPagingDAOImpl());
+
+			return remote;
+		} else if (entity.equals("GooglePaging")) {
+
+			MaintenanceGooglePagingRemote remote = null;
+			remote = new MaintenanceGooglePagingBean();
+			remote.setDao(new GooglePagingDAOImpl());
+
+			return remote;
+		} else if (entity.equals("ProfileUserDashboard")) {
+
+			MaintenanceProfileUserDashboardRemote remote = null;
+			remote = new MaintenanceProfileUserDashboardBean();
+			remote.setDao(new ProfileUserDashboardDAOImpl());
+
+			return remote;
+		} else if (entity.equals("TrendingTopic")) {
+
+			MaintenanceTrendingTopicRemote remote = null;
+			remote = new MaintenanceTrendingTopicBean();
+			remote.setDao(new TrendingTopicDAOImpl());
+
+			return remote;
+		} else if (entity.equals("MonitoringSearch")) {
+
+			MaintenanceMonitoringSearchRemote remote = null;
+			remote = new MaintenanceMonitoringSearchBean();
+			remote.setDao(new MonitoringSearchDAOImpl());
+
+			return remote;
+		} else if (entity.equals("InstagramDevice")) {
+
+			MaintenanceInstagramDeviceRemote remote = null;
+			remote = new MaintenanceInstagramDeviceBean();
+			remote.setDao(new InstagramDeviceDAOImpl());
+
+			return remote;
+		}
+
+		return null;
+	}
+}

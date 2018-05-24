@@ -1,0 +1,44 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.feed.Stream;
+
+@Stateless
+public class StreamDAOImpl extends AbstractDAOImpl<Stream> implements StreamDAO {
+
+	@Override
+	public List<Stream> getStreamsByUser(Long idUser) {
+		sql = "SELECT s FROM Stream s"
+				+ " WHERE s.tab.user.idUser = :idUser";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idUser", idUser);
+		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<Stream>();
+		}
+	}
+
+	@Override
+	public Long getMaxOrderByTab(Long idTab) {
+		sql = "SELECT max(s.streamOrder) FROM Stream s"
+				+ " WHERE s.tab.idTab = :idTab";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idTab", idTab);
+		
+		try {
+			return (Long) query.getSingleResult();
+		} catch (Exception e) {
+			return 0L;
+		}
+	}
+
+}

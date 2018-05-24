@@ -1,0 +1,675 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.TwitterPostMonitoringId;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.twitter.TwitterPost;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring;
+
+@Stateless
+public class TwitterPostMonitoringDAOImpl extends AbstractDAOImpl<TwitterPostMonitoring> implements TwitterPostMonitoringDAO {
+
+	private String nativeSql = "";
+	List<Long> statusIds = null;
+	
+	@Override
+	public void delete(TwitterPostMonitoring object) throws Exception {
+		try {
+			object = em.merge(object);
+			em.remove(object);
+			this.flush();
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+	}
+	
+	@Override
+	public Long getCountOfPosts(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT COUNT(t) FROM TwitterPostMonitoring t WHERE t.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (t.twitterPost.createdAt >= :dateFrom AND t.twitterPost.createdAt <= :dateUntil)";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("dateFrom", dateFrom);
+		query.setParameter("dateUntil", dateUntil);
+
+		return (Long) query.getSingleResult();
+	}
+	
+	@Override
+	public List<TwitterPostMonitoring> listMostRecents(Long idMonitoring, Integer maxResults) {
+		
+		sql = "select statusid from opsocial.twitterpostsmonitorings where idmonitoring=" + idMonitoring + 
+				" order by createdtime desc limit " + maxResults;
+		
+		query = em.createNativeQuery(sql);
+		
+		List<Long> ids = new ArrayList<Long>();
+		
+		for(Object id : query.getResultList()) {
+			ids.add(Long.valueOf(id.toString()));
+		}
+		
+		if(!ids.isEmpty()) {
+			sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring and " +
+					"t.twitterPost.statusId in :ids order by t.createdTime desc";
+			query = em.createQuery(sql);
+			query.setParameter("ids", ids);
+			query.setParameter("idMonitoring", idMonitoring);
+			return query.getResultList();
+		} else {
+			return new ArrayList<TwitterPostMonitoring>();
+		}
+	}
+	
+	@Override
+	public List<TwitterPostMonitoring> listMostRecents(Long createdAt, Long idMonitoring) {
+		
+		sql = "select statusid from opsocial.twitterpostsmonitorings where createdtime > " + createdAt + 
+				" and idmonitoring=" + idMonitoring + " order by createdtime ";
+		
+		query = em.createNativeQuery(sql);
+		
+		List<Long> ids = new ArrayList<Long>();
+		
+		for(Object id : query.getResultList()) {
+			ids.add(Long.valueOf(id.toString()));
+		}
+		
+		if(!ids.isEmpty()) {
+			sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring and  " +
+					"t.twitterPost.statusId in :ids order by t.createdTime";
+			query = em.createQuery(sql);
+			query.setParameter("ids", ids);
+			query.setParameter("idMonitoring", idMonitoring);
+			return query.getResultList();
+		} else {
+			return new ArrayList<TwitterPostMonitoring>();
+		}
+		
+	}
+	
+	@Override
+	public List<TwitterPostMonitoring> listElder(Long createdAt, Long idMonitoring, Integer maxResults) {
+	
+		sql = "select statusid from opsocial.twitterpostsmonitorings where createdtime < " + createdAt + 
+				" and idmonitoring=" + idMonitoring + " order by createdtime desc limit " + maxResults;
+		
+		query = em.createNativeQuery(sql);
+		
+		List<Long> ids = new ArrayList<Long>();
+		
+		for(Object id : query.getResultList()) {
+			ids.add(Long.valueOf(id.toString()));
+		}
+		
+		if(!ids.isEmpty()) {
+			sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring and " +
+					"t.twitterPost.statusId in :ids order by t.createdTime desc";
+			query = em.createQuery(sql);
+			query.setParameter("ids", ids);
+			query.setParameter("idMonitoring", idMonitoring);
+			return query.getResultList();
+		} else {
+			return new ArrayList<TwitterPostMonitoring>();
+		}
+		
+	}
+	
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT tpm.term, COUNT(tpm) FROM TwitterPostMonitoring tpm " +
+				"WHERE tpm.monitoring.idMonitoring = :idMonitoring AND (tpm.retrievedDate >= :date AND tpm.retrievedDate < (:date + 86400)) " +
+				"GROUP BY tpm.term";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(tpm) FROM TwitterPostMonitoring tpm WHERE tpm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (tpm.retrievedDate >= :date AND tpm.retrievedDate < (:date + 86400))";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		return (Long) query.getSingleResult();
+	}
+
+	@Override
+	public List<Object[]> getCountOfPostsPerHourDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT series.hour, count(tpm) FROM (SELECT generate_series(0,23)*1 AS hour) AS series " +
+				"LEFT JOIN (SELECT tpm.* FROM opsocial.twitterpostsmonitorings as tpm INNER JOIN opsocial.monitorings AS m ON tpm.idmonitoring = m.idmonitoring " +
+					"WHERE tpm.idmonitoring = " + idMonitoring + " AND (tpm.retrieveddate >= " + date + " AND tpm.retrieveddate < (" + date + " + 86400))) AS tpm ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(tpm.retrieveddate)::timestamp with time zone) " +
+			  "GROUP BY series.hour " +  
+			  "ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT tpm.qualification, tpm.term, COUNT(*) FROM opsocial.twitterpostsmonitorings tpm WHERE tpm.idmonitoring = " + idMonitoring + " " + 
+				"AND (tpm.retrieveddate >= " + date + " AND tpm.retrieveddate < (" + date + " + 86400)) AND tpm.qualification <> '' " + 
+				"GROUP BY tpm.qualification, tpm.term";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT mpt.idtag, COUNT(*) FROM opsocial.twitterpostsmonitorings AS tpm " +
+				"INNER JOIN opsocial.monitoringspoststags AS mpt ON " +
+				"mpt.postid = CAST(tpm.statusid AS varchar) AND mpt.term = tpm.term AND mpt.idmonitoring = tpm.idmonitoring " +
+				"WHERE mpt.idmonitoring = " + idMonitoring + " AND (tpm.retrieveddate >= " + date + " AND tpm.retrieveddate < (" + date + " + 86400)) " + 
+				"GROUP BY mpt.idtag";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public List<TwitterPostMonitoring> getByInterval(Long idMonitoring, Long startDate, Long endDate, String qualification, 
+			List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		
+		String joinMonitoringTags = "";
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			joinMonitoringTags = "INNER JOIN opsocial.monitoringspoststags AS mpt ON (" +
+					"tpm.idmonitoring = mpt.idmonitoring AND tpm.term = mpt.term AND CAST(tpm.statusid AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.TWITTER + " ') ";	
+		}
+		
+		sql = "SELECT tpm.idmonitoring, tpm.statusid, tpm.term, tpm.visible, tpm.qualification, tpm.retrieveddate, " +
+					"tpm.createdtime, tpm.hashashtags, tpm.haslinks, tpm.idlocation FROM opsocial.twitterpostsmonitorings AS tpm " + 
+				 joinMonitoringTags +
+			"WHERE tpm.idmonitoring = " + idMonitoring + " AND tpm.createdtime >= " + startDate + " AND " +
+			"tpm.createdtime <= " + endDate;
+		
+		if(monitoringWords != null) {
+			
+			sql += " AND tpm.statusid IN ( "
+				+ "Select tp2.statusid FROM opsocial.twitterposts tp2 WHERE ";
+
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(tp2.text) LIKE LOWER('%" + w + "%') OR "; //TODO implementar regex melhor
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("OR "));
+
+			sql += ")";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " AND (";
+			
+			for(String t : monitoringTerms) {
+				sql += " tpm.term = '" + t + "' OR";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("OR"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " AND (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " tpm.qualification is null OR";
+				} else {
+					sql += " tpm.qualification = '" + q + "' OR";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("OR"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+
+		sql += " GROUP BY tpm.idmonitoring, tpm.statusid, tpm.term, tpm.visible, tpm.qualification, tpm.retrieveddate," +
+				" tpm.createdtime, tpm.hashashtags, tpm.haslinks, tpm.idlocation";
+		
+		sql += " ORDER BY tpm.createdtime desc";
+		
+		query = em.createNativeQuery(sql);
+		query.setFirstResult(offset * 50);
+		query.setMaxResults(limit);
+		
+		List<TwitterPostMonitoring> twitterPostsMonitorings = new ArrayList<TwitterPostMonitoring>();
+		
+		List<Object[]> result = query.getResultList();
+
+		Monitoring monitoring = new Monitoring();
+		sql = "SELECT mn FROM Monitoring mn WHERE mn.idMonitoring=" + idMonitoring;
+		query = em.createQuery(sql);
+		monitoring = (Monitoring) query.getSingleResult();
+		
+		for (Object[] object : result) {
+			
+			TwitterPostMonitoring twitterPostsMonitoring = new TwitterPostMonitoring();
+			
+			TwitterPost twitterPost = new TwitterPost();
+			Long statusId = (Long) object[1];
+			sql = "SELECT tp FROM TwitterPost tp WHERE tp.statusId = :statusId"; 
+			query = em.createQuery(sql);
+			query.setParameter("statusId", statusId);
+			twitterPost = (TwitterPost) query.getSingleResult();
+			
+			twitterPostsMonitoring.setMonitoring(monitoring);
+			twitterPostsMonitoring.setTwitterPost(twitterPost); //TODO ver os que podem ser null
+			twitterPostsMonitoring.setTerm((String) object[2]);
+			twitterPostsMonitoring.setVisible(((String) object[3]).charAt(0));
+			twitterPostsMonitoring.setQualification(object[4] != null ? ((String) object[4]).charAt(0) : null);
+			twitterPostsMonitoring.setRetrievedDate(object[5] != null ? ((Long) object[5]) : null);
+			twitterPostsMonitoring.setCreatedTime(object[6] != null ? ((Long) object[6]) : null);
+			twitterPostsMonitoring.setHasHashTags(object[7] != null ? ((Boolean) object[7]) : null);
+			twitterPostsMonitoring.setHasLinks(object[8] != null ? ((Boolean) object[8]) : null);
+			twitterPostsMonitoring.setIdLocation(object[9] != null ? ((String) object[9]) : null);
+			
+			twitterPostsMonitorings.add(twitterPostsMonitoring);
+		}
+		
+		return twitterPostsMonitorings;
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate, Long endDate, 
+			String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+
+		Long postsCount = 0L;
+		
+		String joinMonitoringTags = "";
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			joinMonitoringTags = "INNER JOIN opsocial.monitoringspoststags AS mpt ON (" +
+					"tpm.idmonitoring = mpt.idmonitoring AND tpm.term = mpt.term AND CAST(tpm.statusid AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.TWITTER + " ') ";
+			
+			sql = "SELECT count(distinct(tpm))";	
+		} else {
+			sql = "SELECT count(tpm)";
+		}
+		
+		sql += " FROM opsocial.twitterpostsmonitorings AS tpm " + joinMonitoringTags +
+			"WHERE tpm.idmonitoring = " + idMonitoring + " AND tpm.createdtime >= " + startDate + " AND " +
+			"tpm.createdtime <= " + endDate;
+		
+		if(monitoringWords != null) {
+			
+			sql += " AND tpm.statusid IN ( "
+					+ "SELECT tp2.statusid FROM opsocial.twitterposts tp2 WHERE ";
+				
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(tp2.text) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+
+			sql += ")";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " AND (";
+			
+			for(String t : monitoringTerms) {
+				sql += " tpm.term = '" + t + "' OR";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("OR"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " AND (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " tpm.qualification is null OR";
+				} else {
+					sql += " tpm.qualification = '" + q + "' OR";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("OR"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		query = em.createNativeQuery(sql);
+		
+		postsCount = (Long) query.getSingleResult(); 
+		
+		return postsCount;
+	}
+	
+	@Override
+	public TwitterPostMonitoring merge(TwitterPostMonitoring twitterPostMonitoring) throws Exception {
+
+		TwitterPostMonitoringId twitterPostMonitoringId = new TwitterPostMonitoringId();
+		twitterPostMonitoringId.setTwitterPost(twitterPostMonitoring.getTwitterPost().getStatusId());
+		twitterPostMonitoringId.setMonitoring(twitterPostMonitoring.getMonitoring().getIdMonitoring());
+		twitterPostMonitoringId.setTerm(twitterPostMonitoring.getTerm());
+
+		TwitterPostMonitoring objTmp = getById(twitterPostMonitoringId);
+
+		try {
+			validateVersion(objTmp, twitterPostMonitoring);
+		} catch (IllegalStateException ex) {
+			throw new OptimisticLockException();
+		}
+
+		em.merge(twitterPostMonitoring);
+		twitterPostMonitoring = getById(twitterPostMonitoringId);
+		
+		this.flush();
+
+		return twitterPostMonitoring;
+	}
+	
+	@Override
+	public List<TwitterPostMonitoring> listByMonitoring(Long idMonitoring) {
+		sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+
+		return query.getResultList();
+	}
+
+	@Override
+	public List<TwitterPostMonitoring> listByTerm(String term, Long idMonitoring) {
+
+		sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring and t.term = :term";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+
+		return query.getResultList();
+	}
+	
+	@Override
+	public TwitterPostMonitoring getByComposedId(Long idMonitoring, Long statusId, String term) {
+		
+		sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring and t.term = :term and t.twitterPost.statusId = :statusId";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+		query.setParameter("statusId", statusId);
+		
+		return (TwitterPostMonitoring) query.getSingleResult();
+	}
+	
+	@Override
+	public TwitterPostMonitoring getByComposedId(Long idMonitoring, Long statusId) {
+		
+		sql = "Select t From TwitterPostMonitoring t where t.monitoring.idMonitoring = :idMonitoring and t.twitterPost.statusId = :statusId";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("statusId", statusId);
+		
+		if(!query.getResultList().isEmpty()) {
+			return (TwitterPostMonitoring) query.getSingleResult();
+		} else {
+			return null;
+		}
+	}
+	
+	@Override
+	public List<TwitterPostMonitoring> listSample(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		
+		sql = "Select * From opsocial.twitterpostsmonitorings tpm where " +
+				"tpm.idMonitoring = " + idMonitoring + " and " +
+				"tpm.createdTime >= " + startDate +" and " +
+				"tpm.createdTime <= " + endDate;
+				
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("null") || q.equals("Q")) {
+					sql += " tpm.qualification is null or";
+				} else {
+					sql += " tpm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(!notIn.isEmpty()) {
+			
+			sql += "and statusid not in (";
+			
+			for(String postId : notIn) {
+				sql += postId + ",";
+			}
+			
+			sql = sql.substring(0,sql.lastIndexOf(","));
+			
+			sql += ")";
+		}
+		
+		sql += " order by random(), createdtime desc limit " + sample;
+		
+		query = em.createNativeQuery(sql, TwitterPostMonitoring.class);
+		
+		List<TwitterPostMonitoring> twitterPostMonitorings = (List<TwitterPostMonitoring>) query.getResultList(); 
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			List<TwitterPostMonitoring> twitterPostsMonitoringToExclude = new ArrayList<TwitterPostMonitoring>();
+			
+			for(TwitterPostMonitoring twitterPostMonitoring : twitterPostMonitorings) {
+				
+				try {
+					
+					MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote) 
+							new InitialContext().lookup("global/OpSocialBack/MaintenanceMonitoringPostTagBean!br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote");
+					
+					if(!monitoringPostTagRemote.thereIsMonitoringTag(String.valueOf(twitterPostMonitoring.getTwitterPost().getStatusId()), 
+							twitterPostMonitoring.getMonitoring().getIdMonitoring(), twitterPostMonitoring.getTerm(), 
+							Profile.TWITTER, monitoringTags)) {
+						twitterPostsMonitoringToExclude.add(twitterPostMonitoring);
+					}
+					
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			twitterPostMonitorings.removeAll(twitterPostsMonitoringToExclude);
+		}
+		
+		return twitterPostMonitorings;
+	}
+
+	@Override
+	public List<TwitterPostMonitoring> listByRetweedStatus(Long idMonitoring, Long statusId, Long retweedtedStatus) {
+		
+		String statusIdCond = "";
+		if(retweedtedStatus != null) {
+			statusIdCond = " OR tp.statusId = " + retweedtedStatus;
+		}
+		
+		sql = "SELECT tpm.* from opsocial.twitterpostsmonitorings as tpm " +
+				"INNER JOIN opsocial.twitterposts AS tp ON " +
+				"tp.statusid = tpm.statusid " +
+				"WHERE tpm.idmonitoring = " + idMonitoring + " AND (tp.retweetedstatus = " + statusId + statusIdCond + ")";
+		
+		query = em.createNativeQuery(sql, TwitterPostMonitoring.class);
+		
+		return query.getResultList();
+	}
+
+	@Override
+	public List<String> listTwitterPostsText(Long idMonitoring, Long startDate, Long endDate, Long limit) {
+		
+		sql = "SELECT statusid FROM opsocial.twitterpostsmonitorings WHERE idmonitoring = " + idMonitoring + " " + 
+				"AND createdTime >= " + startDate + " AND createdTime <= " + endDate + " " +
+				"ORDER BY RANDOM() LIMIT " + limit;
+		
+		query = em.createNativeQuery(sql);
+		
+		List<String> ids = new ArrayList<String>();
+		
+		for(Object id : query.getResultList()) {
+			ids.add(id.toString());
+		}
+		
+		if(!ids.isEmpty()) {
+			
+			sql = "SELECT t.text FROM TwitterPost t WHERE t.statusId IN :ids";
+			
+			query = em.createQuery(sql);
+			query.setParameter("ids", ids);
+			
+			List<String> words = (List<String>) query.getResultList();
+			
+			return words;	
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public List<String> listTwitterPostsText(Long idMonitoring, Long startDate, Long endDate, Long limit, Character qualification) {
+		
+		sql = "SELECT statusid FROM opsocial.twitterpostsmonitorings WHERE idmonitoring = " + idMonitoring + " " + 
+				"AND createdTime >= " + startDate + " AND createdTime <= " + endDate + " AND qualification = '" + qualification + "' " +
+				"ORDER BY RANDOM() LIMIT " + limit;
+		
+		query = em.createNativeQuery(sql);
+		
+		List<String> ids = new ArrayList<String>();
+		
+		for(Object id : query.getResultList()) {
+			ids.add(id.toString());
+		}
+		
+		if(!ids.isEmpty()) {
+			
+			sql = "SELECT t.text FROM TwitterPost t WHERE t.statusId IN :ids";
+			
+			query = em.createQuery(sql);
+			query.setParameter("ids", ids);
+			
+			List<String> words = (List<String>) query.getResultList();
+			
+			return words;	
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	public List<TwitterPostMonitoring> getTwitterPostsByUser(Long idMonitoring, Long userId, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT tpm FROM TwitterPostMonitoring tpm WHERE tpm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND tpm.twitterPost.userId = :userId " +
+				"AND (tpm.retrievedDate >= :dateFrom AND tpm.retrievedDate < :dateUntil) " +
+				"ORDER BY tpm.retrievedDate DESC";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("userId", userId);
+		query.setParameter("dateFrom", dateFrom);
+		query.setParameter("dateUntil", dateUntil);
+
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			return new ArrayList<TwitterPostMonitoring>();
+		}
+	}
+}

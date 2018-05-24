@@ -1,0 +1,31 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.servlet.ServletException;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeRequestUrl;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.networksintegrations.GoogleIntegration;
+
+public class InsertGooglePlusAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception {
+		
+		try {
+			
+			StringBuffer callbackURL = getRequest().getRequestURL();
+			int index = callbackURL.lastIndexOf("/");
+			callbackURL.replace(index, callbackURL.length(), "").append("/authGooglePlusCallback"); 
+			
+			String authorizationUrl = new GoogleAuthorizationCodeRequestUrl(GoogleIntegration.CLIENT_ID, callbackURL.toString(), 
+					GoogleIntegration.SCOPE).setAccessType("offline").build();
+			
+			getParameters().put("authenticationurl", new StringUtil(authorizationUrl));
+			
+		} catch (Exception e) {
+			throw new ServletException(e);
+		}		
+	}
+}

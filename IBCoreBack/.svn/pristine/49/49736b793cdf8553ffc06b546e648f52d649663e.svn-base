@@ -1,0 +1,131 @@
+package br.com.opsocial.server.services;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.servlet.ServletRequestContext;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class UploadAvatar extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+	private static final long SIZE_LIMIT = 500000L;
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+			throws ServletException, IOException {
+		super.doGet(req, resp);
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		
+		boolean isMultiPart = ServletFileUpload
+				.isMultipartContent(new ServletRequestContext(request));
+
+		String tempPath = request.getSession().getServletContext().getInitParameter("uploadDirAvatar");
+		
+		if (isMultiPart) {
+
+			FileItemFactory factory = new DiskFileItemFactory();
+			ServletFileUpload upload = new ServletFileUpload(factory);
+
+			try {
+				List<FileItem> items = upload.parseRequest(request);
+				
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				
+				PrintWriter out = response.getWriter();
+
+				for (FileItem item : items) {
+
+					if (item.isFormField())
+						continue;
+					
+
+					if(!item.getName().isEmpty()) {
+
+						if(item.getContentType().equals("image/jpeg") || item.getContentType().equals("image/png") || item.getContentType().equals("image/gif")) {
+						
+							if (item.getSize() <= SIZE_LIMIT) {
+								
+								Date now = new Date();
+	
+								String fileName = String.valueOf(now.getTime()) + ".png";
+	
+								File uploadedFile = new File(tempPath, fileName);
+	
+								if (uploadedFile.createNewFile()) {
+									
+									try {
+										item.write(uploadedFile);
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
+
+									JsonObject object = new JsonObject();
+
+									object.addProperty("avatar", Persistent.AVATAR_PATH + fileName);
+									
+									out.print(object);
+									out.flush();
+								
+								}
+							} else {
+								item.delete();
+								
+								response.setContentType("text/html");
+								response.setCharacterEncoding("UTF-8");
+								
+								out = response.getWriter();
+								
+								JsonObject object = new JsonObject();
+								object.addProperty("errorCode", 1);
+								
+								out.print(object);
+								out.flush();
+							}
+						} else {
+							item.delete();
+							
+							response.setContentType("text/html");
+							response.setCharacterEncoding("UTF-8");
+							
+							out = response.getWriter();
+							
+							JsonObject object = new JsonObject();
+							object.addProperty("errorCode", 1);
+							
+							out.print(object);
+							out.flush();
+						}
+					}
+				}
+
+			} catch (FileUploadException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}

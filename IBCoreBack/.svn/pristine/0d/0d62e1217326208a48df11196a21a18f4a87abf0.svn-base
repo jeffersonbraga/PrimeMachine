@@ -1,0 +1,148 @@
+package br.com.opsocial.server.actions.groups;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceGroupRemote;
+import br.com.opsocial.ejb.das.MaintenanceGroupsProfilesRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.groups.GroupProfilesHelper;
+import br.com.opsocial.ejb.entity.groups.Groups;
+import br.com.opsocial.ejb.entity.groups.GroupsProfiles;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class GroupsController extends ServerAction {
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups_delete",
+    method = RequestMethod.DELETE,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<HttpStatus> deleteGroup(Long idGroup) {
+		
+		try {
+			
+			MaintenanceGroupRemote remote = (MaintenanceGroupRemote) RecoverMaintenance.recoverMaintenance("Groups");
+
+			Groups group = remote.getById(idGroup);
+			
+			remote.delete(group);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+		}
+
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/insert",
+    method = RequestMethod.PUT,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> insertProfileOnGroup(@Valid @RequestBody Groups group, HttpSession session) {
+		
+		try {
+			
+			MaintenanceGroupRemote remote = (MaintenanceGroupRemote) RecoverMaintenance.recoverMaintenance("Groups");
+			//TODO: Colocando usuário na sessão apenas para uso na autenticação de perfis do Facebook.
+			MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+			
+			session.setAttribute("user", userRemote.getById(1L));
+			
+			User user = (User) session.getAttribute("user");
+			
+			group.setAccount(user.getAccount());
+
+			group = remote.save(group);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return new ResponseEntity<>(group, HttpStatus.OK);
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups_update",
+    method = RequestMethod.PUT,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> updateGroup(@Valid @RequestBody GroupProfilesHelper groupProfilesHelper, HttpSession session) {
+		
+		Groups group = new Groups();
+		
+		try {
+			
+			MaintenanceGroupsProfilesRemote remote = 
+					(MaintenanceGroupsProfilesRemote) RecoverMaintenance.recoverMaintenance("GroupsProfiles");
+			
+			group = groupProfilesHelper.getGroup();
+
+			if(groupProfilesHelper.getProfiles() != null) {
+				
+				List<Profile> listProfilesToADD = new ArrayList<Profile>(groupProfilesHelper.getProfiles());
+				
+				remote.deleteNotNecessaryProfiles(group.getIdGroup(), listProfilesToADD);
+	
+				for (Profile profile : listProfilesToADD) {
+					
+					GroupsProfiles groupsProfiles = new GroupsProfiles();
+					groupsProfiles.setGroups(group);
+					groupsProfiles.setProfile(profile);
+					groupsProfiles.setVersion(1L);
+					
+					remote.save(groupsProfiles);
+				}
+				
+				group.setGroupsProfiles(remote.getByGroup(group.getIdGroup()));
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(group, HttpStatus.FORBIDDEN);
+		}
+
+		return new ResponseEntity<>(group, HttpStatus.OK);
+	}
+
+	@CrossOrigin
+	@RequestMapping(value = "/groups/list",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Groups>> listGroups(Long idAccount) throws Exception {
+		
+		MaintenanceGroupRemote maintenanceGroupRemote = (MaintenanceGroupRemote) RecoverMaintenance.recoverMaintenance("Groups");
+		List<Groups> groups = maintenanceGroupRemote.listGroupsByAccount(idAccount);
+		
+		MaintenanceGroupsProfilesRemote maintenanceGroupsProfilesRemote = 
+				(MaintenanceGroupsProfilesRemote) RecoverMaintenance.recoverMaintenance("GroupsProfiles");
+		
+		for (Groups group : groups) {
+			group.setGroupsProfiles(maintenanceGroupsProfilesRemote.getByGroup(group.getIdGroup()));
+		}
+
+		return new ResponseEntity<>(groups, HttpStatus.OK);
+	}
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub	
+	}
+}

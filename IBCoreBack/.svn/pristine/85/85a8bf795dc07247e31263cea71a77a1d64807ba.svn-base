@@ -1,0 +1,91 @@
+package br.com.opsocial.server.site;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.SendMail;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class RedefinePasswordServlet {
+
+	private User user;
+
+	@CrossOrigin
+	@RequestMapping(value = "/redefine_password_site",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	protected void doPost(String email, HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance
+				.recoverMaintenance("User");
+
+		user = userRemote.getByEmail(email);
+
+		resp.setContentType("text/html");
+		resp.setCharacterEncoding("UTF-8");
+
+		PrintWriter out = resp.getWriter();
+
+		JsonObject object = new JsonObject();
+
+		if (user != null) {
+			
+			String newPassWord = RandomStringUtils.random(10, true, true);
+			
+			String subject = "Nova senha OpSocial";
+			
+			File fileEmail = new File(req.getSession().getServletContext().getRealPath("email/" + "nova-senha.html"));
+			Document doc = Jsoup.parse(fileEmail, "UTF-8");
+			doc.getElementById("username").html("Oi " + user.getName().split(" ")[0] + ",");
+			doc.getElementById("useremail").html(user.getEmail());
+			doc.getElementById("userpassword").html(newPassWord);
+			
+			new SendMail(subject, user.getEmail(), doc.html());
+			
+			user.setPassword(newPassWord);
+			
+			try {
+				
+				userRemote.save(user);
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+				
+			object.addProperty("success", "true");
+			object.addProperty("message", "Nova senha enviada com sucesso!");
+
+		} else {
+			
+			object.addProperty("success", "false");
+			object.addProperty("message", "E-mail não encontrado.");
+		}
+
+		out.print(object);
+		out.flush();
+	}
+	
+}

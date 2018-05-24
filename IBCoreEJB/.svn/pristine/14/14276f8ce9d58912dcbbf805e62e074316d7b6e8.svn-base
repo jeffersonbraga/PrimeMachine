@@ -1,0 +1,72 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.FaceReportLocationDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.report.FaceReportLocation;
+import br.com.opsocial.ejb.entity.report.ReportFacebookCity;
+
+@Stateless
+public class MaintenanceFaceReportLocationBean extends AbstractDASImpl<FaceReportLocation> implements MaintenanceFaceReportLocationRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	FaceReportLocationDAO dao;
+	
+	@Override
+	public AbstractDAO<FaceReportLocation> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public FaceReportLocation getEntity(String pageId, String location, String fromGroup) {
+		return dao.getEntity(pageId, location, fromGroup);
+	}
+
+	@Override
+	public List<ReportFacebookCity> getReportFacebookCityImp(String pageId, Long dateFrom, Long dateUntil) {
+		return dao.getReportFacebookCityImp(pageId, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<ReportFacebookCity> getReportFacebookCityFan(String pageId) {
+		return dao.getReportFacebookCityFan(pageId);
+	}
+	
+	@Override
+	public List<ReportFacebookCity> getReportFacebookCityFan(String pageId, Integer offset, Integer limit) {
+		return dao.getReportFacebookCityFan(pageId, offset, limit);
+	}
+	
+	@Override
+	public List<ReportFacebookCity> getReportFacebookCityImp(String pageId, Integer offset, Integer limit) {
+		return dao.getReportFacebookCityImp(pageId, offset, limit);
+	}
+	
+	@Override
+	public Map<String, Long> getExternalReferences(String pageId, Long dateFrom, Long dateUntil, Integer offset, Integer limit) {
+		return dao.getExternalReferences(pageId, dateFrom, dateUntil, offset, limit);
+	}
+
+	@Override
+	public void setDao(AbstractDAO<FaceReportLocation> dao) {
+		this.dao = (FaceReportLocationDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<FaceReportLocation> getDao() {
+		return dao;
+	}
+
+	@Override
+	public boolean deleteFaceReportsLocations(String pageId) {
+		return dao.deleteFaceReportsLocations(pageId);
+	}
+}

@@ -1,0 +1,341 @@
+package br.com.opsocial.server.utils;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportDetailedFacebookDTO;
+import br.com.opsocial.client.entity.report.twitter.ReportDetailedTwitterDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringUser;
+import br.com.opsocial.server.locale.MessageByLocaleServiceImpl;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+
+@Service
+public class UtilFunctionsService {
+
+	@Autowired
+	MessageByLocaleServiceImpl messageByLocaleService;
+	
+	public UtilFunctionsService() {
+		
+	}
+	
+	public String getSentimentName(Character sentiment) {
+		
+		String sentimentName = "";
+		
+		if(sentiment != null) {
+			if(sentiment.equals(PostMonitoringDTO.POSITIVE)) {
+				sentimentName = messageByLocaleService.getMessage("monitoring.sentiment.positive");
+			} else if(sentiment.equals(PostMonitoringDTO.NEGATIVE)) {
+				sentimentName = messageByLocaleService.getMessage("monitoring.sentiment.negative");
+			} else if(sentiment.equals(PostMonitoringDTO.NEUTER)){
+				sentimentName = messageByLocaleService.getMessage("monitoring.sentiment.neuter");
+			}
+		}
+		
+		return sentimentName;
+	}
+	
+	public String getUserSex(String sex) {
+		
+		String userSex = "";
+		
+		if(sex != null) {
+			if(sex.equals(MonitoringUser.FEMALE)) {
+				userSex = messageByLocaleService.getMessage("monitoring.user.female");
+			} else if(sex.equals(MonitoringUser.MALE)) {
+				userSex = messageByLocaleService.getMessage("monitoring.user.male");
+			} else {
+				userSex = messageByLocaleService.getMessage("monitoring.user.unknown");
+			}
+		} else {
+			userSex = messageByLocaleService.getMessage("monitoring.user.unknown");
+		}
+		
+		return userSex;
+	}
+
+	public String getGroupStatusName(String status) {
+
+		if(status.equals(Profile.GROUP_STATUS_OPEN)) {
+			return messageByLocaleService.getMessage("facebook.group.open");
+		} else if(status.equals(Profile.GROUP_STATUS_CLOSED)) {
+			return messageByLocaleService.getMessage("facebook.group.closed");
+		} else if(status.equals(Profile.GROUP_STATUS_SECRET)) {
+			return messageByLocaleService.getMessage("facebook.group.secret");
+		} else {
+			return "";
+		}
+	}
+	
+	public String getFormattedWeekDayShort(int weekDay) {
+		
+		String formattedWeekDay = "";
+		
+		switch (weekDay) {
+		case 0:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.sunday");
+			break;
+		case 1:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.monday");
+			break;
+		case 2:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.tuesday");
+			break;	
+		case 3:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.wednesday");
+			break;
+		case 4:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.thursday");
+			break;
+		case 5:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.friday");
+			break;
+		case 6:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.short.saturday");
+			break;
+		default:
+			break;
+		}
+		
+		return formattedWeekDay;
+	}
+	
+	public String getFormattedWeekDay(int weekDay) {
+		
+		String formattedWeekDay = "";
+		
+		switch (weekDay) {
+		case 0:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.sunday");
+			break;
+		case 1:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.monday");
+			break;
+		case 2:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.tuesday");
+			break;	
+		case 3:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.wednesday");
+			break;
+		case 4:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.thursday");
+			break;
+		case 5:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.friday");
+			break;
+		case 6:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.complete.saturday");
+			break;
+		default:
+			break;
+		}
+		
+		return formattedWeekDay;
+	}
+	
+	public String getTweetTypeName(String tweetType) {
+		
+		if(tweetType.equals(ReportDetailedTwitterDTO.MSG_SENT_WITH_TEXT_COUNT)) {
+			return messageByLocaleService.getMessage("twitter.post.type.text");
+		} else if(tweetType.equals(ReportDetailedTwitterDTO.MSG_SENT_WITH_PHOTO_COUNT)) {
+			return messageByLocaleService.getMessage("twitter.post.type.photo");
+		} else if(tweetType.equals(ReportDetailedTwitterDTO.MSG_SENT_WITH_LINK_COUNT)) {
+			return messageByLocaleService.getMessage("twitter.post.type.link");
+		} else {
+			return "";
+		}	
+	}
+	
+	public String getFormattedMonth(String month) {
+		
+		String formattedMonth = "";
+		
+		if(month.endsWith("jan")) {
+			return messageByLocaleService.getMessage("month.january");
+		} else if(month.endsWith("feb")) {
+			return messageByLocaleService.getMessage("month.february");
+		} else if(month.endsWith("mar")) {
+			return messageByLocaleService.getMessage("month.march");
+		} else if(month.endsWith("apr")) {
+			return messageByLocaleService.getMessage("month.april");
+		} else if(month.endsWith("mai")) {
+			return messageByLocaleService.getMessage("month.may");
+		} else if(month.endsWith("jun")) {
+			return messageByLocaleService.getMessage("month.june");
+		} else if(month.endsWith("jul")) {
+			return messageByLocaleService.getMessage("month.july");
+		} else if(month.endsWith("aug")) {
+			return messageByLocaleService.getMessage("month.august");
+		} else if(month.endsWith("sep")) {
+			return messageByLocaleService.getMessage("month.september");
+		} else if(month.endsWith("oct")) {
+			return messageByLocaleService.getMessage("month.october");
+		} else if(month.endsWith("nov")) {
+			return messageByLocaleService.getMessage("month.november");
+		} else if(month.endsWith("dec")) {
+			return messageByLocaleService.getMessage("month.december");
+		}
+		
+		return formattedMonth;
+	}
+	
+	public String getFormattedMonth(int month) {
+		
+		String formattedMonth = "";
+		
+		if(month == 0) {
+			return messageByLocaleService.getMessage("month.january");
+		} else if(month == 1) {
+			return messageByLocaleService.getMessage("month.february");
+		} else if(month == 2) {
+			return messageByLocaleService.getMessage("month.march");
+		} else if(month == 3) {
+			return messageByLocaleService.getMessage("month.april");
+		} else if(month == 4) {
+			return messageByLocaleService.getMessage("month.may");
+		} else if(month == 5) {
+			return messageByLocaleService.getMessage("month.june");
+		} else if(month == 6) {
+			return messageByLocaleService.getMessage("month.july");
+		} else if(month == 7) {
+			return messageByLocaleService.getMessage("month.august");
+		} else if(month == 8) {
+			return messageByLocaleService.getMessage("month.september");
+		} else if(month == 9) {
+			return messageByLocaleService.getMessage("month.october");
+		} else if(month == 10) {
+			return messageByLocaleService.getMessage("month.november");
+		} else if(month == 11) {
+			return messageByLocaleService.getMessage("month.december");
+		}
+		
+		return formattedMonth;
+	}
+	
+	public String getLikeSourceName(String likeSource) {
+		
+		if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_PAGE_PROFILE)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.pageprofile");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_HOVERCARD)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.hovercard");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_PHOTO_SNOWLIFT)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.photosnowlift");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_MOBILE)){
+			return messageByLocaleService.getMessage("facebook.report.likesource.mobile");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_EXTERNAL_CONNECT)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.externalconnect");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_ADS)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.ads");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_LIKE_STORY)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.likestory");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_FROM_PAGES)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.frompages");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_SEARCH)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.search");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_FROM_RECOMMENDATIONS)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.fromrecommendations");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_MOBILE_ADS)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.mobileads");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_API)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.api");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_PAGE_INVITE_ESCAPE_HATCH_FINCH)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.pageinviteescapehatchfinch");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_PAGE_SUGGESTION)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.pagesuggestion");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_FAN_CONTEXT_STORY)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.fancontextstory");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_REGISTRATION)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.registration");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_PAGE_TIMELINE)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.pagetimeline");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_WIZARD_SUGGESTION)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.wizardsuggestion");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_FROM_LIKE_SUGGESTIONS)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.fromlikesuggestions");
+		} else if(likeSource.equals(ReportDetailedFacebookDTO.PAGE_FANS_SPONSORED_STORY)) {
+			return messageByLocaleService.getMessage("facebook.report.likesource.sponsoredstory");
+		} else {
+			return "";
+		}
+		
+	}
+	
+	public String getPageNegativeFeedbackName(String pageNegativeFeedbackType) {
+		
+		if(pageNegativeFeedbackType.equals(ReportFacebook.PAGE_NEGATIVE_FEEDBACK_HIDE_ALL_CLICKS)) {
+			return messageByLocaleService.getMessage("facebook.report.negativefeedback.hideallclicks");
+		} else if(pageNegativeFeedbackType.equals(ReportFacebook.PAGE_NEGATIVE_FEEDBACK_HIDE_CLICKS)) {
+			return messageByLocaleService.getMessage("facebook.report.negativefeedback.hideclicks");
+		} else if(pageNegativeFeedbackType.equals(ReportFacebook.PAGE_NEGATIVE_FEEDBACK_REPORT_SPAM_CLICKS)) {
+			return messageByLocaleService.getMessage("facebook.report.negativefeedback.reportspamclicks");
+		} else {
+			return "";
+		}
+		
+	}
+	
+	public String getConsumptionTypeName(String consumptionType) {
+		
+		if(consumptionType.equals(ReportFacebook.PAGE_CONSUMPTIONS_PHOTO_VIEW)) {
+			return messageByLocaleService.getMessage("facebook.report.consumptiontype.photoview");
+		} else if(consumptionType.equals(ReportFacebook.PAGE_CONSUMPTIONS_LINK_CLICKS)) {
+			return messageByLocaleService.getMessage("facebook.report.consumptiontype.linkclicks");
+		} else if(consumptionType.equals(ReportFacebook.PAGE_CONSUMPTIONS_VIDEO_PLAY)) {
+			return messageByLocaleService.getMessage("facebook.report.consumptiontype.videoplay");
+		} else if(consumptionType.equals(ReportFacebook.PAGE_CONSUMPTIONS_OTHER_CLICKS)) {
+			return messageByLocaleService.getMessage("facebook.report.consumptiontype.otherclicks");
+		} else {
+			return "";
+		}
+	}
+	
+	public String getStoryTypeName(String storyType) {
+		
+		if(storyType.equals(ReportDetailedFacebookDTO.PAGE_STORIES_BY_MENTION)) {
+			return messageByLocaleService.getMessage("facebook.report.stotytype.mention");
+		} else if(storyType.equals(ReportDetailedFacebookDTO.PAGE_STORIES_BY_CHECKIN)) {
+			return messageByLocaleService.getMessage("facebook.report.stotytype.checkin");
+		} else if(storyType.equals(ReportDetailedFacebookDTO.PAGE_STORIES_BY_USER_POST)) {
+			return messageByLocaleService.getMessage("facebook.report.stotytype.userpost");
+		} else {
+			return "";
+		}
+	}
+	
+	public String getFormattedTinyWeekDay(int weekDay) {
+		
+		String formattedWeekDay = "";
+		
+		switch (weekDay) {
+		case 0:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.sunday");
+			break;
+		case 1:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.monday");
+			break;
+		case 2:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.tuesday");
+			break;	
+		case 3:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.wednesday");
+			break;
+		case 4:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.thursday");
+			break;
+		case 5:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.friday");
+			break;
+		case 6:
+			formattedWeekDay = messageByLocaleService.getMessage("weekday.tiny.saturday");
+			break;
+		default:
+			break;
+		}
+		
+		return formattedWeekDay;
+	}
+	
+}

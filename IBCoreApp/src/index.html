@@ -1,0 +1,162 @@
+<!doctype html>
+<html class="scroll-op">
+<head>
+  <meta charset="utf-8">
+  <base href="/">
+  <title>Woop</title>
+  <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" />
+    
+    <link rel="apple-touch-icon" sizes="57x57" href="/pages/ico/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/pages/ico/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/pages/ico/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/pages/ico/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/pages/ico/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/pages/ico/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/pages/ico/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/pages/ico/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/pages/ico/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="/pages/ico/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/pages/ico/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/pages/ico/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/pages/ico/favicon-16x16.png">
+    <link rel="manifest" href="/pages/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/pages/ico/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta content="{{app.description}}" name="description" />
+    <meta content="{{app.author}}" name="author" />
+    
+    <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/nvd3/1.8.4/nv.d3.min.css" rel="stylesheet"/> -->
+    <link href="/assets/plugins/nvd3/nv.d3.min.css" rel="stylesheet"/>
+    <!-- 
+    <link href="/assets/css/twitter_core.bundle.css" rel="stylesheet"/>
+    <link href="/assets/css/twitter_more_1.bundle.css" rel="stylesheet"/>
+ -->
+    <link href="pages/css/pages-icons.css" rel="stylesheet" type="text/css">    
+    <link href="/assets/plugins/bootstrap3-wysihtml5/bootstrap3-wysihtml5.min.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/bootstrap-tag/bootstrap-tagsinput.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/bootstrap-datepicker/css/datepicker3.css" rel="stylesheet" type="text/css" media="screen">
+    <link href="/assets/plugins/summernote/css/summernote.css" rel="stylesheet" type="text/css" media="screen">
+    <link href="/assets/plugins/bootstrap-daterangepicker/daterangepicker-bs3.css" rel="stylesheet" type="text/css" media="screen">
+    <!-- <link href="/assets/plugins/bootstrap-timepicker/bootstrap-timepicker.css" rel="stylesheet" type="text/css" media="screen"> -->
+    <link href="/assets/plugins/simple-line-icons/simple-line-icons.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/assets/plugins/pace/pace-theme-flash.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/bootstrapv3/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/font-awesome/css/font-awesome.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/jquery-scrollbar/jquery.scrollbar.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/assets/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/assets/plugins/switchery/css/switchery.min.css" rel="stylesheet" type="text/css" media="screen" />
+    <link id="lazyload_placeholder">
+    <link rel="stylesheet" href="pages/css/pages.css" type="text/css">
+    <!-- <link href="/assets/plugins/dropzone/css/dropzone.css" rel="stylesheet" type="text/css" /> -->
+    <link href="/assets/plugins/dropzone/css/dropzone.css" rel="stylesheet" type="text/css" /> 
+    <!-- <link href="https://woopsocial.com/assets/plugins/dropzone/css/dropzone.css" rel="stylesheet" type="text/css" /> -->
+    
+    <!-- jQuery datatables plugin inclusion OPSOCIAL 3.0 -->
+    <link href="/assets/plugins/jquery-datatable/media/css/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/jquery-datatable/extensions/FixedColumns/css/dataTables.fixedColumns.min.css" rel="stylesheet" type="text/css" />
+    <link href="/assets/plugins/datatables-responsive/css/datatables.responsive.css" rel="stylesheet" type="text/css" media="screen" />
+    <!-- jQuery datatables plugin inclusion OPSOCIAL 3.0 -->
+
+    <script type="text/javascript">
+    window.onload = function() {
+        if (navigator.appVersion.indexOf("Windows NT 6.2") != -1)
+            document.head.innerHTML += '<link rel="stylesheet" type="text/css" href="pages/css/windows.chrome.fix.css" />'
+    }
+    </script>
+    <!-- LOCALIZE JS
+    <script src="https://global.localizecdn.com/localize.js"></script>
+    
+    <script>!function(a){if(!a.Localize){a.Localize={};for(var e=["translate","untranslate","phrase","initialize","translatePage","setLanguage","getLanguage","detectLanguage","getAvailableLanguages","untranslatePage","bootstrap","prefetch","on","off"],t=0;t<e.length;t++)a.Localize[e[t]]=function(){}}}(window);</script>
+    
+    <script>
+     Localize.initialize({
+      key: 'LqRoOSvE8OEak',
+      rememberLanguage: true,
+      defaultLanguage: 'en',
+      targetLanguage: 'en'
+     });
+    </script>
+     LOCALIZE JS -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+  <app-root>
+    <div class="absolute-center">
+      <img src="assets/img/logo-svg-fundo-branco.svg" alt="Woop Logo" width="250">
+      <p class="small text-center"></p>
+    </div>
+  </app-root>
+</body>
+    <script type="text/javascript" src="/assets/plugins/pace/pace.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery/jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/modernizr.custom.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-ui/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/bootstrapv3/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery/jquery-easy.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-unveil/jquery.unveil.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-bez/jquery.bez.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-ios-list/jquery.ioslist.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/imagesloaded/imagesloaded.pkgd.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-actual/jquery.actual.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-scrollbar/jquery.scrollbar.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/select2/js/select2.full.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/classie/classie.js"></script>
+    <script type="text/javascript" src="/assets/plugins/switchery/js/switchery.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-validation/js/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
+    <!-- <script type="text/javascript" src="/pages/js/pages.js"></script> -->
+    <script type="text/javascript" src="/assets/js/scripts.js"></script>
+
+    <!-- BEGIN VENDOR JS -->
+    <script type="text/javascript" src="/assets/plugins/bootstrap3-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-autonumeric/autoNumeric.js"></script>
+    <script type="text/javascript" src="/assets/plugins/bootstrap-tag/bootstrap-tagsinput.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-inputmask/jquery.inputmask.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/bootstrap-form-wizard/js/jquery.bootstrap.wizard.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+    <!-- <script type="text/javascript" src="/assets/js/form_elements.js"></script>  -->
+    <script type="text/javascript" src="/assets/plugins/summernote/js/summernote.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/moment/moment.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/bootstrap-daterangepicker/daterangepicker.js"></script>
+    <!-- <script type="text/javascript" src="/assets/plugins/bootstrap-timepicker/bootstrap-timepicker.js"></script> -->
+    <script type="text/javascript" src="/assets/plugins/bootstrap-typehead/typeahead.bundle.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/bootstrap-typehead/typeahead.jquery.min.js"></script>
+    <!-- END VENDOR JS -->
+    <!-- BEGIN CORE TEMPLATE JS -->
+    <script src="/pages/js/pages.min.js"></script>
+    <!-- END CORE TEMPLATE JS -->
+    <!-- jQuery datatables plugin inclusion OPSOCIAL 3.0 -->
+    <script type="text/javascript" src="/assets/plugins/jquery-datatable/media/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-datatable/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-datatable/media/js/dataTables.bootstrap.js"></script>
+    <script type="text/javascript" src="/assets/plugins/jquery-datatable/extensions/Bootstrap/jquery-datatable-bootstrap.js"></script>
+    <script type="text/javascript" src="/assets/plugins/datatables-responsive/js/datatables.responsive.js"></script>
+    <script type="text/javascript" src="/assets/plugins/datatables-responsive/js/lodash.min.js"></script>
+    <script type="text/javascript" src="/assets/js/tables.js"></script>
+    <!-- BEGIN PAGE LEVEL JS -->
+    <!-- END PAGE LEVEL JS -->
+    <script type="text/javascript" src="/assets/plugins/jquery.sieve.min.js"></script>    
+    
+    <script type="text/javascript" src="/assets/plugins/d3.layout.cloud.js"></script>
+    <script type="text/javascript" src="/assets/js/icon.js"></script>
+    <!--<script type="text/javascript" src="/assets/plugins/dropzone/dropzone.min.js"></script>-->
+    
+    <!-- <script type="text/javascript" src="https://woopsocial.com/assets/plugins/dropzone/dropzone.js"></script> -->
+    <!-- <script type="text/javascript" src="/assets/plugins/dropzone/dropzone.js"></script>  -->
+    <!-- <script type="text/javascript" src="https://canvg.github.io/canvg/rgbcolor.js"></script>  -->
+    <!-- <script type="text/javascript" src="https://canvg.github.io/canvg/StackBlur.js"></script> -->
+    <!-- <script type="text/javascript" src="https://canvg.github.io/canvg/canvg.js"></script>  -->
+    <script type="text/javascript" src="/assets/js/dom-autoscroller.js"></script>
+
+    <!-- <script src="http://192.168.0.8:8081/target/target-script-min.js#anonymous"></script> -->
+
+    <!-- END PAGE LEVEL JS -->
+
+</html> 

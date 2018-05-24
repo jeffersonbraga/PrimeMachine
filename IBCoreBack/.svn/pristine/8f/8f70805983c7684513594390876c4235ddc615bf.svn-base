@@ -1,0 +1,121 @@
+package br.com.opsocial.server.validation;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class InsertProfilesValidation {
+
+	private Boolean canInsertMoreProfiles;
+	private String profileControlMessage;
+	
+	private HashSet<Character> networksAlreadyInserted;
+	
+	public InsertProfilesValidation() {
+		this.canInsertMoreProfiles = true;
+		this.profileControlMessage = "";
+	}
+	
+	public boolean canInsertMoreProfiles(List<Profile> newProfiles, User user) {
+		
+		this.networksAlreadyInserted = new HashSet<Character>();
+		
+		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) 
+				RecoverMaintenance.recoverMaintenance("Profile");
+		
+		List<Character> profileTypes = new ArrayList<Character>();
+		profileTypes.add(Profile.FACEBOOK_PAGE);
+		profileTypes.add(Profile.TWITTER);
+		profileTypes.add(Profile.FACEBOOK);
+		profileTypes.add(Profile.INSTAGRAM);
+		profileTypes.add(Profile.LINKEDIN);
+		profileTypes.add(Profile.LINKEDIN_PAGE);
+		
+		List<Profile> existingProfiles = profileRemote.getEntityByNetworkType(profileTypes, user.getAccount().getIdAccount());
+		
+		if((existingProfiles.size() + newProfiles.size()) > user.getAccount().getProfiles()) {
+			
+			profileControlMessage = "O plano contratado permite a inserção de até " + user.getAccount().getProfiles() + " perfis/páginas";
+			canInsertMoreProfiles = false;	
+			
+		} else if(user.getAccount().getPlanType().equals(Account.FREEMIUM)) {	
+				
+			Boolean hasSameNetwork = false;
+			
+			// Verify if has two or more profiles of the same network in the profiles to be inserted.
+			for(Profile newProfile : newProfiles) {
+				
+				Character normalizedNetworkType = normalizeNetworkType(newProfile.getType());
+				
+				if(!networksAlreadyInserted.contains(normalizedNetworkType)) {
+					networksAlreadyInserted.add(normalizedNetworkType);
+				} else {
+					hasSameNetwork = true;
+					break;
+				}
+			}
+			
+			// Verify if has two or more profiles of the same network in the profiles already inserted in the DB.
+			if(!hasSameNetwork) {
+				
+				for(Profile existingProfile : existingProfiles) {
+
+					for(Profile profileToInsert : newProfiles) {
+
+						if(normalizeNetworkType(existingProfile.getType()).equals(normalizeNetworkType(profileToInsert.getType()))) {
+							hasSameNetwork = true;
+							break;
+						}
+					}
+
+					if(hasSameNetwork) {
+						break;
+					}
+				}
+			}
+
+			if(hasSameNetwork) {
+				profileControlMessage = "Você possui o plano freemium, que permite a inserção de 4 perfis, sendo apenas um de cada rede.";
+				canInsertMoreProfiles = false;
+			}
+		} 
+		
+		return this.canInsertMoreProfiles;
+	}
+	
+	private Character normalizeNetworkType(Character networkType) {
+		
+		Character normalizedNetworkType = networkType; 
+		
+		if(networkType.equals(Profile.FACEBOOK_PAGE)) {
+			normalizedNetworkType = Profile.FACEBOOK;
+		} else if(normalizedNetworkType.equals(Profile.LINKEDIN_PAGE)) {
+			normalizedNetworkType = Profile.LINKEDIN;
+		}
+		
+		return normalizedNetworkType;
+	}
+
+	public Boolean getCanInsertMoreProfiles() {
+		return canInsertMoreProfiles;
+	}
+
+	public void setCanInsertMoreProfiles(Boolean canInsertMoreProfiles) {
+		this.canInsertMoreProfiles = canInsertMoreProfiles;
+	}
+
+	public String getProfileControlMessage() {
+		return profileControlMessage;
+	}
+
+	public void setProfileControlMessage(String profileControlMessage) {
+		this.profileControlMessage = profileControlMessage;
+	}
+	
+}

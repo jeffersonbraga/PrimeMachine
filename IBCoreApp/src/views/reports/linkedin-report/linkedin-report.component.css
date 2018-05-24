@@ -1,0 +1,24 @@
+#content-pdf{
+    width: 650px;
+    max-height: 0px;
+    overflow: hidden; 
+}
+
+.page-break{
+    page-break-before: always;
+}
+
+@media print{
+    #content-pdf{
+        max-height: none;
+    }
+}
+
+th, td {
+    padding: 12px 5px !important;
+}
+
+.fa-linkedin-square{
+    color: #0084bf;
+    font-size: 24px
+}

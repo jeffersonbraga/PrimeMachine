@@ -1,0 +1,30 @@
+<!--<sidebar-root *ngIf="!showLogin"></sidebar-root>
+<div class="page-container">
+    <header-root *ngIf="!showLogin"></header-root>
+    <div class="page-content-wrapper">
+        <div class="content">
+            <router-outlet></router-outlet>
+        </div>
+        <footer-root></footer-root>
+    </div>    
+</div>
+<quick_view-root *ngIf="!showLogin"></quick_view-root>
+<quick_search-root *ngIf="!showLogin"></quick_search-root>-->
+<router-outlet class="no-padding"></router-outlet>
+<ngbox></ngbox>
+<confirm-dialog-modal></confirm-dialog-modal>
+<alert-dialog-modal></alert-dialog-modal>
+    
+<!-- EMOJI COMPONENT -->
+<emoji-component 
+    *ngIf="showEmojiList" 
+    [(dataSource)]="emojiSource" 
+    [(dataField)]="emojiField" 
+    [ngStyle]="{'left': position.left + 'px', 'top': position.top + 'px'}">
+</emoji-component>
+<op-smarttip-component 
+    *ngIf="showSmartTipList" 
+    [(dataSource)]="smartTipSource" 
+    [(dataField)]="smartTipField" 
+    [ngStyle]="{'left': positionSmartTip.left + 'px', 'top': positionSmartTip.top + 'px'}">
+</op-smarttip-component>

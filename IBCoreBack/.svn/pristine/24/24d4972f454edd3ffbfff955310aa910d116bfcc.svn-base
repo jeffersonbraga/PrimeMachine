@@ -1,0 +1,26 @@
+package br.com.opsocial.server.actions.home;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class LogoutAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception {
+ 		
+		User user = (User) getSession().getAttribute("user");
+		
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		if(user != null) {
+			user = remote.getById(user.getIdUser());
+			user.setSessionId(null);
+			
+			remote.save(user);
+		}
+		
+		getSession().removeAttribute("user");
+	}
+}

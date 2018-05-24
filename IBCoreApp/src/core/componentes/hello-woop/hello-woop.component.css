@@ -1,0 +1,14 @@
+/* Modal Content */
+.modal-hello-woop {
+    display: inline-block; 
+    vertical-align: top;
+    position: absolute;
+    background-color: #fefefe;
+    margin: auto;
+    padding: 3px;
+    width: 100%;
+}
+
+.h-25 {
+    min-height: 25px !important;
+}

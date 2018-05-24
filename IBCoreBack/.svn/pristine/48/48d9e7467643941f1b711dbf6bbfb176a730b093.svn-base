@@ -1,0 +1,45 @@
+package br.com.opsocial;
+
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
+@Configuration
+@ComponentScan
+public class WebConfig extends WebMvcConfigurerAdapter {
+	
+	@Autowired
+	Environment env;
+	
+	@Override
+	public void addViewControllers(ViewControllerRegistry registry) {
+	    registry.addViewController("/home/report").setViewName("forward:/index.html");
+	}
+
+	@Override
+	public void addCorsMappings(CorsRegistry registry) {
+		registry.addMapping("/**");
+	}
+	
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		
+		Collection<String> activeProfiles = Arrays.asList(env.getActiveProfiles());
+		
+		if(activeProfiles.contains(OpSocialBackApplication.SPRING_PROFILE_DEVELOPMENT)) {
+			registry.addResourceHandler("/opsocial/images/temp/**").addResourceLocations("file:///" + OpSocialBackApplication.UPLOAD_DIR_TEMP + "/");
+		} else {
+			registry.addResourceHandler("/opsocial/images/temp/**").addResourceLocations("file:" + OpSocialBackApplication.UPLOAD_DIR_TEMP + "/");
+		}
+		
+		
+	}
+}

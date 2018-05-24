@@ -1,0 +1,49 @@
+package br.com.opsocial.server.actions.reports.facebook;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.application.TableOrder;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookPostToPostDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.server.utils.reports.xls.ReportFacebookPostToPostXLS;
+import entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportFacebookPostToPostXLSAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/report_facebook_post_to_post_xls",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		TableOrder postsMostEngagedOrder = ((TableOrder) getParameters().get("postsMostEngagedOrder"));
+		
+		setParameters(new HashMap<String, Object>());
+		
+		ReportFacebookPostToPostDTO reportFacebookPostToPost = UtilReports.mountReportFacebookPostToPost(profile, new GenericDateInterval(dateFrom, dateUntil), true);
+		reportFacebookPostToPost.setPostsMostEngagedOrder(postsMostEngagedOrder);
+		
+		ReportFacebookPostToPostXLS reportFacebookPostToPostXLS = new ReportFacebookPostToPostXLS(reportFacebookPostToPost, profile);
+		reportFacebookPostToPostXLS.createXLS();
+
+		getParameters().put("xlsToDownload", new StringUtil(reportFacebookPostToPostXLS.getFileName()));
+		getParameters().put("xlsNameToDownload", new StringUtil(reportFacebookPostToPostXLS.getFormattedFileName()));
+		getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(profile.getAccount().getIdAccount()));
+	}
+
+}

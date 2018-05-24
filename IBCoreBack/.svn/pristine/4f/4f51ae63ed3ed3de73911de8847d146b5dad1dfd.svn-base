@@ -1,0 +1,49 @@
+package br.com.opsocial.client.entity.monitoring;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class MonitoringGroupReportDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private String name;
+	private String avatar;
+	private String status;
+	private Long totalPosts;
+	
+	public MonitoringGroupReportDTO() {
+		
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public Long getTotalPosts() {
+		return totalPosts;
+	}
+
+	public void setTotalPosts(Long totalPosts) {
+		this.totalPosts = totalPosts;
+	}
+}

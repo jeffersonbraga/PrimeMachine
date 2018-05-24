@@ -1,0 +1,74 @@
+package br.com.opsocial.server.actions.profiles;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.PersistentList;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+
+@RestController
+@RequestMapping("opsocial")
+public class ChangeAdminFacebookContentAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/change_admin_facebook_content",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		if(getSession().getAttribute("message") != null) {
+			getParameters().put("message", getSession().getAttribute("message"));
+		}
+		
+		if(getSession().getAttribute("alr_rec_facebook") != null) {
+			getParameters().put("alrRecFacebook", getSession().getAttribute("alr_rec_facebook"));
+			if(((Boolean) getSession().getAttribute("alr_rec_facebook")).getValue()) {
+				getSession().removeAttribute("message");
+				getSession().removeAttribute("alr_rec_facebook");
+				
+				PersistentList<Profile> profiles = (PersistentList<Profile>) getSession().getAttribute("profiles");
+				PersistentList<Profile> profilesNotFound = (PersistentList<Profile>) getSession().getAttribute("profilesNotFound");
+				
+				getParameters().put("profiles", profiles);
+				getParameters().put("profilesNotFound", profilesNotFound);
+				
+				getSession().removeAttribute("profiles");
+				getSession().removeAttribute("profilesNotFound");
+				
+				List<Profile> noAdminFacebookPages = (List<Profile>) getContext().getAttribute("noAdminFacebookPages" + getUser().getAccount().getIdAccount());
+				
+				if(noAdminFacebookPages != null) {
+					
+					List<Profile> profilesToExclude = new ArrayList<Profile>();
+					for(Profile profilesUpdated : profiles.getPersistences()) {
+						for(Profile profileNoAdmin : noAdminFacebookPages) {
+							if(profilesUpdated.getIdProfile().equals(profileNoAdmin.getIdProfile())) {
+								profilesToExclude.add(profileNoAdmin);
+							}
+						}
+					}
+					
+					noAdminFacebookPages.removeAll(profilesToExclude);
+					
+					if(noAdminFacebookPages.isEmpty()) {
+						getContext().removeAttribute("noAdminFacebookPages" + getUser().getAccount().getIdAccount());	
+					}
+				} else {
+					
+					getContext().removeAttribute("expiredProfiles"+getUser().getAccount().getIdAccount());
+				}
+			}
+		}
+		
+	}
+
+}

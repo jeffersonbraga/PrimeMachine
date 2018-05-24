@@ -1,0 +1,17 @@
+.user-container{
+    border-bottom: 1px solid #ccc;
+}
+
+.name-user{
+    line-height: 37px;
+}
+
+.actioning {
+    background: url(/pages/img/progress/progress-circle-success.svg) no-repeat top left;
+    width: 20px;
+    height: 20px;
+    background-size: 100% auto;
+    position: relative;
+    top: 10px;
+    left: 10px;
+}

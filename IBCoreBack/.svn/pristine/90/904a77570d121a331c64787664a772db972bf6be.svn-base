@@ -1,0 +1,133 @@
+package br.com.opsocial.server.actions.dashboard;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.Date;
+import br.com.opsocial.client.entity.twitter.TrendingTopicDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.application.UsersDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceAnniversarieRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceTrendingTopicRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Anniversarie;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+
+@RestController
+@RequestMapping("opsocial")
+public class ListDashboardAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/list_dashboard",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+
+		getParameters().put("date", new Date(new java.util.Date()));
+		
+		// Listando aniversários de hoje, amanhã e depois de amanhã
+		MaintenanceAnniversarieRemote anniversarieRemote = (MaintenanceAnniversarieRemote) RecoverMaintenance.recoverMaintenance("Anniversarie");
+
+		Calendar c = Calendar.getInstance();
+		
+		java.util.Date initDate = new java.util.Date(); 
+		c.setTime(initDate);
+		initDate = c.getTime();
+		initDate.setHours(0);
+		initDate.setMinutes(0);
+		initDate.setSeconds(0);
+		
+		java.util.Date endDate = new java.util.Date(); 
+		c.setTime(endDate);
+		endDate = c.getTime();
+		endDate.setHours(23);
+		endDate.setMinutes(59);
+		endDate.setSeconds(59);
+		
+		List<Anniversarie> todayAnniversarieDTOs = new ArrayList<Anniversarie>();
+		List<Anniversarie> tomorrowAnniversarieDTOs = new ArrayList<Anniversarie>();
+		List<Anniversarie> afterTomorrowAnniversarieDTOs = new ArrayList<Anniversarie>();
+		
+		List<Anniversarie> anniversaries = anniversarieRemote.listByDate(initDate, endDate);
+
+		for(Anniversarie anniversarie : anniversaries) {
+			todayAnniversarieDTOs.add(MountDTO.mountAnniversarie(anniversarie));
+		}
+
+		initDate.setDate(initDate.getDate() + 1);
+		endDate.setDate(endDate.getDate() + 1);
+		
+		anniversaries = anniversarieRemote.listByDate(initDate, endDate);
+
+		for(Anniversarie anniversarie : anniversaries) {
+			tomorrowAnniversarieDTOs.add(MountDTO.mountAnniversarie(anniversarie));
+		}
+		
+		initDate.setDate(initDate.getDate() + 1);
+		endDate.setDate(endDate.getDate() + 1);
+		
+		anniversaries = anniversarieRemote.listByDate(initDate, endDate);
+
+		for(Anniversarie anniversarie : anniversaries) {
+			afterTomorrowAnniversarieDTOs.add(MountDTO.mountAnniversarie(anniversarie));
+		}
+		
+		// Trending Topics Twitter
+		MaintenanceTrendingTopicRemote trendingTopicRemote = (MaintenanceTrendingTopicRemote)
+				RecoverMaintenance.recoverMaintenance("TrendingTopic");
+		
+		List<TrendingTopicDTO> trendingTopicDTOs = MountDTO.mountTrendingTopic(trendingTopicRemote.getMostRecentTrendingTopics(0, 10));
+		
+		Collections.sort(trendingTopicDTOs);
+		
+		// Get user for control the AuthInstagramSchedulingWindow.
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		UsersDTO user = MountDTO.mountUser(userRemote.getById(getUser().getIdUser()));
+		
+		if(user.getShowInstagramAuthWindow().equals(Profile.ACTIVE)) {
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+			List<Profile> profiles = profileRemote.listInstagramProfilesToAuthenticate(user.getAccount().getIdAccount());
+
+			if(profiles.isEmpty()) {
+
+				User userToUpdate = userRemote.getById(user.getIdUser());
+				userToUpdate.setShowInstagramAuthWindow(Profile.INACTIVE);
+
+				userRemote.save(userToUpdate);
+			}
+
+			getParameters().put("profiles", MountDTO.mountProfile(profiles));
+		} else {
+
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+			List<Profile> profiles = profileRemote.listInstagramProfilesToReconnect(user.getAccount().getIdAccount());
+
+			getParameters().put("profiles", MountDTO.mountProfile(profiles));
+			if(!profiles.isEmpty()) {
+				getParameters().put("reconect_instagram_scheduling", new Boolean(true));
+			}
+		}
+		
+		getParameters().put("todayAnniversaries", todayAnniversarieDTOs);
+		getParameters().put("tomorrowAnniversaries", tomorrowAnniversarieDTOs);
+		getParameters().put("afterTomorrowAnniversaries", afterTomorrowAnniversarieDTOs);
+		getParameters().put("trendingTopics", trendingTopicDTOs);
+		getParameters().put("user_to_instagram_auth", user);
+	}
+}

@@ -1,0 +1,34 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import br.com.opsocial.client.entity.primitive.BitlyShortenUrlDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.BitlyClient;
+
+public class ShortenLinksAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception {
+		
+		List<BitlyShortenUrlDTO> shortenedUrls = new ArrayList<BitlyShortenUrlDTO>();
+		try {
+			List<BitlyShortenUrlDTO> urlsToShorten = ((List<BitlyShortenUrlDTO>) getParameters().get("urlsToShorten"));
+			
+			BitlyClient bitlyClient = new BitlyClient();
+			for(BitlyShortenUrlDTO urlToShorten : urlsToShorten) {
+				if(!urlToShorten.isShortened()) {
+					shortenedUrls.add(bitlyClient.shortenUrl(urlToShorten));
+				} else {
+					shortenedUrls.add(urlToShorten);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		getParameters().put("shortenedUrls", shortenedUrls);
+	}
+
+}

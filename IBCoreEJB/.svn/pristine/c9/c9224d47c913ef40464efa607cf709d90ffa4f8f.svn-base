@@ -1,0 +1,497 @@
+package br.com.opsocial.ejb.dao;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.Stateless;
+import javax.persistence.NoResultException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramCommentCompareDTO;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+import br.com.opsocial.ejb.entity.report.FanPageGrowth;
+import br.com.opsocial.ejb.utils.reports.UtilReports;
+
+@Stateless
+public class InstagramReportDAOImpl extends AbstractDAOImpl<InstagramReport> implements InstagramReportDAO {
+
+	@Override
+	public InstagramReport getEntity(String idInstagramUser, String property, Long date) {
+		
+		sql = "SELECT ir FROM InstagramReport ir WHERE ir.idInstagramUser = :idInstagramUser " +
+				"AND ir.property = :property " +
+				"AND ir.date = :date";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", idInstagramUser);
+		query.setParameter("property", property);
+		query.setParameter("date", date);
+
+		try {
+			return (InstagramReport) query.getSingleResult();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	@Override
+	public InstagramReport getEntity(String idInstagramUser, String property, String label) {
+		
+		sql = "SELECT ir FROM InstagramReport ir WHERE ir.idInstagramUser = :idInstagramUser " +
+				"AND ir.property = :property " +
+				"AND ir.label = :label";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", idInstagramUser);
+		query.setParameter("property", property);
+		query.setParameter("label", label);
+
+		try {
+			return (InstagramReport) query.getSingleResult();
+		} catch (Exception e) {
+			return null;
+		}
+	}	
+
+	@Override
+	public InstagramReport getEntityBeforeDate(String idInstagramUser, String property, Long date) {
+		
+		sql = "SELECT ir FROM InstagramReport ir WHERE ir.idInstagramUser = :idInstagramUser " +
+				"AND ir.property = :property " +
+				"AND ir.date < :date " +
+				"ORDER BY ir.date DESC";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", idInstagramUser);
+		query.setParameter("property", property);
+		query.setParameter("date", date);
+		query.setFirstResult(0);
+		query.setMaxResults(1);
+		
+		try {
+			return (InstagramReport) query.getSingleResult();
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramFollowerTrend> getInstagramFollowersTrends(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT date, ir.value FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_ADDS + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ") " +
+				"ORDER BY ir.date";
+		
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> resultFollowersAdds = query.getResultList();
+		
+		sql = "SELECT date, ir.value FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_REMOVES + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ") " +
+				"ORDER BY ir.date";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> resultFollowersRemoves = query.getResultList();
+		
+		List<InstagramFollowerTrend> instagramFollowerTrends = new ArrayList<InstagramFollowerTrend>();
+		
+		int x = 0;
+		for (Object[] object : resultFollowersAdds) {
+			
+			InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+			instagramFollowerTrend.setDate((Long) object[0]);
+			instagramFollowerTrend.setNewFollowers(((Long) object[1]));
+			instagramFollowerTrend.setUnfollowers(((Long) resultFollowersRemoves.get(x)[1]));
+			instagramFollowerTrend.setBalanceFollowers(instagramFollowerTrend.getNewFollowers() - instagramFollowerTrend.getUnfollowers());
+			
+			instagramFollowerTrends.add(instagramFollowerTrend);
+			x++;
+		}
+		
+		return instagramFollowerTrends;
+	}
+
+	@Override
+	public InstagramFollowerTrend getInstagramFollowersTrend(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT CAST(SUM(ir.value) AS bigint) FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_ADDS + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ")";
+		
+		query = em.createNativeQuery(sql);
+		
+		Long followersAdds = (Long) query.getSingleResult();
+		
+		sql = "SELECT CAST(SUM(ir.value) AS bigint) FROM opsocial.instagramreports AS ir " +
+				"WHERE ir.idinstagramUser = '" + idInstagramUser + "' AND ir.property = '" + UtilReports.PROFILE_FOLLOWERS_REMOVES + "' " +
+						"AND (ir.date >= " + dateFrom + " AND ir.date <= " + dateUntil + ")";
+
+		query = em.createNativeQuery(sql);
+		
+		Long followersRemoves = (Long) query.getSingleResult();
+		
+		InstagramFollowerTrend instagramFollowerTrend = new InstagramFollowerTrend();
+		try {
+			
+			instagramFollowerTrend.setNewFollowers(followersAdds);
+			instagramFollowerTrend.setUnfollowers(followersRemoves);
+			instagramFollowerTrend.setBalanceFollowers(followersAdds - followersRemoves);
+
+		} catch (Exception e) {
+
+			instagramFollowerTrend.setNewFollowers(0L);
+			instagramFollowerTrend.setUnfollowers(0L);
+			instagramFollowerTrend.setBalanceFollowers(0L);
+		}
+		
+		return instagramFollowerTrend;
+	}
+
+	@Override
+	public List<InstagramReport> getAudiencesFollowersTrend(String networkId, Long dateFromVerified, Long dateUntil) {
+
+		sql = "select ir FROM InstagramReport ir where ir.idInstagramUser = :idInstagramUser AND (ir.date >= " + dateFromVerified + " AND ir.date <= " + dateUntil + ") and (ir.property = 'profile_followers' or ir.property = 'profile_followers_adds' or ir.property = 'profile_followers_removes') order by ir.idInstagramUser, ir.date, ir.property";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+
+		try {
+			return (List<InstagramReport>) query.getResultList();
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public List<InstagramReport> getAudiencesDemograph(String networkId, Long dateFromVerified, Long dateUntil) {
+
+		sql = "SELECT ir.property,  ir.label, AVG(ir.value) AS value "
+				+ "FROM opsocial.instagramreports AS ir WHERE ir.idInstagramUser = '" + networkId + "' AND (ir.property = 'audience_age_men' OR ir.property = 'audience_age_women') "
+				+ "AND (ir.date >= " + dateFromVerified + " AND ir.date <= " + dateUntil + ") "
+						+ "GROUP BY ir.property,  ir.label ORDER BY ir.property, ir.label";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramReport item = new InstagramReport();
+				item.setProperty((String) o[0]);
+				item.setLabel((String) o[1]);
+				item.setValue(((BigDecimal) o[2]).longValue());
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramReport> getAudiencesTopCountry(String networkId, Long dateFromVerified, Long dateUntil) {
+
+		sql = "SELECT ir.label, ir.value FROM InstagramReport ir "
+				+ "WHERE ir.idInstagramUser = :idInstagramUser "
+						+ "AND ir.property = 'audience_country' ORDER BY ir.value DESC";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+		query.setFirstResult(0);
+		query.setMaxResults(10);
+		
+		try {
+
+			List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramReport item = new InstagramReport();
+				item.setLabel((String) o[0]);
+				item.setValue((Long) o[1]);
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramReport> getAudiencesTopCity(String networkId, Long dateFromVerified, Long dateUntil) {
+
+		sql = "SELECT ir.label, ir.value FROM InstagramReport ir WHERE ir.idInstagramUser = :idInstagramUser "
+						+ "AND ir.property = 'audience_city' ORDER BY ir.value DESC";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+		query.setFirstResult(0);
+		query.setMaxResults(10);
+
+		try {
+
+			List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramReport item = new InstagramReport();
+				item.setLabel((String) o[0]);
+				item.setValue((Long) o[1]);
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramReport> getAudiencesOnlineFollowersByHour(String networkId, Long dateFromVerified,
+			Long dateUntil) {
+
+		sql = "SELECT ir.property, ir.label, AVG(ir.value) AS valor "
+				+ "FROM InstagramReport ir where ir.idInstagramUser = :idInstagramUser AND (ir.date >= " + dateFromVerified + " AND ir.date <= " + dateUntil + ") "
+						+ "AND ir.property = 'online_followers' GROUP BY ir.property, ir.label ORDER BY ir.label";
+
+		query = em.createQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+
+		try {
+			List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramReport item = new InstagramReport();
+				item.setProperty((String) o[0]);
+				item.setLabel((String) o[1]);
+				item.setValue(((Double) o[2]).longValue());
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramReport> getAudiencesOnlineFollowersByDay(String networkId, Long dateFromVerified,
+			Long dateUntil) {
+		
+		sql = "SELECT series.weekday, COALESCE(AVG(rd.value), 0) FROM (SELECT generate_series(0,6) AS weekday) AS series " +
+				"INNER JOIN ( " +
+					"SELECT ir.* FROM opsocial.instagramreports AS ir " + 
+					"WHERE ir.idinstagramuser = '" + networkId + "' AND ir.property = 'online_followers' AND (ir.date >= " + dateFromVerified + " AND ir.date <= " + dateUntil + ")) " + 
+					"AS rd ON " +
+					"series.weekday = extract(DOW FROM TO_TIMESTAMP(rd.date)::timestamp with time zone) " +
+				"GROUP BY series.weekday " +
+				"ORDER BY series.weekday";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+		
+		for(Object[] object : result) {
+			
+			InstagramReport item = new InstagramReport();
+			item.setLabel(((Integer) object[0]).toString());
+			item.setValue(((BigDecimal) object[1]).longValue());
+			dataReport.add(item);
+		}
+
+		return dataReport;
+	}
+
+	@Override
+	public List<InstagramReport> getAudiencesPostsInteraction(String networkId, Long dateFromVerified, Long dateUntil) {
+		return null;
+	}
+
+	@Override
+	public List<InstagramReport> getLikesPerDayFollowers(String networkId, Long dateFromVerified, Long dateUntil){
+
+		sql = "SELECT count(*), extract('epoch' from date_trunc('day', TO_TIMESTAMP(irp.createtime)::timestamp with time zone))::bigint AS day "
+				+ "FROM opsocial.instagramreportsposts AS irp INNER JOIN opsocial.instagrampostslikes AS ipl ON ipl.idmedia = irp.idmedia "
+				+ "WHERE irp.idinstagramuser = '" + networkId + "' AND (irp.createtime >= " + dateFromVerified + " AND irp.createtime < " + dateUntil + " + 86400) "
+					+ "AND ipl.idinstagramuser IN (SELECT ifl.followerid::text FROM opsocial.instagramfollowers AS ifl "
+					+ "WHERE ifl.idprofile = '" + Long.valueOf(networkId) + "' ) group by day order by day";
+		//sql = "select ir FROM InstagramReport ir where ir.idInstagramUser = :idInstagramUser AND (ir.date >= " + dateFromVerified + " AND ir.date <= " + dateUntil + ") and ir.property = 'follower_activity_Dias' order by ir.idInstagramUser, ir.day_week";
+
+		query = em.createNativeQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+
+		try {
+			List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramReport item = new InstagramReport();
+				item.setValue((Long) o[0]);
+				item.setDate((Long) o[1]);
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramReport> getLikesPerDayNoFollowers(String networkId, Long dateFromVerified, Long dateUntil){
+
+		sql = "SELECT count(*), extract('epoch' from date_trunc('day', TO_TIMESTAMP(irp.createtime)::timestamp with time zone))::bigint AS day "
+				+ "FROM opsocial.instagramreportsposts AS irp INNER JOIN opsocial.instagrampostslikes AS ipl ON ipl.idmedia = irp.idmedia "
+				+ "WHERE irp.idinstagramuser = '" + networkId + "'  AND (irp.createtime >= " + dateFromVerified + " AND irp.createtime < " + dateUntil + " + 86400) "
+						+ "AND NOT EXISTS (SELECT 1 FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = '" + Long.valueOf(networkId) + "' "
+								+ "AND ifl.followerid::text = ipl.idinstagramuser ) group by day order by day";
+
+		query = em.createNativeQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+
+		try {
+			List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramReport item = new InstagramReport();
+				item.setValue((Long) o[0]);
+				item.setDate((Long) o[1]);
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public List<InstagramCommentCompareDTO> getCommentsPerDay(String networkId, Long dateFromVerified, Long dateUntil){
+
+		sql = "SELECT x.day AS dateCompare, sum(x.sumcommentsFol) AS followerComments, sum(x.sumcommentsNoFol) AS noFollowerComments "
+				+ "FROM ((SELECT extract('epoch' from date_trunc('day', TO_TIMESTAMP(irp.createtime)::timestamp with time zone))::bigint AS day, "
+				+ "COALESCE(SUM(irp.comments), 0) AS sumcommentsFol, 0 as sumcommentsNoFol FROM opsocial.instagramreportsposts AS irp "
+				+ "INNER JOIN opsocial.instagrampostscomments AS ipl ON ipl.idmedia = irp.idmedia WHERE irp.idinstagramuser = '" + networkId + "'  "
+				+ "AND (irp.createtime >= " + dateFromVerified + " AND irp.createtime < " + dateUntil + " + 86400) "
+				+ "AND ipl.idinstagramuser IN (SELECT ifl.followerid::text FROM opsocial.instagramfollowers AS ifl "
+				+ "WHERE ifl.idprofile = '" + networkId + "') GROUP BY day ORDER BY day) "
+				+ "UNION ALL (SELECT extract('epoch' from date_trunc('day', TO_TIMESTAMP(irp.createtime)::timestamp with time zone))::bigint AS day, 0 as sumcommentsFol, "
+				+ "COALESCE(SUM(irp.comments), 0) AS sumcommentsNoFol FROM opsocial.instagramreportsposts AS irp "
+				+ "INNER JOIN opsocial.instagrampostscomments AS ipl ON ipl.idmedia = irp.idmedia WHERE irp.idinstagramuser = '" + networkId + "' "
+				+ "AND (irp.createtime >= " + dateFromVerified + " AND irp.createtime < " + dateUntil + " + 86400) AND ipl.idinstagramuser "
+				+ "NOT IN (SELECT ifl.followerid::text FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = '" + networkId + "' ) "
+				+ "GROUP BY day ORDER BY day)  ORDER BY day) x GROUP BY x.day";
+
+		query = em.createNativeQuery(sql);
+		query.setParameter("idInstagramUser", networkId);
+
+		try {
+			List<InstagramCommentCompareDTO> dataReport = new ArrayList<InstagramCommentCompareDTO>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+
+			for (Object[] o : l) {
+
+				InstagramCommentCompareDTO item = new InstagramCommentCompareDTO();
+				item.setDateCompare((Long) o[0]);
+				item.setFollowerComments((BigDecimal) o[1]);
+				item.setNoFollowerComments((BigDecimal) o[2]);
+				dataReport.add(item);
+			}
+
+			return dataReport;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+	
+	public InstagramSimpleDataDTO getAudiencesAveragePublicAge(String networkId, Long dateFromVerified, Long dateUntil){
+
+		sql = "SELECT ir.label, SUM(ir.value) AS sumvalue FROM opsocial.instagramreports AS ir "
+				+ "WHERE ir.idinstagramuser = '" + networkId + "' AND (ir.property = 'audience_age_men' OR ir.property = 'audience_age_women') "
+				+ "GROUP BY ir.label ORDER BY sumvalue DESC LIMIT 1";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			List<InstagramCommentCompareDTO> dataReport = new ArrayList<InstagramCommentCompareDTO>();
+			Object[] l = (Object[]) query.getSingleResult();
+
+			InstagramSimpleDataDTO result = new InstagramSimpleDataDTO();
+			result.setKey(l[0]);
+			result.setValue(l[1]);
+			
+			return result;
+		} catch (NoResultException e) {
+			return null;
+		}
+	}
+	
+	public List<InstagramSimpleDataDTO> getAudiencesAveragePublicGender(String networkId, Long dateFromVerified, Long dateUntil) {
+
+		sql = "SELECT ir.property, SUM(ir.value) AS value FROM opsocial.instagramreports AS ir WHERE "
+				+ "ir.idinstagramuser = '" + networkId + "' AND (ir.property = 'audience_age_men' OR ir.property = 'audience_age_women') "
+				+ "GROUP BY ir.property ORDER BY ir.property ASC";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			
+			List<InstagramSimpleDataDTO> dataReport = new ArrayList<InstagramSimpleDataDTO>();
+			List<Object[]> l = (List<Object[]>) query.getResultList();
+			
+			for (Object[] o : l) {
+
+				InstagramSimpleDataDTO item = new InstagramSimpleDataDTO();
+				item.setKey(o[0]);
+				item.setValue(o[1]);
+				dataReport.add(item);
+			}
+			
+			return dataReport;
+			
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	@Override
+	public Long getPropertySum(String idInstagramUser, String property, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT COALESCE(CAST(SUM(value) AS BIGINT), 0) " +
+				"FROM opsocial.instagramreports " +
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND property = '" + property + "' " +
+				"AND (date >= " + dateFrom + " AND date <= " + dateUntil + ")";
+
+		query = em.createNativeQuery(sql);
+		
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			return 0L;
+		}
+	}
+}

@@ -1,0 +1,62 @@
+<div id="backModalMedia" (click)="showed = false" *ngIf="showed"></div>
+<div id="modalMedia" *ngIf="showed">
+    <span class="closeModal fa fa-times" (click)="showed = false"></span>
+    <img [src]="mediaPreview" *ngIf="typeModal == 'P'">
+
+    <video controls autoplay loop *ngIf="typeModal == 'V'">
+        <source [src]="mediaPreview"> Your browser does not support the video tag.
+    </video>
+
+    <video autoplay loop *ngIf="typeModal == 'G'">
+        <source [src]="mediaPreview"> Your browser does not support the video tag.
+    </video>
+</div>
+
+<div class="clearfix reply-comment relative">
+	<div class="overlay-mask" *ngIf="deleting">
+		<div class="text-center">
+			<div class="sending-comment absolute-center"></div>
+		</div>
+	</div>
+	<div class="comment-avatar pull-left">
+		<img [src]="reply.from.profilePicture">
+	</div>
+	<div class="pull-left reply-comment-text">
+		<p class="word-break">
+			<span class="screenNameComment font-segoe fs-13">{{ reply.from.name }}</span> <span [innerHtml]="reply.message | urlfy | scapeBreakLines | hashtags:profile.type"></span>
+		</p>
+		<div class="attachment relative" *ngIf="reply.attachment">
+			<div class="overlay-mask cursor hover-media" (click)="openPhoto(reply.attachment.media.image.src, 'photo')" *ngIf="reply.attachment.type == 'animated_image_video' || reply.attachment.type == 'video_inline'">
+				<div class="text-center">
+					<div class="absolute-center text-white">
+						<i class="fa fa-play" aria-hidden="true" *ngIf="reply.attachment.type == 'video_inline'"></i>
+						<div class="thumbnail-wrapper circular gif" aria-hidden="true" *ngIf="reply.attachment.type == 'animated_image_video'">
+							<span>gif</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<img (click)="openPhoto(reply.attachment.media.image.src, 'photo')" class="attachmentFile cursor" [src]="reply.attachment.media.image.src" alt="" *ngIf="reply.attachment.type == 'photo'">
+			<img class="attachmentFile cursor" [src]="reply.attachment.media.image.src" alt="" *ngIf="reply.attachment.type == 'sticker'">
+			<img class="attachmentFile" [src]="reply.attachment.media.image.src" alt="" *ngIf="reply.attachment.type == 'animated_image_video' || reply.attachment.type == 'video_inline'">
+			<a [href]="reply.attachment.url" target="_blank" *ngIf="reply.attachment.type == 'share'" class="reply-share">
+				<div class="row">
+					<div class="col-md-4">
+						<img (click)="openPhoto(reply.attachment.media.image.src, 'photo')" class="cursor" width="100%" [src]="reply.attachment.media.image.src" alt="">
+					</div>
+					<div class="col-md-8 resume-text">
+						<h2 class="fs-16 font-segoe">{{ reply.attachment.title }}</h2>
+						<p class="fs-12 font-segoe">{{ reply.attachment.description }}</p>
+					</div>
+				</div>
+			</a>
+		</div>
+		<div class="interactions">
+			<span class="action" [class.success]="preliked" (click)="likeReply()">Like</span>
+			<span> • </span>
+			<span class="action" (click)="confirmDeleteReply()">Delete</span>
+			<span> • </span>
+			<span>{{ reply.createdTime | truncHour }}</span>
+		</div>
+	</div>
+</div>

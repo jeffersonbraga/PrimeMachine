@@ -1,0 +1,100 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.facebook.FacePostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.Long;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceFacePostMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.facebook.FacePostMonitoring;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+
+@RestController
+@RequestMapping("woopsocial")
+public class MonitoringFacebookAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/monitoring_facebook",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		MonitoringDTO monitoringDTO = (MonitoringDTO) getParameters().get("monitoring");
+		Long mostRecent = (Long) getParameters().get("mostRecent");
+		Long elder = (Long) getParameters().get("elder");
+		
+		if(monitoringDTO.getIsFirstSearch().equals('T')) {
+			
+			MaintenanceMonitoringRemote remote = (MaintenanceMonitoringRemote) 
+					RecoverMaintenance.recoverMaintenance("Monitoring");
+			
+			Monitoring monitoring = remote.getById(monitoringDTO.getIdMonitoring());
+			monitoring.setIsFirstSearch('F');
+			
+			monitoringDTO = MountDTO.mountMonitoring(remote.save(monitoring));
+		}
+		
+		MaintenanceFacePostMonitoringRemote remote = (MaintenanceFacePostMonitoringRemote) 
+				RecoverMaintenance.recoverMaintenance("FacePostMonitoring");
+		
+		MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("MonitoringPostTag");
+		
+		List<FacePostMonitoring> facePostMonitorings = new ArrayList<FacePostMonitoring>();
+		
+		if(mostRecent != null) {
+			
+			if(mostRecent.getValue() != null) {
+				facePostMonitorings = remote.listMostRecents(mostRecent.getValue(), monitoringDTO.getIdMonitoring());
+				getParameters().put("requestType", new Character('N'));	
+			} else {
+				facePostMonitorings = remote.listMostRecents(monitoringDTO.getIdMonitoring(), 50);			
+			}
+			
+		} else if(elder != null) {
+			facePostMonitorings = remote.listElder(elder.getValue(), monitoringDTO.getIdMonitoring(), 50);
+			getParameters().put("requestType", new Character('O'));
+			
+		} else {
+			facePostMonitorings = remote.listMostRecents(monitoringDTO.getIdMonitoring(), 50);
+		}
+		
+		List<PostMonitoringDTO> posts = new ArrayList<PostMonitoringDTO>();
+	
+		for(FacePostMonitoring facePostMonitoring : facePostMonitorings) {
+			
+			FacePostMonitoringDTO facePostMonitoringDTO = MountDTO.mountFacePostMonitoring(facePostMonitoring);
+			facePostMonitoringDTO.setMonitoringPostTags(
+					MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(facePostMonitoring.getFacebookPost().getPostId(), 
+						monitoringDTO.getIdMonitoring(), facePostMonitoring.getTerm(), Profile.FACEBOOK)));
+			
+			posts.add(facePostMonitoringDTO);
+		}
+
+		Date now = new Date();
+		
+		Date createTime = new Date(monitoringDTO.getCreatedAt() * 1000);
+		createTime.setMinutes(createTime.getMinutes() + 5);
+		
+		if(now.after(createTime) && posts.isEmpty() && (mostRecent == null || mostRecent.getValue() == null)) {
+			getParameters().put("no_results", new Boolean(true));
+		} else {
+			getParameters().put("posts", posts);
+		}		
+	}
+}

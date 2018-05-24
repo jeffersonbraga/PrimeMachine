@@ -1,0 +1,388 @@
+package br.com.opsocial.server.services.ipag;
+
+import java.util.List;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+
+public class IpagDTO {
+
+	public static String RETORNO_TIPO_XML 			= "";
+
+	public static String RETORNO_TIPO_JSON 			= "";
+
+	public static String METODO_BANDEIRA_VISA 		= "";
+
+	public static String METODO_BANDEIRA_MASTER		= "";
+
+	public static String METODO_BANDEIRA_AMERICAN	= "";
+
+	public static String METODO_BANDEIRA_DINNERS 	= "";
+
+	//FIXO
+	private String identificacao;
+	
+	private String operacao;
+	
+	private String url_retorno;
+	
+	private String retorno_tipo;
+
+	//BUSCAR USUÁRIO CRIADO PELO FORM CADASTRO
+	private String nome;
+	
+	private String email;
+	
+	private String fone;
+	
+	private String endereco;
+	
+	private String numero_endereco;
+	
+	private String complemento;
+	
+	private String bairro;
+	
+	private String cidade;
+	
+	private String estado;
+	
+	private String pais;
+	
+	private String cep;
+
+	//ALTERNATIVO E INFORMADO PELO USUÁRIO
+	private String metodo;
+	
+	private String parcelas;
+	
+	private String nome_cartao;
+	
+	private String num_cartao;
+	
+	private String cvv_cartao;
+	
+	private String mes_cartao;
+	
+	private String ano_cartao;
+
+	private String frequencia;
+	
+	private String intervalo;
+	
+	private String inicio;
+	
+	private String ciclos;
+	
+	private String trial;
+	
+	private String valor_rec;
+
+	//PROCESSAMENTO DA VENDA
+	private String pedido;
+	
+	private String valor;
+	
+	private String doc;
+	
+	private String plantype;
+
+	public String getIdentificacao() {
+		return identificacao;
+	}
+
+	public String getOperacao() {
+		return operacao;
+	}
+
+	public String getUrl_retorno() {
+		return url_retorno;
+	}
+
+	public String getRetorno_tipo() {
+		return retorno_tipo;
+	}
+
+	public String getNome() {
+		return nome;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public String getFone() {
+		return fone;
+	}
+
+	public String getEndereco() {
+		return endereco;
+	}
+
+	public String getNumero_endereco() {
+		return numero_endereco;
+	}
+
+	public String getComplemento() {
+		return complemento;
+	}
+
+	public String getBairro() {
+		return bairro;
+	}
+
+	public String getCidade() {
+		return cidade;
+	}
+
+	public String getEstado() {
+		return estado;
+	}
+
+	public String getPais() {
+		return pais;
+	}
+
+	public String getCep() {
+		return cep;
+	}
+
+	public String getMetodo() {
+		return metodo;
+	}
+
+	public String getParcelas() {
+		return parcelas;
+	}
+
+	public String getNome_cartao() {
+		return nome_cartao;
+	}
+
+	public String getNum_cartao() {
+		return num_cartao;
+	}
+
+	public String getCvv_cartao() {
+		return cvv_cartao;
+	}
+
+	public String getMes_cartao() {
+		return mes_cartao;
+	}
+
+	public String getAno_cartao() {
+		return ano_cartao;
+	}
+
+	public String getFrequencia() {
+		return frequencia;
+	}
+
+	public String getIntervalo() {
+		return intervalo;
+	}
+
+	public String getInicio() {
+		return inicio;
+	}
+
+	public String getCiclos() {
+		return ciclos;
+	}
+
+	public String getTrial() {
+		return trial;
+	}
+
+	public String getValor_rec() {
+		return valor_rec;
+	}
+
+	public String getPedido() {
+		return pedido;
+	}
+
+	public String getValor() {
+		return valor;
+	}
+
+	public String getDoc() {
+		return doc;
+	}
+
+	public void setIdentificacao(String identificacao) {
+		this.identificacao = identificacao;
+	}
+
+	public void setOperacao(String operacao) {
+		this.operacao = operacao;
+	}
+
+	public void setUrl_retorno(String url_retorno) {
+		this.url_retorno = url_retorno;
+	}
+
+	public void setRetorno_tipo(String retorno_tipo) {
+		this.retorno_tipo = retorno_tipo;
+	}
+
+	public void setNome(String nome) {
+		this.nome = nome;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public void setFone(String fone) {
+		this.fone = fone;
+	}
+
+	public void setEndereco(String endereco) {
+		this.endereco = endereco;
+	}
+
+	public void setNumero_endereco(String numero_endereco) {
+		this.numero_endereco = numero_endereco;
+	}
+
+	public void setComplemento(String complemento) {
+		this.complemento = complemento;
+	}
+
+	public void setBairro(String bairro) {
+		this.bairro = bairro;
+	}
+
+	public void setCidade(String cidade) {
+		this.cidade = cidade;
+	}
+
+	public void setEstado(String estado) {
+		this.estado = estado;
+	}
+
+	public void setPais(String pais) {
+		this.pais = pais;
+	}
+
+	public void setCep(String cep) {
+		this.cep = cep;
+	}
+
+	public void setMetodo(String metodo) {
+		this.metodo = metodo;
+	}
+
+	public void setParcelas(String parcelas) {
+		this.parcelas = parcelas;
+	}
+
+	public void setNome_cartao(String nome_cartao) {
+		this.nome_cartao = nome_cartao;
+	}
+
+	public void setNum_cartao(String num_cartao) {
+		this.num_cartao = num_cartao;
+	}
+
+	public void setCvv_cartao(String cvv_cartao) {
+		this.cvv_cartao = cvv_cartao;
+	}
+
+	public void setMes_cartao(String mes_cartao) {
+		this.mes_cartao = mes_cartao;
+	}
+
+	public void setAno_cartao(String ano_cartao) {
+		this.ano_cartao = ano_cartao;
+	}
+
+	public void setFrequencia(String frequencia) {
+		this.frequencia = frequencia;
+	}
+
+	public void setIntervalo(String intervalo) {
+		this.intervalo = intervalo;
+	}
+
+	public void setInicio(String inicio) {
+		this.inicio = inicio;
+	}
+
+	public void setCiclos(String ciclos) {
+		this.ciclos = ciclos;
+	}
+
+	public void setTrial(String trial) {
+		this.trial = trial;
+	}
+
+	public void setValor_rec(String valor_rec) {
+		this.valor_rec = valor_rec;
+	}
+
+	public void setPedido(String pedido) {
+		this.pedido = pedido;
+	}
+
+	public void setValor(String valor) {
+		this.valor = valor;
+	}
+
+	public void setDoc(String doc) {
+		this.doc = doc;
+	}
+	
+	public void makeBasicNameValuePair(List<NameValuePair> fields) {
+
+		//FIXO
+		fields.add(new BasicNameValuePair("identificacao", 	this.getIdentificacao()));
+		fields.add(new BasicNameValuePair("operacao",		this.getOperacao()));
+		fields.add(new BasicNameValuePair("url_retorno",	this.getUrl_retorno()));
+		fields.add(new BasicNameValuePair("retorno_tipo",	this.getRetorno_tipo()));
+
+		//BUSCAR USUÁRIO CRIADO PELO FORM CADASTRO
+		fields.add(new BasicNameValuePair("nome",			this.getNome()));
+		fields.add(new BasicNameValuePair("email",			this.getEmail()));
+		fields.add(new BasicNameValuePair("fone",			this.getFone()));
+		fields.add(new BasicNameValuePair("endereco",		this.getEndereco()));
+		fields.add(new BasicNameValuePair("numero_endereco",this.getNumero_endereco()));
+		fields.add(new BasicNameValuePair("complemento",	this.getComplemento()));
+		fields.add(new BasicNameValuePair("bairro",			this.getBairro()));
+		fields.add(new BasicNameValuePair("cidade",			this.getCidade()));
+		fields.add(new BasicNameValuePair("estado",			this.getEstado()));
+		fields.add(new BasicNameValuePair("pais",			this.getPais()));
+		fields.add(new BasicNameValuePair("cep",			this.getCep()));
+
+		//ALTERNATIVO E INFORMADO PELO USUÁRIO
+		fields.add(new BasicNameValuePair("metodo",			this.getMetodo()));
+		fields.add(new BasicNameValuePair("parcelas",		this.getParcelas()));
+		fields.add(new BasicNameValuePair("nome_cartao",	this.getNome_cartao()));
+		fields.add(new BasicNameValuePair("num_cartao",		this.getNum_cartao()));
+		fields.add(new BasicNameValuePair("cvv_cartao",		this.getCvv_cartao()));
+		fields.add(new BasicNameValuePair("mes_cartao",		this.getMes_cartao()));
+
+		//PROCESSAMENTO DA VENDA
+		fields.add(new BasicNameValuePair("frequencia",		this.getFrequencia()));
+		fields.add(new BasicNameValuePair("intervalo",		this.getIntervalo()));
+		fields.add(new BasicNameValuePair("inicio",			this.getInicio()));
+		fields.add(new BasicNameValuePair("ciclos",			this.getCiclos()));
+		fields.add(new BasicNameValuePair("trial",			this.getTrial()));
+		fields.add(new BasicNameValuePair("valor_rec",		this.getValor_rec()));
+
+		//PROCESSAMENTO DA VENDA
+		fields.add(new BasicNameValuePair("pedido",			this.getPedido()));
+		fields.add(new BasicNameValuePair("valor",			this.getValor()));
+		fields.add(new BasicNameValuePair("doc",			this.getDoc()));
+	}
+
+	public String getPlantype() {
+		return plantype;
+	}
+
+	public void setPlantype(String plantype) {
+		this.plantype = plantype;
+	}
+}

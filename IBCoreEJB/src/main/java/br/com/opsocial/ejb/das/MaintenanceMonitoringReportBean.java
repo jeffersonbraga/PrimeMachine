@@ -1,0 +1,151 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.MonitoringReportDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.monitoring.MonitoringReport;
+
+@Stateless
+public class MaintenanceMonitoringReportBean extends AbstractDASImpl<MonitoringReport> implements MaintenanceMonitoringReportRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	MonitoringReportDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<MonitoringReport> dao) {
+		this.dao = (MonitoringReportDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringReport> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<MonitoringReport> getDAO() {
+		return dao;
+	}
+
+	@Override
+	public Map<Character, Long> getPostsPerDaysNetworks(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsPerDaysNetworks(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Integer, Map<Character, Long>> getPostsPerHoursNetworks(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsPerHoursNetworks(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Integer, Map<Character, Long>> getPostsPerWeekDaysNetworks(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsPerWeekDaysNetworks(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getPostsTotal(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsTotal(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getGarbagePostsTotal(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getGarbagePostsTotal(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Character, Long> getFacebookPostsInteractions(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getFacebookPostsInteractions(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getReportInitialDate(Long idMonitoring) {
+		return dao.getReportInitialDate(idMonitoring);
+	}
+
+	@Override
+	public List<Long> getDatesGeneratedReports(Long idMonitoring) {
+		return dao.getDatesGeneratedReports(idMonitoring);
+	}
+
+	@Override
+	public Long getPostsTotalByTerm(Long idMonitoring, String term, Long dateFrom, Long dateUntil) {
+		return dao.getPostsTotalByTerm(idMonitoring, term, dateFrom, dateUntil);
+	}
+
+	@Override
+	public boolean hasEntity(Character networkType, Long date, String periodType, String period, Long idMonitoring) {
+		return dao.hasEntity(networkType, date, periodType, period, idMonitoring);
+	}
+	
+	@Override
+	public MonitoringReport getEntity(Character networkType, Long date, String periodType, String period, Long idMonitoring) {
+		return dao.getEntity(networkType, date, periodType, period, idMonitoring);
+	}
+	
+	@Override
+	public boolean hasEntity(Character networkType, Long date, Character garbage, String periodType, Long idMonitoring) {
+		return dao.hasEntity(networkType, date, garbage, periodType, idMonitoring);
+	}
+
+	@Override
+	public MonitoringReport getEntity(Character networkType, Long date, Character garbage, String periodType, Long idMonitoring) {
+		return dao.getEntity(networkType, date, garbage, periodType, idMonitoring);
+	}
+	
+	@Override
+	public Map<Date, Long> getPostsPerDay(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsPerDay(idMonitoring, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Map<Date, Map<Character, Long>> getPostsPerDayNetworks(Long idMonitoring, Long dateFrom, Long dateUntil) {
+		return dao.getPostsPerDayNetworks(idMonitoring, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Character, Long> getSentimentAnalysisForSamples(
+			Long idMonitoring, HashMap<Character, String> mappedPosts) {
+		return dao.getSentimentAnalysisForSamples(idMonitoring, mappedPosts);
+	}
+
+	@Override
+	public Map<Character, Long> getSentimentAnalysisForSamples(
+			Long idMonitoring, String term,
+			HashMap<Character, String> mappedPosts) {
+		return dao.getSentimentAnalysisForSamples(idMonitoring, term, mappedPosts);
+	}
+
+	@Override
+	public Long getPostsTotalByTermForSamples(Long idMonitoring, String term,
+			HashMap<Character, String> mappedPosts) {
+		return dao.getPostsTotalByTermForSamples(idMonitoring, term, mappedPosts);
+	}
+
+	@Override
+	public Map<Character, Long> getPostsPerHoursNetworks(Long idMonitoring,
+			Long dateFrom, Long dateUntil, Integer hourFrom, Integer hourUntil) {
+		return dao.getPostsPerHoursNetworks(idMonitoring, dateFrom, dateUntil, hourFrom, hourUntil);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

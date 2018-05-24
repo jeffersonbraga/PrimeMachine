@@ -1,0 +1,37 @@
+<project name="Mover_arquivo" default="mover_dist" basedir=".">
+
+	<property name="PATH_INDEX"      		value="D:\Projetos\OpSocialFront\meu_index"/>
+	<property name="PATH_DESTINO"      		value="D:\Projetos\OpSocialBack\src\main\webapp"/>
+	<property name="PATH_ORIGEM"      		value="D:\Projetos\OpSocialFront\dist"/>
+	<property name="PATH_NODEMODULES"  		value="D:\Projetos\OpSocialFront\node_modules"/>
+	<property name="PATH_NODEMODULES_BACK"  value="${PATH_DESTINO}\node_modules"/>
+	<property name="PATH_DEPLOY"      		value="D:\wildfly-10.1.0.Final\standalone\deployments\OpSocialBack.war"/>
+
+	<target name="mover_completo" description="Move angular2 sources">
+		<copy  todir="${PATH_DESTINO}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+
+		<copy  todir="${PATH_NODEMODULES_BACK}">
+			<fileset dir="${PATH_NODEMODULES}"/>
+		</copy>
+	</target>
+
+	<target name="mover_dist" description="Move angular2 sources">
+		<copy  todir="${PATH_DESTINO}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+	</target>
+
+	<target name="mover_deploy" description="Move angular2 sources">
+		<copy  todir="${PATH_DEPLOY}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+	</target>
+
+	<target name="mover_index" description="Move angular2 sources">
+		<copy  todir="${PATH_DEPLOY}">
+			<fileset dir="${PATH_INDEX}"/>
+		</copy>
+	</target>
+</project>

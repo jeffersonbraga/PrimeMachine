@@ -1,0 +1,45 @@
+<div class="row m-t-20">
+    <div class="col-md-4 col-sm-12 col-xs-12 p-l-11 left-collumn">
+        <ul>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('introduction')" [class.active]="videoId == 'introduction'">
+                <span class="marker">• </span>Introduction
+            </li>
+        </ul>
+        <ul>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('addChannels')" [class.active]="videoId == 'addChannels'">
+                <span class="marker">• </span>Add Channels</li>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('manageChannelGroup')" [class.active]="videoId == 'manageChannelGroup'">
+                <span class="marker">• </span>Manage Channel's Group</li>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('addStreams')" [class.active]="videoId == 'addStreams'">
+                <span class="marker">• </span>Add Streams</li>
+        </ul>
+        <ul>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('createImageOrVideoPost')" [class.active]="videoId == 'createImageOrVideoPost'">
+                <span class="marker">• </span>Create a image / video post</li>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('createPostLink')" [class.active]="videoId == 'createPostLink'">
+                <span class="marker">• </span>Create post with link</li>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('createInstagramStories')" [class.active]="videoId == 'createInstagramStories'">
+                <span class="marker">• </span>Create a Instagram Stories</li>
+        </ul>
+        <ul>
+            <li class="all-caps tutorial font-montserrat" (click)="openVideo('manageTeamMembers')" [class.active]="videoId == 'manageTeamMembers'">
+                <span class="marker">• </span>Manage Team Members</li>
+        </ul>
+    </div>
+    <div class="col-md-8 col-sm-12 col-xs-12">
+        <span class="title all-caps marker font-montserrat bold">{{ titleVideo }}</span>
+
+        <p *ngIf="videoId == 'introduction'" class="m-t-12 font-montserrat">We prepared a list of videos to help your fist steps and to explore on the best way the features of the Woop. You
+            can start at "Add Channels" or at any tutorial you want to watch on the left menu. You can access this content
+            later in "Tutorials" at the top corner on the right side.
+        </p>
+
+        <div class="text-center" *ngIf="videoId == 'introduction'">
+            <img src="/assets/img/tutorial/imagem-intro.png" alt="Tutorial image" class="tutorial-img">
+        </div>
+
+        <div class="embed-responsive embed-responsive-16by9 m-t-22" *ngIf="videoId != 'introduction'">
+            <iframe class="embed-responsive-item" [src]="iframeUrl" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>

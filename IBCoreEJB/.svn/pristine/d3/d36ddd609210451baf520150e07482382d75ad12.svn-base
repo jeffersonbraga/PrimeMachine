@@ -1,0 +1,182 @@
+package br.com.opsocial.ejb.entity.generic;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+import javax.ejb.SessionContext;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.PostPersist;
+import javax.persistence.PostRemove;
+import javax.persistence.PostUpdate;
+import javax.persistence.Transient;
+
+import br.com.opsocial.ejb.das.MaintenanceOpLogBean;
+import br.com.opsocial.ejb.das.MaintenanceOpLogRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.application.OpLog;
+import br.com.opsocial.ejb.entity.application.User;
+
+@MappedSuperclass
+public abstract class Persistent extends AbstractEntityImpl {
+	
+	@Resource
+	@Transient
+	public SessionContext sctx;
+	
+	private static final long serialVersionUID = 1L;
+	
+	public final static Character UNFILTERED_PICTURE = 'U';
+	public final static Character FILTERED_PICTURE = 'F';
+	
+	@Transient
+	private User userSession;
+	
+	public User getUserSession() {
+		return userSession;
+	}
+
+	public void setUserSession(User user) {
+		this.userSession = user;
+	}
+
+	@PostPersist
+	public void onPersist() {
+		Object remote;
+		try {
+			remote = (Object) new InitialContext().lookup("global/OpSocialBack/MaintenanceOpLogBean!br.com.opsocial.ejb.das.MaintenanceOpLogRemote");
+			//SessionContext sctx = remote.getSessionContext();
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		System.out.println("teste de persistencia" + this.getClass().getSimpleName());
+	}
+
+	@PostRemove
+	public void onRemove(){
+	}
+	
+	@PostUpdate
+	public void onUpdate(){
+		/*try {
+			AbstractDAS qualquer = InitialContext.doLookup("global/OpSocialBack/Maintenance" + this.getClass().getSimpleName() + "Bean!br.com.opsocial.ejb.das.Maintenance" + this.getClass().getSimpleName() + "Remote");
+			AbstractDAS remote = (AbstractDAS) new InitialContext().lookup("global/OpSocialBack/Maintenance" + this.getClass().getSimpleName() + "Bean!br.com.opsocial.ejb.das.Maintenance" + this.getClass().getSimpleName() + "Remote");
+			Long idUser = remote.getIdUserSession();
+
+			String entity = this.getClass().getSimpleName();
+			String operation = "update";
+			Date date = new Date();
+			Long entityKey = this.getId();
+			
+			this.saveLog(entity, operation, idUser, date, entityKey);
+			
+		} catch (NamingException e) {
+			e.printStackTrace();
+		}*/
+	}
+	
+	public void saveLog(String entity, String operation, Long idUser, Date date, Long entityKey){
+		if ((entity.equals("User") || entity.equals("Post") || entity.equals("Schedule")) && idUser != null){
+			try {
+				MaintenanceOpLogRemote remoteLog = (MaintenanceOpLogRemote) new InitialContext().lookup("global/OpSocialBack/MaintenanceOpLogBean!br.com.opsocial.ejb.das.MaintenanceOpLogRemote");
+				MaintenanceUserRemote remoteUser = (MaintenanceUserRemote) new InitialContext().lookup("global/OpSocialBack/MaintenanceUserBean!br.com.opsocial.ejb.das.MaintenanceUserRemote");
+				
+				OpLog opLog = new OpLog();
+				User user = remoteUser.getById(idUser);
+				
+				opLog.setEntity(entity);
+				opLog.setOperation(operation);
+				opLog.setUser(user);
+				opLog.setDate(date);
+				opLog.setEntityKey(entityKey);
+				
+				remoteLog.save(opLog);
+				
+			} catch (NamingException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+//GLASSFISH LOCAL - Linux 
+	
+//	public static String SERVER_PATH = "http://localhost:8080/OpSocial";
+//	public static String SITE = "http://localhost:8080/OpSocialSite";
+//	public static String UPLOAD_SERVLET = "./opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/properties/";
+//	public static String REPORTS = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/reports/";
+//	public static String SYSTEM_PATH = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/";
+//	public static String FONTS = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/fonts/";
+//	public static String IMAGES_PATH = "http://localhost:8080/OpSocial/images/temp/";
+//	public static String AVATAR_PATH = "http://localhost:8080/OpSocial/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+//	public static String EMAILS_PATH = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocial/email/";
+//	public static String EMAILS_DATASIFT_PATH = "/home/rafael/glassfishv3/glassfish/domains/domain1/eclipseApps/OpSocialSite/email/datasift/";
+	
+	//GLASSFISH LOCAL - MAC
+	
+//	public static String SERVER_PATH = "http://localhost:8080/OpSocial";
+//	public static String SITE = "http://localhost:8080/OpSocialSite";
+//	public static String UPLOAD_SERVLET = "./opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/properties/";
+//	public static String REPORTS = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/reports/";
+//	public static String SYSTEM_PATH = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/";
+//	public static String FONTS = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/fonts/";
+//	public static String IMAGES_PATH = "http://localhost:8080/OpSocial/images/temp/";
+//	public static String AVATAR_PATH = "http://localhost:8080/OpSocial/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+//	public static String EMAILS_PATH = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocial/email/";
+//	public static String EMAILS_DATASIFT_PATH = "/Users/felipesabedot/Documents/glassfish3.1/glassfish/domains/domain1/eclipseApps/OpSocialSite/email/datasift/";
+	
+	//GLASSFISH LOCAL
+
+	public static String SERVER_PATH = "http://localhost:8080/OpSocialBack";
+	public static String SITE = "http://localhost:8080/OpSocialSite";
+	public static String UPLOAD_SERVLET = "./opsocial/upload";
+	public static String DEFAULT_OPGRAM_PICTURE = "http://localhost:8080/OpSocial/images/compose/compose_add_photo.png";
+	public static String PROPERTIES = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\properties\\";
+	public static String REPORTS = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\reports\\";
+	public static String SYSTEM_PATH = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\";
+	public static String FONTS = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocial\\fonts\\";
+	public static String IMAGES_PATH = "http://localhost:8080/OpSocial/images/temp/";
+	public static String AVATAR_PATH = "http://localhost:8080/OpSocialBack/opsocial/images/avatar/";
+	public static String REPORT_LOGO_PATH = "http://localhost:8080/OpSocial/images/report_logo/";
+	public static String EMAILS_PATH = "C:\\opsocial\\emails\\";
+	public static String EMAILS_DATASIFT_PATH = "C:\\glassfishv3\\glassfish\\domains\\domain1\\eclipseApps\\OpSocialSite\\email\\datasift\\";
+	public static String ACTIVATON_LINK = "http://localhost:4200/newuser/";
+
+	//GLASSFISH SERVER AWS
+
+//	public static String SERVER_PATH = "http://www.app.opsocial.com.br";
+//	public static String SITE = "http://www.opsocial.com.br";
+//	public static String UPLOAD_SERVLET = "./opsocial/opsocial/upload";
+//	public static String DEFAULT_OPGRAM_PICTURE = "http://www.app.opsocial.com.br/images/compose/compose_add_photo.png";
+//	public static String PROPERTIES = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/properties/";
+//	public static String REPORTS = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/reports/";
+//	public static String FONTS = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/fonts/";
+//	public static String SYSTEM_PATH = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/";
+//	public static String IMAGES_PATH = "http://www.app.opsocial.com.br/images/temp/";
+//	public static String AVATAR_PATH = "http://www.app.opsocial.com.br/images/avatar/";
+//	public static String REPORT_LOGO_PATH = "http://www.app.opsocial.com.br/images/report_logo/";
+//	public static String EMAILS_PATH = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocial/email/";
+//	public static String EMAILS_DATASIFT_PATH = "/opt/glassfishv3/glassfish/domains/domain1/applications/OpSocialSite/email/datasift/";
+		
+	@Override
+	public Long getId() {
+		return null;
+	}
+
+	@Override
+	public void setId(Long id) {
+	}
+}

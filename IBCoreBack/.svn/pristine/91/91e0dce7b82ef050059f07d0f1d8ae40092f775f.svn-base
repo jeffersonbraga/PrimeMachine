@@ -1,0 +1,336 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.List;
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.report.AgeGroup;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+
+public class ReportFacebookHistoricalDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+ 
+	private List<br.com.opsocial.ejb.entity.report.FanPageGrowth> fanPageGrowth;
+	private Long fansUntilOneYearAgo;
+	
+	private br.com.opsocial.ejb.entity.report.FanPageGrowth majorFanPageGrowth;
+	private br.com.opsocial.ejb.entity.report.FanPageGrowth minorFanPageGrowth;
+	
+	private Integer organicGrowthOrigin;
+	private Integer paidGrowthOrigin;
+	
+	private Map<String, Long> aboutYourFans;
+	private AgeGroup majorAgeGroupFans;
+	private Integer womenFansPerc;
+	private Integer menFansPerc;
+	
+	private Map<String, Long> aboutReachedUsers;
+	private List<AgeGroup> aboutReachedMaleUsers;
+	private List<AgeGroup> aboutReachedFemaleUsers;
+	
+	private AgeGroup majorAgeGroupReacheUsers;
+	private Integer womenReachedUsersPerc;
+	private Integer menReachedUsersPerc;
+	
+	private List<ReportFacebookCityDTO> citiesMoreFans;
+	private List<ReportFacebookCityDTO> citiesMoreReached;
+	
+	private List<FacebookInfluentialUserDTO> mostInfluentialFans;
+	
+	private List<SumByDate> singleReach;
+	private List<SumByDate> totalImpressions;
+	
+	private List<SumByDate> commentsByMonth;
+	private List<SumByDate> likesByMonth;
+	private List<SumByDate> sharesByMonth;
+	private List<SumByDate> clicksByMonth;
+	
+	private Integer likesPercentage;
+	private Integer sharesPercentage;
+	private Integer commentsPercentage;
+	private Integer clicksPercentage;
+
+	private SumByDate mostEngagementMonth;
+	private SumByDate mostReachedMonth;
+	
+	private List<FaceReportPostDTO> postsMostEngaged;
+	
+	public ReportFacebookHistoricalDTO() {
+		
+	}
+
+	public List<br.com.opsocial.ejb.entity.report.FanPageGrowth> getFanPageGrowth() {
+		return fanPageGrowth;
+	}
+
+	public void setFanPageGrowth(List<br.com.opsocial.ejb.entity.report.FanPageGrowth> fanPageGrowth) {
+		this.fanPageGrowth = fanPageGrowth;
+	}
+
+	public Long getFansUntilOneYearAgo() {
+		return fansUntilOneYearAgo;
+	}
+
+	public void setFansUntilOneYearAgo(Long fansUntilOneYearAgo) {
+		this.fansUntilOneYearAgo = fansUntilOneYearAgo;
+	}
+
+	public br.com.opsocial.ejb.entity.report.FanPageGrowth getMajorFanPageGrowth() {
+		return majorFanPageGrowth;
+	}
+
+	public void setMajorFanPageGrowth(br.com.opsocial.ejb.entity.report.FanPageGrowth majorFanPageGrowth) {
+		this.majorFanPageGrowth = majorFanPageGrowth;
+	}
+
+	public br.com.opsocial.ejb.entity.report.FanPageGrowth getMinorFanPageGrowth() {
+		return minorFanPageGrowth;
+	}
+
+	public void setMinorFanPageGrowth(br.com.opsocial.ejb.entity.report.FanPageGrowth minorFanPageGrowth) {
+		this.minorFanPageGrowth = minorFanPageGrowth;
+	}
+
+	public Integer getOrganicGrowthOrigin() {
+		return organicGrowthOrigin;
+	}
+
+	public void setOrganicGrowthOrigin(Integer organicGrowthOrigin) {
+		this.organicGrowthOrigin = organicGrowthOrigin;
+	}
+
+	public Integer getPaidGrowthOrigin() {
+		return paidGrowthOrigin;
+	}
+
+	public void setPaidGrowthOrigin(Integer paidGrowthOrigin) {
+		this.paidGrowthOrigin = paidGrowthOrigin;
+	}
+
+	public Map<String, Long> getAboutYourFans() {
+		return aboutYourFans;
+	}
+
+	public void setAboutYourFans(Map<String, Long> aboutYourFans) {
+		this.aboutYourFans = aboutYourFans;
+	}
+
+	public AgeGroup getMajorAgeGroupFans() {
+		return majorAgeGroupFans;
+	}
+
+	public void setMajorAgeGroupFans(AgeGroup majorAgeGroupFans) {
+		this.majorAgeGroupFans = majorAgeGroupFans;
+	}
+
+	public Integer getWomenFansPerc() {
+		return womenFansPerc;
+	}
+
+	public void setWomenFansPerc(Integer womenFansPerc) {
+		this.womenFansPerc = womenFansPerc;
+	}
+
+	public Integer getMenFansPerc() {
+		return menFansPerc;
+	}
+
+	public void setMenFansPerc(Integer menFansPerc) {
+		this.menFansPerc = menFansPerc;
+	}
+
+	public Map<String, Long> getAboutReachedUsers() {
+		return aboutReachedUsers;
+	}
+
+	public void setAboutReachedUsers(Map<String, Long> aboutReachedUsers) {
+		this.aboutReachedUsers = aboutReachedUsers;
+	}
+
+	public List<AgeGroup> getAboutReachedMaleUsers() {
+		return aboutReachedMaleUsers;
+	}
+
+	public void setAboutReachedMaleUsers(List<AgeGroup> aboutReachedMaleUsers) {
+		this.aboutReachedMaleUsers = aboutReachedMaleUsers;
+	}
+
+	public List<AgeGroup> getAboutReachedFemaleUsers() {
+		return aboutReachedFemaleUsers;
+	}
+
+	public void setAboutReachedFemaleUsers(List<AgeGroup> aboutReachedFemaleUsers) {
+		this.aboutReachedFemaleUsers = aboutReachedFemaleUsers;
+	}
+
+	public AgeGroup getMajorAgeGroupReacheUsers() {
+		return majorAgeGroupReacheUsers;
+	}
+
+	public void setMajorAgeGroupReacheUsers(AgeGroup majorAgeGroupReacheUsers) {
+		this.majorAgeGroupReacheUsers = majorAgeGroupReacheUsers;
+	}
+
+	public Integer getWomenReachedUsersPerc() {
+		return womenReachedUsersPerc;
+	}
+
+	public void setWomenReachedUsersPerc(Integer womenReachedUsersPerc) {
+		this.womenReachedUsersPerc = womenReachedUsersPerc;
+	}
+
+	public Integer getMenReachedUsersPerc() {
+		return menReachedUsersPerc;
+	}
+
+	public void setMenReachedUsersPerc(Integer menReachedUsersPerc) {
+		this.menReachedUsersPerc = menReachedUsersPerc;
+	}
+
+	public List<ReportFacebookCityDTO> getCitiesMoreFans() {
+		return citiesMoreFans;
+	}
+
+	public void setCitiesMoreFans(List<ReportFacebookCityDTO> citiesMoreFans) {
+		this.citiesMoreFans = citiesMoreFans;
+	}
+
+	public List<ReportFacebookCityDTO> getCitiesMoreReached() {
+		return citiesMoreReached;
+	}
+
+	public void setCitiesMoreReached(List<ReportFacebookCityDTO> citiesMoreReached) {
+		this.citiesMoreReached = citiesMoreReached;
+	}
+
+	public List<FacebookInfluentialUserDTO> getMostInfluentialFans() {
+		return mostInfluentialFans;
+	}
+
+	public void setMostInfluentialFans(
+			List<FacebookInfluentialUserDTO> mostInfluentialFans) {
+		this.mostInfluentialFans = mostInfluentialFans;
+	}
+
+	public List<SumByDate> getSingleReach() {
+		return singleReach;
+	}
+
+	public void setSingleReach(List<SumByDate> singleReach) {
+		this.singleReach = singleReach;
+	}
+
+	public List<SumByDate> getTotalImpressions() {
+		return totalImpressions;
+	}
+
+	public void setTotalImpressions(List<SumByDate> totalImpressions) {
+		this.totalImpressions = totalImpressions;
+	}
+
+	public List<SumByDate> getCommentsByMonth() {
+		return commentsByMonth;
+	}
+
+	public void setCommentsByMonth(List<SumByDate> commentsByMonth) {
+		this.commentsByMonth = commentsByMonth;
+	}
+
+	public List<SumByDate> getLikesByMonth() {
+		return likesByMonth;
+	}
+
+	public void setLikesByMonth(List<SumByDate> likesByMonth) {
+		this.likesByMonth = likesByMonth;
+	}
+
+	public List<SumByDate> getSharesByMonth() {
+		return sharesByMonth;
+	}
+
+	public void setSharesByMonth(List<SumByDate> sharesByMonth) {
+		this.sharesByMonth = sharesByMonth;
+	}
+
+	public List<SumByDate> getClicksByMonth() {
+		return clicksByMonth;
+	}
+
+	public void setClicksByMonth(List<SumByDate> clicksByMonth) {
+		this.clicksByMonth = clicksByMonth;
+	}
+
+//	public List<PostEngagementStatsDTO> getPostEngagementStats() {
+//		return postEngagementStats;
+//	}
+//
+//	public void setPostEngagementStats(List<PostEngagementStatsDTO> postEngagementStats) {
+//		this.postEngagementStats = postEngagementStats;
+//	}
+
+//	public PostEngagementPercDTO getPostEngagementPerc() {
+//		return postEngagementPerc;
+//	}
+//
+//	public void setPostEngagementPerc(PostEngagementPercDTO postEngagementPerc) {
+//		this.postEngagementPerc = postEngagementPerc;
+//	}
+
+	public Integer getLikesPercentage() {
+		return likesPercentage;
+	}
+
+	public void setLikesPercentage(Integer likesPercentage) {
+		this.likesPercentage = likesPercentage;
+	}
+
+	public Integer getSharesPercentage() {
+		return sharesPercentage;
+	}
+
+	public void setSharesPercentage(Integer sharesPercentage) {
+		this.sharesPercentage = sharesPercentage;
+	}
+
+	public Integer getCommentsPercentage() {
+		return commentsPercentage;
+	}
+
+	public void setCommentsPercentage(Integer commentsPercentage) {
+		this.commentsPercentage = commentsPercentage;
+	}
+
+	public Integer getClicksPercentage() {
+		return clicksPercentage;
+	}
+
+	public void setClicksPercentage(Integer clicksPercentage) {
+		this.clicksPercentage = clicksPercentage;
+	}
+
+	public SumByDate getMostEngagementMonth() {
+		return mostEngagementMonth;
+	}
+
+	public void setMostEngagementMonth(SumByDate mostEngagementMonth) {
+		this.mostEngagementMonth = mostEngagementMonth;
+	}
+
+	public SumByDate getMostReachedMonth() {
+		return mostReachedMonth;
+	}
+
+	public void setMostReachedMonth(SumByDate mostReachedMonth) {
+		this.mostReachedMonth = mostReachedMonth;
+	}
+
+	public List<FaceReportPostDTO> getPostsMostEngaged() {
+		return postsMostEngaged;
+	}
+
+	public void setPostsMostEngaged(List<FaceReportPostDTO> postsMostEngaged) {
+		this.postsMostEngaged = postsMostEngaged;
+	}
+	
+}

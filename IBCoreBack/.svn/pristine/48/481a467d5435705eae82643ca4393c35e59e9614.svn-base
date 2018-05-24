@@ -1,0 +1,174 @@
+package br.com.opsocial.server.utils.instagram;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import br.com.opsocial.OpSocialBackApplication;
+import org.jinstagram.Instagram;
+import org.jinstagram.entity.comments.CommentData;
+import org.jinstagram.entity.comments.MediaCommentResponse;
+import org.jinstagram.entity.users.feed.MediaFeed;
+import org.jinstagram.exceptions.InstagramBadRequestException;
+import org.jinstagram.exceptions.InstagramException;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.PostAttachment;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+import br.com.opsocial.server.utils.streams.StreamPost;
+import br.com.opsocial.server.utils.streams.StreamPostComment;
+import br.com.opsocial.server.utils.streams.StreamPostComments;
+import br.com.opsocial.server.utils.streams.StreamPostPaging;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+
+public class InstagramAPI {
+	
+	private InstagramPostHelper instagramPostHelper;
+
+	public InstagramAPI() {
+		
+	}
+
+	public StreamPostComment comment(String postId, StreamPostComment streamPostComment, Profile profile) {
+		
+		InstagramIntegration instagramIntegration = new InstagramIntegration();
+		
+		Instagram instagram = instagramIntegration.getInstagram(profile);
+		
+		try {
+			
+			MediaCommentResponse mediaCommentResponse = instagram.setMediaComments(postId, streamPostComment.getMessage());
+			
+			streamPostComment = MountDTO.mountStreamPostCommentForInstagram(mediaCommentResponse.getCommentData());
+			
+		} catch (InstagramException e) {
+			e.printStackTrace();
+		}
+		
+		return streamPostComment;
+	}
+	
+	public StreamPostComments getComments(StreamPost streamPost, Profile profile) {
+		
+		StreamPostComments streamPostComments = new StreamPostComments();
+		
+		InstagramIntegration instagramIntegration = new InstagramIntegration();
+		
+		Instagram instagram = instagramIntegration.getInstagram(profile);
+		
+		try {
+			
+			List<CommentData> comments = instagram.getMediaComments(streamPost.getPostId() + "_" + profile.getNetworkId()).getCommentDataList();
+			
+			streamPostComments.setComments(MountDTO.mountStreamPostCommentsForInstagram(comments));
+			
+		} catch (InstagramException e) {
+			e.printStackTrace();
+		}
+
+		return streamPostComments;
+	}
+	
+	public List<StreamPost> getMyPosts(Profile profile, StreamPostPaging streamPostPaging) { 
+		
+		List<StreamPost> streamPosts = new ArrayList<StreamPost>();
+		
+		InstagramIntegration instagramIntegration = new InstagramIntegration();
+		
+		Instagram instagram = instagramIntegration.getInstagram(profile);
+		
+		MediaFeed mediaFeed;
+		
+		try {
+			
+			if(streamPostPaging.getSince() != null) {
+				
+				mediaFeed = instagram.getRecentMediaFeed(instagram.getCurrentUserInfo().getData().getId(), 
+						streamPostPaging.getLimit(), null, streamPostPaging.getSince(), null, null);
+				
+				if(mediaFeed.getData().size() > 0) {
+					streamPostPaging.setSince(mediaFeed.getData().get(mediaFeed.getData().size() - 1).getId());
+				}
+				
+			} else {
+				
+				mediaFeed = instagram.getRecentMediaFeed(instagram.getCurrentUserInfo().getData().getId(), streamPostPaging.getLimit(), null, null, null, null);
+				
+				if(mediaFeed.getData().size() > 0) {
+					streamPostPaging.setSince(mediaFeed.getData().get(mediaFeed.getData().size() - 1).getId());
+				}
+			}
+			
+			streamPosts.addAll(MountDTO.mountStreamPostsForInstagram(mediaFeed.getData()));
+			
+		} catch (InstagramBadRequestException e) {
+			ValidateTokensController.validatingTokens(profile.getAccount());
+			e.printStackTrace();
+		} catch (InstagramException e) {
+			e.printStackTrace();
+		}
+		
+		return streamPosts;
+	}
+	
+	public boolean post(Post post, Profile profile) {
+
+		Boolean wasSent = true;
+		String tempPath = OpSocialBackApplication.UPLOAD_DIR_TEMP + "/";
+		String videoPostsPath = OpSocialBackApplication.UPLOAD_DIR_VIDEO_POSTS + "/";
+
+		try {
+
+			instagramPostHelper = new InstagramPostHelper();
+			//String r = instagramPostHelper.getBusinessInformation(profile.getInstagramDevice());
+
+			if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_PICTURE)) {
+
+				PostAttachment pAttachment = post.getPostsAttachments().get(0);
+
+				String pathName = tempPath + pAttachment.getFileName();
+
+				if(post.getTargetFeed().equals(Post.TIMELINE_FEED)) {
+					wasSent = instagramPostHelper.uploadTimelinePhoto(profile, profile.getInstagramDevice(), post.getText(), new File(pathName));
+				} else if(post.getTargetFeed().equals(Post.STORY_FEED)) {
+					wasSent = instagramPostHelper.uploadStoryPhoto(profile, profile.getInstagramDevice(), post.getText(), new File(pathName));
+				}
+
+			} else if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_VIDEO)) {
+
+				PostAttachment pAttachment = post.getPostsAttachments().get(0);
+
+				if(post.getTargetFeed().equals(Post.TIMELINE_FEED)) {
+					wasSent = instagramPostHelper.uploadTimelineVideo(profile, profile.getInstagramDevice(), post, new File(videoPostsPath + pAttachment.getFileName()));
+				} else if(post.getTargetFeed().equals(Post.STORY_FEED)) {
+					wasSent = instagramPostHelper.uploadStoryVideo(profile, profile.getInstagramDevice(), post, new File(videoPostsPath + pAttachment.getFileName()));
+				}
+
+			} else if(post.getAppendType().equals(Post.APPEND_ALBUM)) {
+				wasSent = instagramPostHelper.uploadTimelineAlbum(profile, profile.getInstagramDevice(), post);
+			}
+			
+			if(!wasSent && !instagramPostHelper.isAccountAuthenticated()) {
+				instagramPostHelper.deactivateProfileScheduling(profile.getIdProfile());
+			}
+			
+		} catch (Exception e) {
+			wasSent = false;
+			e.printStackTrace();
+		}
+		
+		return wasSent;
+	}
+	
+	public String extractSendImageErrorMessage() {
+		return instagramPostHelper.extractSendImageErrorMessage();
+	}
+
+	public boolean tryToPostAgain() {
+		return instagramPostHelper.tryToPostAgain();
+	}
+	
+	
+}

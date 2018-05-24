@@ -1,0 +1,105 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.Set;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.sets.PostMessage;
+
+public class SetsController {
+
+	public static List<PostsController> POSTS_CONTROLLERS;
+
+	private Timer timer;
+
+	public SetsController() {
+		timer = new Timer();
+		timer.schedule(new Task(), 0, 1000 * 60);
+	}
+
+	class Task extends TimerTask {
+
+		public void run() {
+
+			MaintenanceSetRemote setRemote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+
+			Date now = new Date();
+			now.setSeconds(0);
+
+			Long time = now.getTime() / 1000;
+
+			List<Set> endingSets = setRemote.getByEndDate(time);
+
+			List<PostsController> setsToRemove = null;
+
+			for(Set set : endingSets) {  
+
+				if(set.getIsSchedule().equals('F')) { 
+
+					if(POSTS_CONTROLLERS != null) { 
+						for(PostsController postsController : POSTS_CONTROLLERS) {
+
+							if(set.getProfile().getIdProfile().equals(postsController.getSet().getProfile().getIdProfile())) {
+								if(setsToRemove == null) {
+									setsToRemove = 	new ArrayList<PostsController>();
+								}
+
+								setsToRemove.add(postsController);
+							}
+						}
+					}
+
+					set.setPostIndex("");
+					set.setStatus(Set.FINALIZED);
+					set.setState(Set.OFF);
+				}
+			}
+
+			if(setsToRemove != null) {
+				for(PostsController postsController : setsToRemove) {
+					POSTS_CONTROLLERS.remove(postsController);
+				}
+			}
+
+			List<Set> startingSets = setRemote.getByStartDate(time);
+
+			for(Set set : startingSets) {
+
+				try {
+
+					if(set.getIsSchedule().equals('F')) {
+
+						if(POSTS_CONTROLLERS == null) {
+							POSTS_CONTROLLERS = new ArrayList<PostsController>();
+						}
+
+						set.setStatus(Set.STARTED);
+						set = setRemote.save(set);
+						POSTS_CONTROLLERS.add(new PostsController(set));
+
+					} else {
+
+						if(!set.getProfile().getType().equals(Profile.INSTAGRAM)) {
+
+							Post post = set.getPosts().get(0);
+
+							if(post.getPosted().equals(Post.NOT_POSTED)) {
+								new Thread(new PostMessage(post, set.getProfile())).start();
+							}
+						}
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+}

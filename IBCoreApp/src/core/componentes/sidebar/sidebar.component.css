@@ -1,0 +1,7 @@
+span.icon-thumbnail.pull-right {
+    margin-right: 7px;
+}
+
+.page-sidebar .sidebar-menu .menu-items li:hover > a .icon-thumbnail {
+    color: #ffffff;
+}

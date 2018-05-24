@@ -1,0 +1,411 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.ejb.Stateless;
+import javax.persistence.NoResultException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostLike;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+
+@Stateless
+public class InstagramPostLikeDAOImpl extends AbstractDAOImpl<InstagramPostLike> implements InstagramPostLikeDAO {
+
+	@Override
+	public Map<Integer, Long> getLikesPerMonthYear(String idInstagramUser, Integer year) {
+		
+		sql = "SELECT CAST(date_part('month', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) AS month, " +
+				"CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND " +
+				"CAST(date_part('year', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) = " + year + " " +
+				"GROUP BY month " +
+				"ORDER BY month";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<Integer, Long> sumsByProperty = new TreeMap<Integer, Long>();
+		for(Object[] object : result) {
+			sumsByProperty.put((Integer)object[0], (Long)object[1]);
+		}
+		
+		return sumsByProperty;
+	}
+
+	@Override
+	public List<InstagramReport> getLikesPerDay(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT extract('epoch' from date_trunc('day', TO_TIMESTAMP(irp.createtime)::timestamp with time zone))::bigint AS day, " +
+				"CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400) " +
+				"GROUP BY day " +
+				"ORDER BY day";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		List<InstagramReport> dataReport = new ArrayList<InstagramReport>();
+		
+		for (Object[] o : result) {
+
+			InstagramReport item = new InstagramReport();
+			item.setValue((Long) o[1]);
+			item.setDate((Long) o[0]);
+			dataReport.add(item);
+		}
+
+		return dataReport;
+	}
+
+	@Override
+	public Long getCountOfLikes(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND " +
+					"(irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400)";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+
+	@Override
+	public Object[] getLikesOrigin(String idInstagramUser) {
+		
+		sql = "SELECT iduser, CAST(SUM(countlikes) AS bigint) AS totalikes, CAST(SUM(countlikesfollowers) AS bigint) AS likesfollowers, CAST(SUM(countlikesnofollowers) AS bigint) AS likesnofollowers FROM ( " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countlikes, 0 AS countlikesfollowers, COUNT(*) AS countlikesnofollowers FROM opsocial.instagramreportsposts AS irp " +
+					"INNER JOIN opsocial.instagrampostslikes AS ipl ON " +
+					"ipl.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND NOT EXISTS ( " +
+					    "SELECT 1 " +
+					    "FROM opsocial.instagramfollowers AS ifl " +
+					    "WHERE ifl.idprofile = '" + idInstagramUser + "' AND (CAST(ifl.followerid AS VARCHAR) = ipl.idinstagramuser) " +
+					 ") " +
+				"GROUP BY iduser " +
+				"UNION ALL " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countlikes, COUNT(*) AS countlikesfollowers, 0 AS countlikesnofollowers FROM opsocial.instagramreportsposts AS irp " + 
+					"INNER JOIN opsocial.instagrampostslikes AS ipl ON " +
+					"ipl.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND ipl.idinstagramuser " + 
+				"IN (SELECT CAST(ifl.followerid AS VARCHAR) FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = '" + idInstagramUser + "') " +
+			   "GROUP BY iduser) AS likesorigin " +
+			   "GROUP BY iduser";
+
+		query = em.createNativeQuery(sql);
+
+		Object[] likesOrigin = null;
+		Object[] result = null;
+		try {
+
+			result = (Object[]) query.getSingleResult();
+			
+			likesOrigin = new Object[3];
+			likesOrigin[0] = result[1];
+			likesOrigin[1] = result[2];
+			likesOrigin[2] = result[3];
+
+		} catch (NoResultException e) {
+
+			likesOrigin = new Object[3];
+			likesOrigin[0] = 0L;
+			likesOrigin[1] = 0L;
+			likesOrigin[2] = 0L;
+		}
+
+		return likesOrigin;
+	}
+
+	@Override
+	public Object[] getLikesOrigin(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT iduser, CAST(SUM(countlikes) AS bigint) AS totalikes, CAST(SUM(countlikesfollowers) AS bigint) AS likesfollowers, CAST(SUM(countlikesnofollowers) AS bigint) AS likesnofollowers FROM ( " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countlikes, 0 AS countlikesfollowers, COUNT(*) AS countlikesnofollowers FROM opsocial.instagramreportsposts AS irp " +
+					"INNER JOIN opsocial.instagrampostslikes AS ipl ON " +
+					"ipl.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND NOT EXISTS ( " +
+					    "SELECT 1 " +
+					    "FROM opsocial.instagramfollowers AS ifl " +
+					    "WHERE ifl.idprofile = '" + idInstagramUser + "' AND (CAST(ifl.followerid AS VARCHAR) = ipl.idinstagramuser) " +
+					 ") " +
+				"AND (CAST(ipl.createtime AS bigint) >= " + dateFrom + " AND CAST(ipl.createtime AS bigint) < (" + dateUntil + " + 86400)) " + 
+				"GROUP BY iduser " +
+				"UNION ALL " +
+				"SELECT irp.idinstagramuser AS iduser, COUNT(*) AS countlikes, COUNT(*) AS countlikesfollowers, 0 AS countlikesnofollowers FROM opsocial.instagramreportsposts AS irp " + 
+					"INNER JOIN opsocial.instagrampostslikes AS ipl ON " +
+					"ipl.idmedia = irp.idmedia " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND ipl.idinstagramuser " + 
+				"IN (SELECT CAST(ifl.followerid AS VARCHAR)  FROM opsocial.instagramfollowers AS ifl WHERE ifl.idprofile = '" + idInstagramUser + "') " +
+				"AND (CAST(ipl.createtime AS bigint) >= " + dateFrom + " AND CAST(ipl.createtime AS bigint) < (" + dateUntil + " + 86400)) " +
+			   "GROUP BY iduser) AS likesorigin " +
+			   "GROUP BY iduser";
+
+		query = em.createNativeQuery(sql);
+
+		Object[] likesOrigin = null;
+		Object[] result = null;
+		try {
+
+			result = (Object[]) query.getSingleResult();
+			
+			likesOrigin = new Object[3];
+			likesOrigin[0] = result[1];
+			likesOrigin[1] = result[2];
+			likesOrigin[2] = result[3];
+
+		} catch (NoResultException e) {
+
+			likesOrigin = new Object[3];
+			likesOrigin[0] = 0L;
+			likesOrigin[1] = 0L;
+			likesOrigin[2] = 0L;
+		}
+
+		return likesOrigin;
+	}
+
+	@Override
+	public Map<Integer, Long> getLikesPerHour(String idInstagramUser) {
+		
+		sql = "SELECT series.hour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS bigint) FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT irp.createtime, CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' GROUP BY irp.createtime) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY series.hour " +
+				"ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<Integer, Long> likesPerHour = new TreeMap<Integer, Long>();
+		for(Object[] object : result) {
+			likesPerHour.put((Integer)object[0], (Long)object[1]);
+		}
+		
+		return likesPerHour;
+	}
+
+	@Override
+	public Object[] getTimeWithMoreLikes(String idInstagramUser) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countlikes /  " +
+				"NULLIF((SELECT CAST(COALESCE(SUM(likes), 0) AS numeric) FROM opsocial.instagramreportsposts WHERE idinstagramuser = '" + idInstagramUser + "'), 0)), 0) AS integer) " +
+				"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS numeric) AS countlikes FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT CAST(irp.createtime AS bigint), CAST(COALESCE(SUM(irp.likes), 0) AS numeric) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' GROUP BY irp.createtime) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countlikes DESC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS irpa";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Object[] getTimeWithLessLikes(String idInstagramUser) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countlikes /  " +
+				"NULLIF((SELECT CAST(COALESCE(SUM(likes), 0) AS numeric) FROM opsocial.instagramreportsposts WHERE idinstagramuser = '" + idInstagramUser + "'), 0)), 0) AS integer) " +
+				"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS numeric) AS countlikes FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT CAST(irp.createtime AS bigint), CAST(COALESCE(SUM(irp.likes), 0) AS numeric) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' GROUP BY irp.createtime) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countlikes ASC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS irpa ";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Map<Integer, Long> getLikesPerHour(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT series.hour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS bigint) FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT irp.createtime, CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400) GROUP BY irp.createtime) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY series.hour " +
+				"ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+		
+		List<Object[]> result = query.getResultList();
+		
+		Map<Integer, Long> likesPerHour = new TreeMap<Integer, Long>();
+		for(Object[] object : result) {
+			likesPerHour.put((Integer)object[0], (Long)object[1]);
+		}
+		
+		return likesPerHour;
+	}
+
+	@Override
+	public Object[] getTimeWithMoreLikes(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countlikes / " +
+				"NULLIF((SELECT CAST(COALESCE(SUM(likes), 0) AS numeric) FROM opsocial.instagramreportsposts irp " +
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400)), 0)), 0) AS integer) " +
+				"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS numeric) AS countlikes FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT irp.createtime, CAST(COALESCE(SUM(irp.likes), 0) AS numeric) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400) GROUP BY CAST(irp.createtime AS bigint)) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countlikes DESC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS irpa ";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public Object[] getTimeWithLessLikes(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT currenthour, CAST(ROUND(100 * (countlikes / " +
+				"NULLIF((SELECT CAST(COALESCE(SUM(likes), 0) AS numeric) FROM opsocial.instagramreportsposts irp " +
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400)), 0)), 0) AS integer) " +
+				"FROM (SELECT series.hour AS currenthour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS numeric) AS countlikes FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT irp.createtime, CAST(COALESCE(SUM(irp.likes), 0) AS numeric) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400) GROUP BY irp.createtime) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY currenthour " +
+				"ORDER BY countlikes ASC, currenthour ASC " +
+				"LIMIT 1 OFFSET 0) AS irpa ";
+		
+		query = em.createNativeQuery(sql);
+		
+		Object[] result = null;
+		try {
+			
+			result = (Object[]) query.getSingleResult();
+			
+			if((Integer)result[1] == null) {
+				result[1] = 0;
+			}
+			
+		} catch (NoResultException e) {
+			
+			result = new Object[2];
+			result[0] = 0;
+			result[1] = 0;
+		}
+		
+		return result;
+	}
+
+	@Override
+	public List<InstagramSimpleDataDTO> getLikesPerMonthYearSimpleData(String idInstagramUser, Integer year) {
+		
+		sql = "SELECT CAST(date_part('month', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) AS month, " +
+				"CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts AS irp " +
+				"WHERE irp.idinstagramuser = '" + idInstagramUser + "' AND " +
+				"CAST(date_part('year', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) as integer) = " + year + " " +
+				"GROUP BY month " +
+				"ORDER BY month";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+		List<InstagramSimpleDataDTO> dataReport = new ArrayList<InstagramSimpleDataDTO>();
+
+		for (Object[] o : result) {
+
+			InstagramSimpleDataDTO item = new InstagramSimpleDataDTO();
+			item.setKey(o[0]);
+			item.setValue(o[1]);			
+			dataReport.add(item);
+		}
+
+		return dataReport;
+	}
+
+	@Override
+	public List<InstagramSimpleDataDTO> getLikesPerHourSimpleData(String idInstagramUser, Long dateFrom, Long dateUntil) {
+		
+		sql = "SELECT series.hour, CAST(COALESCE(SUM(irp.sumlikes), 0) AS bigint) FROM (SELECT generate_series(0,23) * 1 AS hour) AS series " +  
+				"LEFT JOIN (SELECT irp.createtime, CAST(COALESCE(SUM(irp.likes), 0) AS bigint) AS sumlikes FROM opsocial.instagramreportsposts irp " + 
+				"WHERE idinstagramuser = '" + idInstagramUser + "' AND (irp.createtime >= " + dateFrom + " AND irp.createtime < " + dateUntil + " + 86400) GROUP BY irp.createtime) AS irp ON " +
+				"series.hour = date_part('hour', TO_TIMESTAMP(irp.createtime)::timestamp with time zone) " +
+				"GROUP BY series.hour " +
+				"ORDER BY series.hour";
+
+		query = em.createNativeQuery(sql);
+
+		List<Object[]> result = query.getResultList();
+		List<InstagramSimpleDataDTO> dataReport = new ArrayList<InstagramSimpleDataDTO>();
+
+		for (Object[] o : result) {
+
+			InstagramSimpleDataDTO item = new InstagramSimpleDataDTO();
+			item.setKey(o[0]);
+			item.setValue(o[1]);			
+			dataReport.add(item);
+		}
+
+		return dataReport;
+	}
+}

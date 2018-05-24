@@ -1,0 +1,62 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.entity.application.idclass.GroupsRssfeedsId;
+import br.com.opsocial.ejb.entity.groups.GroupsRssfeeds;
+
+@Stateless
+public class GroupsRssfeedsDAOImpl extends AbstractDAOImpl<GroupsRssfeeds> implements GroupsRssfeedsDAO {
+
+	@Override
+	public GroupsRssfeeds save(GroupsRssfeeds groupsRssfeeds) throws Exception {
+		
+		try {
+			
+			GroupsRssfeedsId groupsRssfeedsId = new GroupsRssfeedsId();
+			groupsRssfeedsId.setGroups(groupsRssfeeds.getGroups().getIdGroup());
+			groupsRssfeedsId.setRssFeed(groupsRssfeeds.getRssFeed().getIdRssfeed());
+			
+			GroupsRssfeeds groupsRssfeedsTemp = getById(groupsRssfeedsId);
+			
+			if(groupsRssfeedsTemp != null) {
+				
+				try {
+					validateVersion(groupsRssfeedsTemp, groupsRssfeeds);
+				} catch (IllegalStateException ex) {
+					throw new OptimisticLockException();
+				}
+			
+				em.merge(groupsRssfeeds);
+				
+				this.flush();
+				
+			} else {
+				
+				em.persist(groupsRssfeeds);
+				
+				this.flush();
+			}
+			
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+		
+		return groupsRssfeeds;
+	}
+
+	@Override
+	public List<Object> getByGroup(Long idGroup) {
+
+		sql = "SELECT gp FROM GroupsRssfeeds gp WHERE gp.groups.idGroup = :idGroup";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idGroup", idGroup);
+		
+		return query.getResultList();
+	}
+}

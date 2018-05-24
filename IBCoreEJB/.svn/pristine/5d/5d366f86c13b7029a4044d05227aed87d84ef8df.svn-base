@@ -1,0 +1,28 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Map;
+
+import javax.ejb.Remote;
+
+import br.com.opsocial.ejb.das.generic.AbstractDAS;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostComment;
+
+@Remote
+public interface MaintenanceInstagramPostCommentRemote extends AbstractDAS<InstagramPostComment> {
+
+	public Map<Integer, Long> getCommentsPerMonthYear(Long idInstagramUser, Integer year);
+	public Map<String, Long> getCommentsPerDay(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Long getCountOfComments(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getCommentsOrigin(Long idInstagramUser);
+	public Object[] getCommentsOrigin(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	
+	public Map<Integer, Long> getCommentsPerHour(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Map<Integer, Long> getCommentsPerHour(Long idInstagramUser);
+	
+	public Object[] getTimeWithMoreComments(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getTimeWithMoreComments(Long idInstagramUser);
+	
+	public Object[] getTimeWithLessComments(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public Object[] getTimeWithLessComments(Long idInstagramUser);
+	
+}

@@ -1,0 +1,108 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.InstagramPostCommentDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostComment;
+
+@Stateless
+public class MaintenanceInstagramPostCommentBean extends AbstractDASImpl<InstagramPostComment> implements MaintenanceInstagramPostCommentRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	InstagramPostCommentDAO dao;
+	
+	@Override
+	public void setDao(AbstractDAO<InstagramPostComment> dao) {
+		this.dao = (InstagramPostCommentDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramPostComment> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramPostComment> getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public InstagramPostComment save(InstagramPostComment object) throws IllegalArgumentException, Exception {
+		return super.save(object);
+	}
+
+	@Override
+	public Map<Integer, Long> getCommentsPerMonthYear(Long idInstagramUser, Integer year) {
+		return dao.getCommentsPerMonthYear(idInstagramUser, year);
+	}
+
+	@Override
+	public Map<String, Long> getCommentsPerDay(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getCommentsPerDay(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Long getCountOfComments(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getCountOfComments(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getCommentsOrigin(Long idInstagramUser) {
+		return dao.getCommentsOrigin(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getCommentsOrigin(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getCommentsOrigin(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Map<Integer, Long> getCommentsPerHour(Long idInstagramUser) {
+		return dao.getCommentsPerHour(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getTimeWithMoreComments(Long idInstagramUser) {
+		return dao.getTimeWithMoreComments(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getTimeWithLessComments(Long idInstagramUser) {
+		return dao.getTimeWithLessComments(idInstagramUser);
+	}
+
+	@Override
+	public Map<Integer, Long> getCommentsPerHour(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getCommentsPerHour(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getTimeWithMoreComments(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getTimeWithMoreComments(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public Object[] getTimeWithLessComments(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getTimeWithLessComments(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

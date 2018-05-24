@@ -1,0 +1,190 @@
+<div class="tweet m-t-10 dismissible-content riginal-tweet my-tweet has-cards has-content">
+    <div class="context"></div>
+    <div class="contentTwitter relative">
+        <div class="stream-item-header">
+            <a class="account-group">
+                <img class="avatar" [src]="channel.avatar" alt="">
+                <!-- <span class="FullNameGroup u-textTruncate">
+                    <strong class="fullname show-popup-with-id " data-aria-label-part="">Joisson Mello</strong>
+                    <span>‏</span>
+                    <span class="UserBadges"></span>
+                    <span class="UserNameBreak">&nbsp;</span>
+                </span> -->
+                <span class="username u-dir" dir="ltr">@
+                    <b>{{ channel.screenName }}</b>
+                </span>
+            </a>
+
+
+            <small class="time">
+                <a class="tweet-timestamp">
+                    <span class="_timestamp" aria-hidden="true">now</span>
+                </a>
+            </small>
+
+            <div>
+                <p class="TweetTextSize word-break" [innerHtml]="post.text | limitText:280 | scapeBreakLines | urlfy"></p>
+            </div>
+
+            <div class="ProfileTweet-action caretTwitter ProfileTweet-action--more">
+                <div class="dropdown">
+                    <button class="ProfileTweet-actionButton u-textUserColorHover dropdown-toggle" type="button">
+                        <div class="IconContainer" title="More">
+                            <span class="Icon Icon--caretDownLight Icon--small"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="AdaptiveMediaOuterContainer" *ngIf="post.picture || post.postsAttachments.length">
+            <div class="AdaptiveMedia is-square">
+                <div class="AdaptiveMedia-container">
+                    <!-- Resumo de link -->
+                    <div class="AdaptiveMedia-singlePhoto" *ngIf="!post.postsAttachments.length">
+                        <div class="AdaptiveMedia-photoContainer">
+                            <img [src]="post.picture" alt="" style="width: 100%; top: -0px;">
+                        </div>
+                    </div>
+                    <!-- Envio de uma foto  -->
+                    <div class="AdaptiveMedia-singlePhoto" *ngIf="post.postsAttachments?.length == 1">
+                        <div class="AdaptiveMedia-photoContainer">
+                            <img [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" alt="" *ngIf="post.postsAttachments[0].fileType === 'P'">
+                            <video style="width: 100%; top: -0px;" *ngIf="post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+                    <!-- Envio de duas fotos  -->
+                    <div class="AdaptiveMedia-doublePhoto" *ngIf="post.postsAttachments?.length == 2">
+                        <div class="AdaptiveMedia-halfWidthPhoto">
+                            <div class="AdaptiveMedia-photoContainer">
+                                <img [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" *ngIf="post.postsAttachments[0].fileType === 'P'">
+                                <video *ngIf="post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                    <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                        <div class="AdaptiveMedia-halfWidthPhoto">
+                            <div class="AdaptiveMedia-photoContainer">
+                                <img [src]="controlService.temp_image_path + post.postsAttachments[1].fileName" *ngIf="post.postsAttachments[1].fileType === 'P'">
+                                <video *ngIf="post.postsAttachments[1].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                    <source [src]="controlService.video_image_path + post.postsAttachments[1].fileName"> Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Envio de três fotos  -->
+                    <div class="AdaptiveMedia-triplePhoto" *ngIf="post.postsAttachments?.length == 3">
+                        <div class="AdaptiveMedia-twoThirdsWidthPhoto">
+                            <div class="AdaptiveMedia-photoContainer">
+                                <img [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" alt="" *ngIf="post.postsAttachments[0].fileType === 'P'">
+                                <video *ngIf="post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                    <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                        <div class="AdaptiveMedia-halfHeightPhotoContainer">
+                            <div class="AdaptiveMedia-halfHeightPhoto">
+                                <div class="AdaptiveMedia-photoContainer">
+                                    <img [src]="controlService.temp_image_path + post.postsAttachments[1].fileName" alt="" *ngIf="post.postsAttachments[1].fileType === 'P'">
+                                    <video *ngIf="post.postsAttachments[1].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                        <source [src]="controlService.video_image_path + post.postsAttachments[1].fileName"> Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                            <div class="AdaptiveMedia-halfHeightPhoto">
+                                <div class="AdaptiveMedia-photoContainer">
+                                    <img [src]="controlService.temp_image_path + post.postsAttachments[2].fileName" alt="" *ngIf="post.postsAttachments[2].fileType === 'P'">
+                                    <video *ngIf="post.postsAttachments[2].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                        <source [src]="controlService.video_image_path + post.postsAttachments[2].fileName"> Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Envio de quatro fotos  -->
+                    <div class="AdaptiveMedia-quadPhoto" *ngIf="post.postsAttachments?.length >= 4">
+                        <div class="AdaptiveMedia-threeQuartersWidthPhoto">
+                            <div class="AdaptiveMedia-photoContainer">
+                                <img [src]="controlService.temp_image_path + post.postsAttachments[0].fileName" alt="" *ngIf="post.postsAttachments[0].fileType === 'P'">
+                                <video *ngIf="post.postsAttachments[0].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                    <source [src]="controlService.video_image_path + post.postsAttachments[0].fileName"> Your browser does not support the video tag.
+                                </video>
+                            </div>
+                        </div>
+                        <div class="AdaptiveMedia-thirdHeightPhotoContainer">
+                            <div class="AdaptiveMedia-thirdHeightPhoto">
+                                <div class="AdaptiveMedia-photoContainer">
+                                    <img [src]="controlService.temp_image_path + post.postsAttachments[1].fileName" *ngIf="post.postsAttachments[1].fileType === 'P'">
+                                    <video *ngIf="post.postsAttachments[1].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                        <source [src]="controlService.video_image_path + post.postsAttachments[1].fileName"> Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                            <div class="AdaptiveMedia-thirdHeightPhoto">
+                                <div class="AdaptiveMedia-photoContainer">
+                                    <img [src]="controlService.temp_image_path + post.postsAttachments[2].fileName" *ngIf="post.postsAttachments[2].fileType === 'P'">
+                                    <video *ngIf="post.postsAttachments[2].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                        <source [src]="controlService.video_image_path + post.postsAttachments[2].fileName"> Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                            <div class="AdaptiveMedia-thirdHeightPhoto">
+                                <div class="AdaptiveMedia-photoContainer">
+                                    <img [src]="controlService.temp_image_path + post.postsAttachments[3].fileName" *ngIf="post.postsAttachments[3].fileType === 'P'">
+                                    <video *ngIf="post.postsAttachments[3].fileType === 'V'" width="100%" (click)="play($event.srcElement)" class="cursor">
+                                        <source [src]="controlService.video_image_path + post.postsAttachments[3].fileName"> Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="stream-item-footer">
+            <div class="ProfileTweet-actionList" role="group" aria-label="Ações do tweet">
+                <div class="ProfileTweet-action ProfileTweet-action--reply">
+                    <button class="ProfileTweet-actionButton" data-modal="ProfileTweet-reply" type="button">
+                        <div class="IconContainer" title="Reply">
+                            <span class="Icon Icon--medium Icon--reply"></span>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="ProfileTweet-action ProfileTweet-action--retweet">
+                    <button class="ProfileTweet-actionButton" data-modal="ProfileTweet-retweet" type="button">
+                        <div class="IconContainer" title="Retweet">
+                            <span class="Icon Icon--medium Icon--retweet"></span>
+                        </div>
+                    </button>
+                </div>
+
+
+                <div class="ProfileTweet-action ProfileTweet-action--favorite">
+                    <button class="ProfileTweet-actionButton" type="button">
+                        <div class="IconContainer" title="Like">
+                            <span role="presentation" class="Icon Icon--heart Icon--medium"></span>
+                            <div class="HeartAnimation"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="ProfileTweet-action ProfileTweet-action--analytics">
+                    <button class="ProfileTweet-actionButton u-textUserColorHover" type="button">
+                        <div class="IconContainer" title="View Tweet activity">
+                            <span class="Icon Icon--medium Icon--analytics"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="post.postsAttachments?.length > 4 && post.postsAttachments?.length !== oldValue">
+    <div class="alert alert-warning m-t-10 m-b-0" role="alert" style="transition: none !important;">
+        <button class="close pointer" (click)="hideErrorMessage()"></button>
+        <strong>Ops! </strong>You can’t upload more than 4 images on twitter
+    </div>
+</div>

@@ -1,0 +1,47 @@
+package br.com.opsocial.server.actions.profiles;
+
+import twitter4j.Twitter;
+import twitter4j.auth.RequestToken;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class RefreshTokenByTwitterAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/refresh_tokenby_twitter",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		getSession().setAttribute("is_profile_refresh_token", new Boolean(true));
+		getSession().setAttribute("alr_rec_twitter", new Boolean(false));
+		getSession().setAttribute("profile", (Profile) getParameters().get("profile"));
+		
+		Twitter systemTwitter = new TwitterIntegration().getSystemTwitter();
+		
+		getRequest().getSession().setAttribute("twitter", systemTwitter);
+		
+        StringBuffer callbackURL = getRequest().getRequestURL();
+        int index = callbackURL.lastIndexOf("/");
+        callbackURL.replace(index, callbackURL.length(), "").append("/callback");
+
+        RequestToken requestToken = systemTwitter.getOAuthRequestToken(callbackURL.toString());
+        getRequest().getSession().setAttribute("requestToken", requestToken);
+        
+        StringUtil authenticationURL = new StringUtil(requestToken.getAuthenticationURL());
+        
+        getParameters().put("authenticationurl", authenticationURL);
+	}
+
+}

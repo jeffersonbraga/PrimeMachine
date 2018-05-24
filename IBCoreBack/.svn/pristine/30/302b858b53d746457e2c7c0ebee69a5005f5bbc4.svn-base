@@ -1,0 +1,51 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+@RestController
+@RequestMapping("opsocial")
+public class RecoverProfilesToReconnectAction {
+
+	private User user;
+
+	@CrossOrigin
+	@RequestMapping(value = "/get_profiles_to_reconnect",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Profile>> doAction(HttpSession session, HttpServletRequest request) throws Exception, OptimisticLockException {
+
+		User user = SecurityUtils.getCurrentUser();
+		List<Profile> expiredProfiles = new ArrayList<Profile>();
+
+		if (user != null) {
+			
+			MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+			
+			expiredProfiles = UtilFunctions.normalizeExpiredProfiles(profileRemote.listInvalidTokenProfiles(user.getAccount().getIdAccount(), Profile.INVALID_TOKEN));
+			
+			expiredProfiles.addAll(profileRemote.listInstagramProfilesToReconnect(user.getAccount().getIdAccount()));
+		}
+
+		return new ResponseEntity<>(expiredProfiles, HttpStatus.OK);
+	}
+}

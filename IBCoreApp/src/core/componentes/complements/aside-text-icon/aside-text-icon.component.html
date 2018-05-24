@@ -1,0 +1,12 @@
+<div class="m-r-0 m-l-0 m-b-5 aside-content">
+	<header>
+		<h5 class="font-montserrat text-uppercase hint-text fs-12 m-t-0 m-b-0 bold">
+			<i class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#666'}"></i> {{ data.title }}
+		</h5>
+	</header>
+
+	<article>
+		<h4 class=" m-t-0 m-b-0 bold">{{ data.value | abbreviateNumber }}</h4>
+		<p class="hint-text small" *ngIf="data.text">{{ data.text}}</p>
+	</article>
+</div>

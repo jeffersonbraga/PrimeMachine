@@ -1,0 +1,128 @@
+<div id="backModalMedia" (click)="showed = false" *ngIf="showed"></div>
+<div id="modalMedia" *ngIf="showed">
+	<span class="closeModal fa fa-times" (click)="showed = false"></span>
+	<img [src]="mediaPreview" *ngIf="typeModal == 'P'">
+
+	<video controls autoplay loop *ngIf="typeModal == 'V'">
+		<source [src]="mediaPreview"> Your browser does not support the video tag.
+	</video>
+
+	<video autoplay loop *ngIf="typeModal == 'G'">
+		<source [src]="mediaPreview"> Your browser does not support the video tag.
+	</video>
+</div>
+
+<div class="relative">
+	<div class="overlay-mask" *ngIf="deleting">
+		<div class="text-center">
+			<div class="sending-comment absolute-center"></div>
+		</div>
+	</div>
+	<div class="comment">
+		<div class="clearfix main-comment">
+			<div class="comment-avatar pull-left" *ngIf="profile.type != 'I'">
+				<a class="grey-color" [href]="'https://www.facebook.com/' + comment.from.idFrom" target="_blank" *ngIf="profile.type != 'I'">
+					<img [src]="comment.from.profilePicture" alt="">
+				</a>
+			</div>
+			<div class="pull-left main-comment-text">
+				<p class="m-b-5 word-break">
+					<a class="grey-color" [href]="'https://www.instagram.com/' + comment.from.name" target="_blank" *ngIf="profile.type == 'I'">
+						<span class="screenNameComment font-segoe fs-13">{{ comment.from.name }}</span>
+					</a>
+					<a class="grey-color" [href]="'https://www.facebook.com/' + comment.from.idFrom" target="_blank" *ngIf="profile.type != 'I'">
+						<span class="screenNameComment font-segoe fs-13">{{ comment.from.name }}</span>
+					</a>
+					<span [innerHtml]="comment.message | urlfy | scapeBreakLines | hashtags:type"></span>
+				</p>
+				<div class="attachment relative" *ngIf="comment.attachment">
+					<div class="overlay-mask cursor hover-media" (click)="openPhoto(comment.attachment.media.image.src, 'photo')" *ngIf="comment.attachment.type == 'animated_image_video' || comment.attachment.type == 'video_inline'">
+						<div class="text-center">
+							<div class="absolute-center text-white">
+								<i class="fa fa-play" aria-hidden="true" *ngIf="comment.attachment.type == 'video_inline'"></i>
+								<div class="thumbnail-wrapper circular gif" aria-hidden="true" *ngIf="comment.attachment.type == 'animated_image_video'">
+									<span>gif</span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<img (click)="openPhoto(comment.attachment.media.image.src, 'photo')" class="attachmentFile cursor" [src]="comment.attachment.media.image.src"
+					 alt="" *ngIf="comment.attachment.type == 'photo'">
+					<img class="attachmentFile cursor" [src]="comment.attachment.media.image.src" alt="" *ngIf="comment.attachment.type == 'sticker'">
+					<img class="attachmentFile" [src]="comment.attachment.media.image.src" alt="" *ngIf="comment.attachment.type == 'animated_image_video' || comment.attachment.type == 'video_inline'">
+					<a [href]="comment.attachment.url" target="_blank" *ngIf="comment.attachment.type == 'share'" class="comment-share">
+						<div class="row">
+							<div class="col-md-4">
+								<img (click)="openPhoto(comment.attachment.media.image.src, 'photo')" class="cursor" width="100%" [src]="comment.attachment.media.image.src"
+								 alt="">
+							</div>
+							<div class="col-md-8 resume-text">
+								<h2 class="fs-16 font-segoe">{{ comment.attachment.title }}</h2>
+								<p class="fs-12 font-segoe">{{ comment.attachment.description }}</p>
+							</div>
+						</div>
+					</a>
+				</div>
+				<div class="interactions m-b-10" *ngIf="profile.type == 'P'">
+					<span class="action" [class.success]="preliked" (click)="likeComment()">Like</span>
+					<span> • </span>
+					<span class="action" (click)="showReply()">Reply</span>
+					<span> • </span>
+					<span class="action" (click)="confirmDeleteComment()">Delete</span>
+					<span> • </span>
+					<span>{{ comment.createdTime | truncHour }}</span>
+				</div>
+				<div class="interactions m-b-10" *ngIf="profile.type == 'I'">
+					<span class="action" (click)="confirmDeleteComment()">Delete</span>
+					<span> • </span>
+					<span>{{ comment.createdTime | truncHour }}</span>
+				</div>
+			</div>
+		</div>
+		<div *ngIf="comment.replies">
+			<stream-post-reply [reply]="reply" [profile]="profile" [post]="post" [comment]="comment" [index]="i" (emit)="spliceReply($event)"
+			 *ngFor="let reply of comment.replies.comments, let i = index"></stream-post-reply>
+		</div>
+		<section class="comment-box" [hidden]="!replyShowed">
+			<div class="overlay-mask p-l-45" *ngIf="sendingReply">
+				<div>
+					<div class="sending-comment" data-color="complete"></div>
+				</div>
+			</div>
+			<textarea #textarea class="form-control textarea-comment font-segoe fs-13" placeholder="Write a comment" (keydown)="sendReply($event, textarea)"
+			 (keyup)="resizeTextarea(textarea)" getCursorPosition></textarea>
+			<i class="fa fa-smile-o cursor" aria-hidden="true" #emojiTrigger (click)="showEmoji(emojiTrigger)" data-toggle-element="emoji"></i>
+			<i class="fa fa-camera cursor" aria-hidden="true" (click)="openFileUpload()"></i>
+			<input #fileInput type="file" id="imgFile" hidden name="file" (change)="saveImage(fileInput)" accept="image/*">
+		</section>
+		<section class="img-preview" [hidden]="!hasImage">
+			<i class="fa fa-times close" aria-hidden="true" (click)="cleanAttachment()"></i>
+			<div class="fit relative">
+				<div class="overlay-mask" *ngIf="loadingImageComment">
+					<div class="text-center">
+						<div class="sending-comment absolute-center"></div>
+					</div>
+				</div>
+				<img src="" #imgPreview *ngIf="typeMedia == 'photo'">
+				<div class="dz-preview dz-file-preview dz-processing dz-success" *ngIf="typeMedia == 'video'">
+					<div class="dz-details">
+						<div class="dz-filename">
+							<div class="fa fa-play-circle-o" style="font-size: 38px;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<span data-dz-name="" *ngIf="typeMedia == 'video'">{{ videoName }}</span>
+		</section>
+		<div *ngIf="comment.replies">
+			<div class="interactions load-more-replies m-t-10 cursor" *ngIf="comment.replies.comments.length < comment.commentCount && comment.replies.comments.length"
+			 (click)="getReplies()">
+				<span class="action">
+					<i class="fa fa-mail-reply-all success fa-rotate-180" aria-hidden="true"></i>
+				</span>
+				<span class="font-segoe fs-13"> Leia {{ comment.commentCount - comment.replies.comments.length >= 2 ? 2 : 1 }} resposta{{ comment.commentCount - comment.replies.comments.length
+					>= 2 ? 's' : '' }} </span>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,102 @@
+package br.com.opsocial.server.actions.reports.facebook;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.Date;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookOverviewDTO;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+public class ReportFacebookOverviewAction extends ServerAction {
+
+	private Profile profile;
+	private Integer period;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceReportGenerateRemote remoteReportGenerate = (MaintenanceReportGenerateRemote)
+				RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		
+		profile = (Profile) getParameters().get("profile");
+		
+		if(getParameters().containsKey("period")) {
+            period = (Integer) getParameters().get("period");
+            getDatesByPeriod(period);
+        } else {
+            Date dateFrom = (Date) getParameters().get("dateFrom");
+            Date dateUntil = (Date) getParameters().get("dateUntil");
+
+            Calendar fromDate = new GregorianCalendar(dateFrom.getValue().getYear() + 1900,dateFrom.getValue().getMonth(), dateFrom.getValue().getDate());
+            Calendar untilDate = new GregorianCalendar(dateUntil.getValue().getYear() + 1900,dateUntil.getValue().getMonth(), dateUntil.getValue().getDate());
+
+            getDates(fromDate, untilDate);
+        }
+		
+		setParameters(new HashMap<String, Object>());
+		
+		if(!remoteReportGenerate.hasEntity(profile.getNetworkId(), profile.getType())) {
+			
+			ReportGenerate reportGenerate = new ReportGenerate();
+			reportGenerate.setNetworkId(profile.getNetworkId());
+			reportGenerate.setNetworkType(profile.getType());
+			reportGenerate.setTokenSecret(profile.getTokenSecret());
+			reportGenerate.setState(ReportFacebook.UNAVAILABLE);
+			
+			reportGenerate = remoteReportGenerate.save(reportGenerate);
+			
+			// Verifica se a página pode resgatar seus insights.
+			if(ReportGenerateVerification.isReportActive(reportGenerate)) {
+				
+				reportGenerate.setState(ReportFacebook.GENERATING);
+				remoteReportGenerate.save(reportGenerate);
+				
+				new Thread(new ReportGenerateRunnable(profile, ReportGenerateRunnable.REPORT_DAYS)).start();
+			}
+		}
+		
+		profile.setReportState(remoteReportGenerate.getEntity(profile.getNetworkId(), Profile.FACEBOOK_PAGE).getState());
+		
+		ReportFacebookOverviewDTO reportFacebookOverview;
+		
+		if(profile.getReportState().equals(Profile.REPORT_FINALIZED) || profile.getReportState().equals(Profile.REPORT_REFRESH_TOKEN)) {
+			reportFacebookOverview = UtilReports.mountReportFacebookOverviewDTO(profile, genericDateInterval, 5);
+		} else {
+			reportFacebookOverview = new ReportFacebookOverviewDTO();
+		}
+		
+		getParameters().put("reportFacebookOverview", reportFacebookOverview);
+		getParameters().put("profile", profile);
+	}
+
+	private void getDatesByPeriod(Integer period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 3);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForFacebookReport(fromDate), UtilFunctions.getDateForFacebookReport(untilDate));
+    }
+
+    private void getDates(Calendar fromDate, Calendar untilDate) {
+    	genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForFacebookReport(fromDate), UtilFunctions.getDateForFacebookReport(untilDate));
+    }
+}

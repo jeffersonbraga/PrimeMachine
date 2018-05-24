@@ -1,0 +1,35 @@
+package br.com.opsocial.server.actions.mailbox;
+
+import java.util.Date;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.ejb.das.MaintenanceAccountRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.mailbox.TaskUpdateProfileConversations;
+
+public class SacUseUpdateAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+
+		if(!getUser().getAccount().getUsesSac()) {
+		
+			MaintenanceAccountRemote remote = (MaintenanceAccountRemote) RecoverMaintenance.recoverMaintenance("Account");
+			
+			Account account = remote.getById(getUser().getAccount().getIdAccount());
+			
+			account.setUsesSac(true);
+			account.setSacLastUse(new Date());
+			
+			remote.save(account);
+			
+			new Thread(new TaskUpdateProfileConversations(account)).start();
+			
+			getParameters().put("usesSac", new Boolean(false));
+		}
+	}
+}

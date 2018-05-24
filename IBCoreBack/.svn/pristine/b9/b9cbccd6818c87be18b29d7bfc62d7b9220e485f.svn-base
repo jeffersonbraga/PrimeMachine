@@ -1,0 +1,101 @@
+package br.com.opsocial.server.actions.monitorings;
+
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.client.entity.facebook.FacebookPostDTO;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.socialnetworks.facebook.CommentDTO;
+import br.com.opsocial.client.entity.socialnetworks.facebook.FromDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import facebook4j.Facebook;
+import facebook4j.auth.AccessToken;
+
+@RestController
+@RequestMapping("opsocial")
+public class FacebookInteractionAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/facebook_interaction",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		StringUtil type = (StringUtil) getParameters().get("type");
+		
+		if(type.getValue().equals("like")) {
+		
+			Profile profileDTO = (Profile) getParameters().get("profile");
+			
+			String objectId = ((StringUtil) getParameters().get("objectId")).getValue();
+			
+			FacebookAPI facebookGraphAPI = new FacebookAPI();
+			
+			facebookGraphAPI.likePost(objectId, profileDTO.getToken());
+			
+		} else if(type.getValue().equals("reply")) {
+
+			Profile profileDTO = (Profile) getParameters().get("profile");
+			String objectId = ((StringUtil) getParameters().get("objectId")).getValue();
+			String message = ((StringUtil) getParameters().get("message")).getValue();
+		
+			FacebookAPI facebookGraphAPI = new FacebookAPI();
+			facebookGraphAPI.comment(objectId, profileDTO.getToken(), message);
+		
+		} else if(type.getValue().equals("comment")) {
+			
+			Profile profileDTO = (Profile) getParameters().get("profile");
+			String objectId = ((StringUtil) getParameters().get("objectId")).getValue();
+			String message = ((StringUtil) getParameters().get("message")).getValue();
+		
+			FacebookAPI facebookGraphAPI = new FacebookAPI();
+			
+			CommentDTO response = facebookGraphAPI.comment(objectId, profileDTO.getToken(), message);
+			
+			setParameters(new HashMap<String, Object>());
+			
+			if(response == null) {
+				getParameters().put("message", new StringUtil(OpSocialBackApplication.messageByLocaleService.getMessage("profile.comment.notallowed")));
+			} else {
+				
+				FromDTO from = new FromDTO();
+				from.setProfilePicture(profileDTO.getAvatar());
+				from.setIdFrom(profileDTO.getNetworkId());
+				from.setName(profileDTO.getScreenName());
+				
+				response.setFrom(from);
+				response.setCreatedTime(new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date()));
+				
+				getParameters().put("comment", response);
+			}
+		
+		} else if(type.getValue().equals("share")) {
+			
+			 Profile profileDTO = (Profile) getParameters().get("profile");
+			 FacebookPostDTO facebookPostDTO = (FacebookPostDTO) getParameters().get("post");   
+			 String comment = ((StringUtil) getParameters().get("comment")).getValue();
+			 
+			 AccessToken accessToken = new AccessToken(profileDTO.getToken(), null);
+			 Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+			 
+			 if(facebookPostDTO.getType().equals(FacebookPostDTO.LINK)) {
+				 facebook.postLink(profileDTO.getNetworkId(), new URL(facebookPostDTO.getLink()), comment);
+			 } else if(facebookPostDTO.getType().equals(FacebookPostDTO.PHOTO)) {
+				 facebook.postLink(profileDTO.getNetworkId(), new URL(facebookPostDTO.getLink()), comment);
+			}  		
+		}
+	}
+}

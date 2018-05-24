@@ -1,0 +1,11 @@
+.top-report-container{
+    position: absolute;
+    right: 0;
+    width: 560px;
+    z-index: 2;
+}
+
+.fa-instagram{
+    color: #ff4169;
+    font-size: 24px
+}

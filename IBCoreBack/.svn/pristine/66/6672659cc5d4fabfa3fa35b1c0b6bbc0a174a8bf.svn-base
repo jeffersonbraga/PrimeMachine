@@ -1,0 +1,107 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.HashMap;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.facebook.FacebookPost;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.instagram.InstagramAPI;
+import br.com.opsocial.server.utils.twitter.TwitterAPI;
+import twitter4j.TwitterException;
+
+@RestController
+@RequestMapping("opsocial")
+public class PostAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/post_action",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws TwitterException {
+
+		List<Profile> profilesToPost = (List<Profile>) getParameters().get("profiles");
+		Character imageType = (Character) getParameters().get("imageType");
+		Post postDTO = (Post) getParameters().get("post");
+
+		setParameters(new HashMap<String, Object>());
+
+		if(imageType != null) {
+			if(imageType.equals(FacebookPost.FILTERED_PICTURE)) {
+				postDTO.setPicture(UtilFunctions.createFilteredPicture(postDTO.getPicture()));
+			}
+		}
+
+		HashMap<Boolean, String> mapPostsSent = new HashMap<Boolean, String>();
+ 
+		for(Profile profileDTO : profilesToPost) {
+
+			try {
+
+				if(profileDTO.getType() == Profile.TWITTER) {
+
+					Boolean wasSent;
+
+					wasSent = new TwitterAPI().post(postDTO,profileDTO);
+
+					if(wasSent) {
+						mapPostsSent.put(true, "A postagem feita com o perfil " + profileDTO.getScreenName() + 
+								" para o " + UtilFunctions.getNetworkName(profileDTO.getType()) + " foi enviada com sucesso.");
+					} else {
+						mapPostsSent.put(false, "A postagem feita com o perfil " + profileDTO.getScreenName() + 
+								" para o " + UtilFunctions.getNetworkName(profileDTO.getType()) + " não pode ser enviada.");
+					}
+
+				} else if(profileDTO.getType().equals(Profile.INSTAGRAM)) {
+
+					Boolean wasSent;
+					MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+					Profile profile = profileRemote.getById(profileDTO.getIdProfile());
+
+					InstagramAPI instagramAPI = new InstagramAPI();
+
+					wasSent = instagramAPI.post(postDTO, profile);
+
+					if(wasSent) {
+						mapPostsSent.put(true, "A postagem feita com o perfil " + profileDTO.getScreenName() + 
+								" para o " + UtilFunctions.getNetworkName(profileDTO.getType()) + " foi enviada com sucesso.");
+					} else {
+						mapPostsSent.put(false, instagramAPI.extractSendImageErrorMessage());
+					}
+
+				} else if(profileDTO.getType().equals(Profile.FACEBOOK) ||
+						profileDTO.getType().equals(Profile.FACEBOOK_PAGE)) {
+					
+					Boolean wasSent;
+					
+					wasSent = new FacebookAPI().post(postDTO, profileDTO);
+					
+					if(wasSent) {
+						mapPostsSent.put(true, "A postagem feita com o perfil " + profileDTO.getScreenName() + 
+								" para o " + UtilFunctions.getNetworkName(profileDTO.getType()) + " foi enviada com sucesso.");
+					} else {
+						mapPostsSent.put(false, "A postagem feita com o perfil " + profileDTO.getScreenName() + 
+								" para o " + UtilFunctions.getNetworkName(profileDTO.getType()) + " não pode ser enviada.");
+					}
+				}
+				
+			} catch (Exception e) {
+				mapPostsSent.put(false, "A postagem feita com o perfil " + profileDTO.getScreenName() + 
+						" para o " + UtilFunctions.getNetworkName(profileDTO.getType()) + " não pode ser enviada.");
+				e.printStackTrace();
+			}
+		}
+		
+		getParameters().put("postsSent", mapPostsSent);
+	}
+}

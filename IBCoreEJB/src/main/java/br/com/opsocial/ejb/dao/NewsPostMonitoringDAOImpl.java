@@ -1,0 +1,518 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Stateless;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.NoResultException;
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAOImpl;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.NewsPostMonitoringId;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.ejb.entity.news.NewsPost;
+import br.com.opsocial.ejb.entity.news.NewsPostMonitoring;
+
+@Stateless
+public class NewsPostMonitoringDAOImpl extends AbstractDAOImpl<NewsPostMonitoring> implements NewsPostMonitoringDAO {
+	
+	@Override
+	public void delete(NewsPostMonitoring object) throws Exception {
+		try {
+			object = em.merge(object);
+			em.remove(object);
+			this.flush();
+		} catch (Exception e) {
+			throw new Exception(e);
+		}
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> listMostRecents(Long idMonitoring, Integer maxResults) {
+	
+		sql = "Select n From NewsPostMonitoring n where n.monitoring.idMonitoring = :idMonitoring and n.garbage='F' order by n.newsPost.createdTime desc";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setMaxResults(maxResults);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> listMostRecents(Long createdTime, Long idMonitoring) {
+	
+		sql = "Select n From NewsPostMonitoring n where n.newsPost.createdTime > :createdTime and n.monitoring.idMonitoring = :idMonitoring and n.garbage='F' order by n.newsPost.createdTime";
+		query = em.createQuery(sql);
+		query.setParameter("createdTime", createdTime);
+		query.setParameter("idMonitoring", idMonitoring);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> listElder(Long createdTime, Long idMonitoring, Integer maxResults) {
+	
+		sql = "Select n From NewsPostMonitoring n where n.newsPost.createdTime < :createdTime and n.monitoring.idMonitoring = :idMonitoring and n.garbage='F' order by n.newsPost.createdTime desc";
+		query = em.createQuery(sql);
+		query.setParameter("createdTime", createdTime);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setMaxResults(maxResults);
+		
+		return query.getResultList();
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> getByInterval(Long idMonitoring, Long startDate, Long endDate, 
+			String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords, Integer offset, Integer limit) {
+		
+		if(monitoringWords != null) {
+			
+			sql = "Select npm.idmonitoring, npm.idnewspost, npm.term, npm.qualification, npm.retrieveddate, np.createdtime, " +
+					"npm.garbage, np.createdtime From opsocial.newspostsmonitorings npm " +
+					"JOIN opsocial.newsposts np on (npm.idnewspost = np.idnewspost) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON (" +
+					"npm.idmonitoring = mpt.idmonitoring AND npm.term = mpt.term AND CAST(npm.idnewspost AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.NEWS + "') " +
+					"WHERE npm.idmonitoring = " + idMonitoring + " and " +
+					"np.createdtime >= " + startDate + " and " +
+					"np.createdtime <= " + endDate + " " +
+					"and npm.garbage='F'";
+
+			sql += " and np.idnewspost in ( "
+				+ "Select np2.idnewspost From opsocial.newsposts np2 where ";
+			
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(np2.title) LIKE LOWER('%" + w + "%') or LOWER(np2.url) LIKE LOWER('%" + w + "%') or LOWER(np2.description) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+			sql += ")";
+			
+		} else {
+			
+			sql = "Select npm.idmonitoring, npm.idnewspost, npm.term, npm.qualification, npm.retrieveddate, " +
+					"npm.garbage, np.createdtime FROM opsocial.newspostsmonitorings npm " +
+					"JOIN opsocial.newsposts np on (npm.idnewspost = np.idnewspost) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON (" +
+					"npm.idmonitoring = mpt.idmonitoring AND npm.term = mpt.term AND CAST(npm.idnewspost AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.NEWS + "') " +
+					"WHERE npm.idmonitoring = " + idMonitoring + " and " +
+					"np.createdtime >= " + startDate + " and " +
+					"np.createdtime <= " + endDate + " " +
+					"and npm.garbage='F'";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " npm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " npm.qualification is null or";
+				} else {
+					sql += " npm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		sql += " GROUP BY npm.idmonitoring, npm.idnewspost, npm.term, npm.qualification, npm.retrieveddate, npm.garbage, np.createdtime";
+		
+		sql += " ORDER BY np.createdtime desc";
+		
+		query = em.createNativeQuery(sql);
+		query.setFirstResult(offset * 50);
+		query.setMaxResults(limit);
+		
+		List<NewsPostMonitoring> newsPostsMonitorings = new ArrayList<NewsPostMonitoring>();
+		
+		List<Object[]> result = query.getResultList();
+
+		Monitoring monitoring = new Monitoring();
+		sql = "SELECT mn FROM Monitoring mn WHERE mn.idMonitoring=" + idMonitoring;
+		query = em.createQuery(sql);
+		monitoring = (Monitoring) query.getSingleResult();
+		
+		for (Object[] object : result) {
+			
+			NewsPostMonitoring newsPostMonitoring = new NewsPostMonitoring();
+			
+			NewsPost newsPost = new NewsPost();
+			Long idNewsPost = (Long) object[1];
+			sql = "SELECT np FROM NewsPost np WHERE np.idNewsPost = :idNewsPost"; 
+			query = em.createQuery(sql);
+			query.setParameter("idNewsPost", idNewsPost);
+			newsPost = (NewsPost) query.getSingleResult();
+			
+			newsPostMonitoring.setMonitoring(monitoring);
+			newsPostMonitoring.setNewsPost(newsPost); //TODO ver os que podem ser null
+			newsPostMonitoring.setTerm((String) object[2]);
+			newsPostMonitoring.setQualification(object[3] != null ? ((String) object[3]).charAt(0) : null);
+			newsPostMonitoring.setRetrievedDate(object[4] != null ? ((Long) object[4]) : null);
+			newsPostMonitoring.setGarbage(object[5] != null ? ((String) object[5]).charAt(0) : null);
+			
+			newsPostsMonitorings.add(newsPostMonitoring);
+		}
+		
+		return newsPostsMonitorings;
+	}
+
+	@Override
+	public Long getByIntervalCount(Long idMonitoring, Long startDate,
+			Long endDate, String qualification, List<Long> monitoringTags, List<String> monitoringTerms, List<String> monitoringWords) {
+		
+		Long postsCount = 0L;
+		
+		if(monitoringWords != null) {
+			
+			sql = "SELECT count(distinct(npm)) FROM opsocial.newspostsmonitorings AS npm " + 
+					"INNER JOIN opsocial.newsposts AS np ON " + 
+					"(np.idnewspost = npm.idnewspost) " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON (" +
+					"npm.idmonitoring = mpt.idmonitoring AND npm.term = mpt.term AND CAST(npm.idnewspost AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.NEWS + "') " +
+					"WHERE npm.idmonitoring = " + idMonitoring + " AND np.createdtime >= " + startDate + " AND " +
+					"np.createdtime <= " + endDate + " AND npm.garbage = 'F'";
+
+			sql += " and np.idnewspost in ( "
+				+ "Select np2.idnewspost From opsocial.newsposts np2 where ";
+			
+			for(String w : monitoringWords) {
+				if(!w.equals("")) //TODO implementar regex melhor
+					sql += "LOWER(np2.title) LIKE LOWER('%" + w + "%') or LOWER(np2.url) LIKE LOWER('%" + w + "%') or LOWER(np2.description) LIKE LOWER('%" + w + "%') or ";
+			}
+
+			sql = sql.substring(0, sql.lastIndexOf("or "));
+			sql += ")";
+			
+		} else {
+			
+			sql = "SELECT count(distinct(npm)) FROM opsocial.newspostsmonitorings AS npm " + 
+					"INNER JOIN opsocial.newsposts AS np ON " + 
+					"np.idnewspost = npm.idnewspost " +
+					"LEFT JOIN opsocial.monitoringspoststags AS mpt ON (" +
+					"npm.idmonitoring = mpt.idmonitoring AND npm.term = mpt.term AND CAST(npm.idnewspost AS varchar) = mpt.postid " +
+					"AND mpt.network = '" + Profile.NEWS + "') " +
+				"WHERE npm.idmonitoring = " + idMonitoring + " AND np.createdtime >= " + startDate + " AND " +
+				"np.createdtime <= " + endDate + " AND npm.garbage = 'F'";
+		}
+		
+		if(monitoringTerms != null) {
+			
+			sql += " and (";
+			
+			for(String t : monitoringTerms) {
+				sql += " npm.term = '" + t + "' or";	
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(qualification != null) {
+			
+			sql += " and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("Q")) {
+					sql += " npm.qualification is null or";
+				} else {
+					sql += " npm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			String monitoringTagsIn = " AND mpt.idtag IN(";
+			
+			monitoringTagsIn = monitoringTagsIn.concat(""+monitoringTags.get(0)+"");
+			for(int i = 1; i < monitoringTags.size(); i++) {
+				monitoringTagsIn = monitoringTagsIn.concat(","+monitoringTags.get(i)+"");
+			}
+			
+			monitoringTagsIn = monitoringTagsIn.concat(")");
+			
+			sql += monitoringTagsIn;
+		}
+		
+		query = em.createNativeQuery(sql);
+		
+		postsCount = (Long) query.getSingleResult(); 
+		
+		return postsCount;
+	}
+
+	@Override
+	public NewsPostMonitoring getByComposedId(Long idMonitoring, Long idNewsPost, String term) {
+		
+		sql = "Select n From NewsPostMonitoring n where n.monitoring.idMonitoring = :idMonitoring and n.term = :term and n.newsPost.idNewsPost = :idNewsPost";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+		query.setParameter("idNewsPost", idNewsPost);
+		
+		return (NewsPostMonitoring) query.getSingleResult();
+	}
+	
+	@Override
+	public NewsPostMonitoring merge(NewsPostMonitoring newsPostMonitoring) throws Exception {
+
+		NewsPostMonitoringId newsPostMonitoringId = new NewsPostMonitoringId();
+		newsPostMonitoringId.setNewsPost(newsPostMonitoring.getNewsPost().getIdNewsPost());
+		newsPostMonitoringId.setMonitoring(newsPostMonitoring.getMonitoring().getIdMonitoring());
+		newsPostMonitoringId.setTerm(newsPostMonitoring.getTerm());
+		
+		NewsPostMonitoring objTmp = getById(newsPostMonitoringId);
+
+		try {
+			validateVersion(objTmp, newsPostMonitoring);
+		} catch (IllegalStateException ex) {
+			throw new OptimisticLockException();
+		}
+
+		em.merge(newsPostMonitoring);
+		newsPostMonitoring = getById(newsPostMonitoringId);
+		
+		this.flush();
+
+		return newsPostMonitoring;
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> listByTerm(String term, Long idMonitoring) {
+
+		sql = "Select n From NewsPostMonitoring n where n.monitoring.idMonitoring = :idMonitoring and n.term = :term";
+		
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("term", term);
+
+		return query.getResultList();
+	}
+
+	@Override
+	public List<Object[]> getCountOfTermPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT npm.term, COUNT(npm) FROM NewsPostMonitoring npm " +
+				"WHERE npm.monitoring.idMonitoring = :idMonitoring AND (npm.retrievedDate >= :date AND npm.retrievedDate < (:date + 86400)) " +
+				"AND npm.garbage = 'F' " +
+				"GROUP BY npm.term";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+		
+		List<Object[]> result = query.getResultList();
+		
+		return result;
+	}
+	
+	@Override
+	public Long getCountOfPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(npm) FROM NewsPostMonitoring npm WHERE npm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (npm.retrievedDate >= :date AND npm.retrievedDate < (:date + 86400)) AND npm.garbage = 'F'";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+	
+	@Override
+	public Long getCountOfGarbagePostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT COUNT(npm) FROM NewsPostMonitoring npm WHERE npm.monitoring.idMonitoring = :idMonitoring " + 
+				"AND (npm.retrievedDate >= :date AND npm.retrievedDate < (:date + 86400)) AND npm.garbage = 'T'";
+
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("date", date);
+
+		try {
+			return (Long) query.getSingleResult();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return 0L;
+		}
+	}
+	
+	@Override
+	public List<Object[]> getCountQualificPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT npm.qualification, npm.term, COUNT(*) FROM opsocial.newspostsmonitorings npm WHERE npm.idmonitoring = " + idMonitoring + " " + 
+				" and npm.garbage='F' AND (npm.retrieveddate >= " + date + " AND npm.retrieveddate < (" + date + " + 86400)) AND npm.qualification <> '' " + 
+				"GROUP BY npm.qualification, npm.term";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public List<Object[]> getCountTagsPostsPerDay(Long idMonitoring, Long date) {
+		
+		sql = "SELECT mpt.idtag, COUNT(*) FROM opsocial.newspostsmonitorings AS npm " +
+				"INNER JOIN opsocial.monitoringspoststags AS mpt ON " +
+				"mpt.postid = CAST(npm.idnewspost AS varchar) AND mpt.term = npm.term AND mpt.idmonitoring = npm.idmonitoring " + 
+				"WHERE mpt.idmonitoring = " + idMonitoring + "  and npm.garbage='F' AND (npm.retrieveddate >= " + date + " AND npm.retrieveddate < (" + date + " + 86400)) " +
+				"GROUP BY mpt.idtag";
+
+		query = em.createNativeQuery(sql);
+
+		try {
+			return (List<Object[]>) query.getResultList();
+		} catch (NoResultException e) {
+			e.printStackTrace();
+			return new ArrayList<Object[]>();
+		}
+	}
+	
+	@Override
+	public NewsPostMonitoring getByComposedId(Long idMonitoring, Long idNewsPost) {
+		
+		sql = "Select n From NewsPostMonitoring n where n.monitoring.idMonitoring = :idMonitoring and n.newsPost.idNewsPost = :idNewsPost";
+		query = em.createQuery(sql);
+		query.setParameter("idMonitoring", idMonitoring);
+		query.setParameter("idNewsPost", idNewsPost);
+		
+		if(!query.getResultList().isEmpty()) {
+			return (NewsPostMonitoring) query.getSingleResult();
+		} else {
+			return null;
+		}
+	}
+	
+	@Override
+	public List<NewsPostMonitoring> listSample(Long idMonitoring, Long startDate, Long endDate, String qualification, List<Long> monitoringTags, Integer sample, List<String> notIn) {
+		
+		sql = "Select * From opsocial.newspostsmonitorings npm inner join opsocial.newsposts np on npm.idnewspost = np.idnewspost where " +
+				"npm.idMonitoring = " + idMonitoring + " and " +
+				"np.createdTime >= " + startDate +" and " +
+				"np.createdTime <= " + endDate +" and " +
+				"npm.garbage='F' ";
+				
+		if(qualification != null) {
+			
+			sql += "and (";
+			
+			String[] arrayQualification = qualification.split(";");
+			
+			for(String q : arrayQualification) {
+				if(q.equals("null") || q.equals("Q")) {
+					sql += " npm.qualification is null or";
+				} else {
+					sql += " npm.qualification = '" + q + "' or";	
+				} 
+			}
+			
+			sql = sql.substring(0, sql.lastIndexOf("or"));
+			
+			sql += ")";
+		}
+		
+		if(!notIn.isEmpty()) {
+			
+			sql += " and npm.idnewspost not in (";
+			
+			for(String postId : notIn) {
+				sql += postId + ",";
+			}
+			
+			sql = sql.substring(0,sql.lastIndexOf(","));
+			
+			sql += ")";
+		}
+		
+		sql += " order by random(), createdtime desc limit " + sample;
+		
+		query = em.createNativeQuery(sql, NewsPostMonitoring.class);
+		
+		List<NewsPostMonitoring> newsPostMonitorings = (List<NewsPostMonitoring>) query.getResultList(); 
+		
+		if(monitoringTags != null && !monitoringTags.isEmpty()) {
+			
+			List<NewsPostMonitoring> newsPostsMonitoringToExclude = new ArrayList<NewsPostMonitoring>();
+			
+			for(NewsPostMonitoring newsPostMonitoring : newsPostMonitorings) {
+				
+				try {
+					
+					MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote) 
+							new InitialContext().lookup("global/OpSocialBack/MaintenanceMonitoringPostTagBean!br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote");
+					
+					if(!monitoringPostTagRemote.thereIsMonitoringTag(String.valueOf(newsPostMonitoring.getNewsPost().getIdNewsPost()), 
+							newsPostMonitoring.getMonitoring().getIdMonitoring(), newsPostMonitoring.getTerm(), 
+							Profile.NEWS, monitoringTags)) {
+						newsPostsMonitoringToExclude.add(newsPostMonitoring);
+					}
+					
+				} catch (NamingException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			newsPostMonitorings.removeAll(newsPostsMonitoringToExclude);
+		}
+		
+		return newsPostMonitorings;
+	}
+
+	
+}

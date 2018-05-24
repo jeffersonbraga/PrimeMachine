@@ -1,0 +1,61 @@
+package br.com.opsocial.server.actions.reports.instagram;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import das.MaintenanceReportLogoRemote;
+import entity.application.Profile;
+import entity.application.idclass.ReportLogoId;
+import entity.report.ReportLogo;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.primitive.PersistentMap;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.report.instagram.ReportInstagramHistoricalDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.server.utils.reports.pdf.ReportInstagramHistoricalPDF;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportInstagramHistoricalPDFAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/report_instagram_historical_pdf",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		HashMap<String, String> chartsImages = ((PersistentMap<String, String>) getParameters().get("chartsImages")).getValue();
+		Profile profile = (Profile) getParameters().get("profile");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceReportLogoRemote reportLogoRemote = (MaintenanceReportLogoRemote) RecoverMaintenance.recoverMaintenance("ReportLogo");
+		
+		ReportLogoId reportLogoId = new ReportLogoId();
+		reportLogoId.setObjectId(profile.getIdProfile());
+		reportLogoId.setType(profile.getType());
+		
+		ReportLogo reportLogo = reportLogoRemote.getById(reportLogoId);
+		
+		if(reportLogo != null) {
+			profile.setReportLogo(MountDTO.mountReportLogo(reportLogo));
+		}
+		
+		ReportInstagramHistoricalDTO reportInstagramHistorical = UtilReports.mountReportInstagramHistoricalDTO(profile);
+
+		ReportInstagramHistoricalPDF reportInstagramHistoricalPDF = new ReportInstagramHistoricalPDF(reportInstagramHistorical, profile, chartsImages);
+		reportInstagramHistoricalPDF.createPDF();
+		
+		getParameters().put("pdfToDownload", new StringUtil(reportInstagramHistoricalPDF.getFileName()));
+		
+	}
+
+}

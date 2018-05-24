@@ -1,0 +1,38 @@
+package br.com.opsocial.server.actions.monitorings.facebookgroups;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class ListFacebookGroupsAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+	
+		MonitoringDTO monitoringDTO = (MonitoringDTO) getParameters().get("monitoring");
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		List<Profile> groups = new ArrayList<Profile>();
+		
+		if(monitoringDTO != null) {
+			groups.addAll(remote.listByIdMonitoringForGroups(Profile.FACEBOOK_GROUP, monitoringDTO.getIdMonitoring()));	
+		}
+
+		List<Profile> groupsDTOs = new ArrayList<Profile>();
+		
+		for(Profile addedGroup : groups) {
+			groupsDTOs.add(MountDTO.mountProfile(addedGroup));
+		}
+
+		getParameters().put("groups", groupsDTOs);		
+	}
+}

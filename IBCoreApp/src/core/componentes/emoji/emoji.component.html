@@ -1,0 +1,160 @@
+<!-- <div class="EmojiPanel">
+    <div class="EmojiPanel__content">
+        <header class="EmojiPanel__header">
+            <div class="EmojiPanel__categories">
+                <button class="emoji" title="item.name" *ngFor="let item of listaEmoji">
+                    <img width="24" height="24" [src]="getElementSource(item.icon)">
+                </button>
+            </div>
+            <div class="EmojiPanel__query" style="display: block;  clear: both;">
+                <input class="EmojiPanel__queryInput" type="text" autocomplete="off" placeholder="Search">
+                <span class="fa fa-search pull-right"> </span>
+            </div>
+        </header>
+        <div class="EmojiPanel__results">
+            <div  *ngFor="let item of listaEmoji">
+                <div *ngIf="(item != undefined)">
+                    <p class="EmojiPanel__category" id="item.category">{{item.name}}</p>
+                        <img    *ngFor="let emoji_item of item.emojis"
+                                class="m-r-5 m-b-10 emoji_icon" 
+                                width="18" 
+                                height="18" 
+                                [src]="getElementSource(emoji_item)"
+                                (click)="selectEmojiItem(emoji_item)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="EmojiPanel__footer">
+        <div class="EmojiPanel__modifierDropdown active">
+            <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="a">
+                <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b')">
+            </button>
+            <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="b">
+                 <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fb')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+            </button>
+            <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="c">
+                 <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fc')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+            </button>
+            <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="d">
+                 <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fd')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+            </button>
+            <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="e">
+                 <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fe')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+            </button>
+            <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="f">
+                 <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3ff')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+            </button>
+        </div>
+    </footer>
+</div>-->
+
+<!-- Modal content -->
+<div class="modal-content" #emoji id="emojiComponent">
+  <div class="modal-header">
+  </div>
+  <div class="modal-body">    
+    <div class="modal-row">
+        <div class="modal-row">
+            <div class="modal-leftbar pull-left">
+            <span class="EmojiPicker-categoryColumn">
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--recent is-active" title="Recently used" data-category="recent" tabindex="-1" (click)="scrollToItem('recent')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--people" title="Smileys &amp; people" data-category="people" tabindex="-1" (click)="scrollToItem('people')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--objects" title="Objects" data-category="objects" tabindex="-1" (click)="scrollToItem('objects')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--activity" title="Activity" data-category="activity" tabindex="-1" (click)="scrollToItem('activity')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--nature" title="Animals &amp; nature" data-category="nature" tabindex="-1" (click)="scrollToItem('nature')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--travel" title="Travel &amp; places" data-category="travel" tabindex="-1" (click)="scrollToItem('travel')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--symbols" title="Symbols" data-category="symbols" tabindex="-1" (click)="scrollToItem('symbols')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--food" title="Food &amp; drink" data-category="food" tabindex="-1" (click)="scrollToItem('food')"></button>
+                <button type="button" class="buttonEmoji EmojiCategoryIcon EmojiCategoryIcon--flags" title="Flags" data-category="flags" tabindex="-1" (click)="scrollToItem('flags')"></button>
+            </span> <!--
+                <ul style="list-style-type:none;left: 0px;margin: 0;padding: 0;">
+                    <li class="emoji" *ngFor="let item of listaEmoji">
+                        <a (click)="scrollToItem(item.name)">
+                            <img width="24" height="24" [src]="getElementSource(item.icon)" title="item.name">
+                        </a>
+                    </li>
+                </ul>-->
+            </div>
+
+            <div class="modal-rightbar pull-right scroll-op scroll-hover" style="top:0px;left:0px;right:0px;" #containerEmojiRight>
+                
+               <div class="modal-searchContent p-t-10">
+                    <input type="text" class="emoji-search-input" autocomplete="off" placeholder="Search" [(ngModel)]="searchText" (keyup)="fillTextSearch()" style="width:100%;">
+                </div>
+ <!--
+            <div class="EmojiPicker-query">
+                <input class="EmojiPicker-queryInput" type="text" autocomplete="off" placeholder="Search for emoji">
+                <button type="button" class="Icon Icon--close EmojiPicker-clearQuery fa fa-close"></button>
+            </div>-->
+
+
+                <div class="modal-listContent p-t-40">
+                    <div *ngIf="(listRecently.length > 0)" class="modal-listContent">
+                    
+                        <span class="pull-left" id="recent">Recently used</span>
+                        <span class="pull-right p-r-5" (click)="clearRecently()">Clear</span>
+                        <div class="clearfix"></div>
+                        <img    *ngFor="let emoji_itemRecently of listRecently"
+                                class="m-r-5 m-b-10 emoji_itemRecently" 
+                                width="18" 
+                                height="18" 
+                                async
+                                [src]="getElementSource(emoji_itemRecently)"
+                                (click)="selectEmojiItem(emoji_itemRecently)">
+                    </div>
+                    <div *ngIf="(searchText != '')" class="modal-listContent">
+                        <p id="resultParagraph">Result search</p>
+                        <img    *ngFor="let emoji_item of listResultSearch"
+                                class="m-r-5 m-b-10 emoji_icon" 
+                                width="18" 
+                                height="18" 
+                                async
+                                [src]="getElementSource(emoji_item)"
+                                (click)="selectEmojiItem(emoji_item)">
+                    </div>
+                    <div *ngFor="let item of listaEmoji">
+                        <div *ngIf="(item != undefined)" class="modal-listContent" #contentEmoji>
+                                <p [id]="item.name" class="set-emoji">{{item.name}}</p>
+                                <img    *ngFor="let emoji_item of item.emojis"
+                                        class="m-r-5 m-b-10 emoji_icon" 
+                                        width="18" 
+                                        height="18" 
+                                        async
+                                        [src]="getElementSource(emoji_item)"
+                                        (click)="selectEmojiItem(emoji_item)">
+                                        
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+  <div class="modal-footer" *ngIf="false">
+    <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="a">
+                <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b')">
+    </button>
+    <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="b">
+            <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fb')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+    </button>
+    <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="c">
+            <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fc')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+    </button>
+    <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="d">
+            <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fd')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+    </button>
+    <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="e">
+            <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3fe')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+    </button>
+    <button type="button" class="EmojiPanel__btnModifier emoji" data-modifier="f">
+            <img class="m-r-5 m-b-10 emoji_icon" width="18" height="18" [src]="getElementSourceByUnicode('270b-1f3ff')" (click)="onMouseOver(emoji_item)" (over)="onMouseOver(emoji_item)">
+    </button>
+    <input class="EmojiPicker-skinTone" type="radio" name="skin-tone" value="1f3fb" title="Light skin tone">
+    <span class="EmojiPicker-skinToneSwatch">
+        <span class="Icon Icon--checkLight Icon--smallest"></span>
+    </span>
+
+  </div>
+</div>

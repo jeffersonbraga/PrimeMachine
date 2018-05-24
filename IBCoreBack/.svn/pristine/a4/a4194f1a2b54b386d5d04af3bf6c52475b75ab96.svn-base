@@ -1,0 +1,312 @@
+package br.com.opsocial.server.utils.reports.xls;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.poi.common.usermodel.Hyperlink;
+import org.apache.poi.hssf.usermodel.HSSFPalette;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.util.CellRangeAddress;
+
+import br.com.opsocial.client.entity.report.facebook.FaceReportPostCommentDTO;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookPostCommentsDTO;
+import br.com.opsocial.server.services.ServicesImpl;
+import entity.application.Profile;
+
+public class ReportFacebookPostCommentsXLS {
+	
+	private ReportFacebookPostCommentsDTO reportFacebookPostComments;
+	private Profile profile;
+	
+	private String reportsPath;
+	private String fileName;
+	private String formattedFileName;
+	
+	private HSSFWorkbook wb;
+	private Sheet sheetPostComments;
+	
+	private CreationHelper createHelper;
+	
+	private CellStyle cellStyleHeader;
+	private CellStyle cellStyleHeaderData;
+	private CellStyle cellStyleHeaderDataPositive;
+	private CellStyle cellStyleHeaderDataNegative;
+	private CellStyle cellSecondaryHeaderData;
+	private CellStyle cellSecondaryHeaderNumber;
+	private CellStyle cellSecondaryHeaderCenter;
+	private CellStyle cellDateStyle;
+	private CellStyle cellStylePreAnalysis;
+	private CellStyle cellStylePreAnalysisResult;
+	private CellStyle cellStyleHLink;
+	private CellStyle cellDataPercentage;
+	
+	private Font fontHeader;
+	private Font fontHeaderData;
+
+	private Float headerDataRowHeight;
+
+	private int rowSheetPostComments;
+
+	public ReportFacebookPostCommentsXLS(ReportFacebookPostCommentsDTO reportFacebookPostComments, Profile profile) {
+		this.reportFacebookPostComments = reportFacebookPostComments;
+		this.profile = profile;
+	}
+	
+	private void addMainHeader(Sheet sheetDataPosts, String text, int untilColumn) {
+		
+		Row row = sheetDataPosts.createRow(0);
+		row.setHeightInPoints((2 * sheetDataPosts.getDefaultRowHeightInPoints()));
+		
+		Cell cellURL = row.createCell(0);
+		cellURL.setCellValue(text);
+		cellURL.setCellStyle(cellStyleHeader);
+		
+		sheetDataPosts.addMergedRegion(new CellRangeAddress(0, 0, 0, untilColumn));
+	}
+	
+	public void createXLS() {
+		
+		wb = new HSSFWorkbook();
+		
+		initiateDefautStyles();
+		
+		this.reportsPath = ServicesImpl.context.getInitParameter("getDirReporstXLS");
+		this.fileName = String.valueOf(RandomStringUtils.randomAlphanumeric(8) + ".xls");
+		
+		sheetPostComments = wb.createSheet("Comentários");
+		
+		headerDataRowHeight = 1.2F * sheetPostComments.getDefaultRowHeightInPoints();
+		
+		addMainHeader(sheetPostComments, profile.getScreenName() + " - Relatório Facebook - Comentários", 12);
+		
+		addPostComments();
+		
+		sheetPostComments.setDefaultColumnWidth(15);
+		
+		try {
+			
+			File reportFile = new File(reportsPath, fileName);
+			FileOutputStream fileOut = new FileOutputStream(reportFile);
+			wb.write(fileOut);
+			fileOut.close();
+			
+			formattedFileName = profile.getScreenName() + "-facebook-comentarios-post--" + reportFacebookPostComments.getFaceReportPostDTO().getPostId();
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void addPostComments() {
+		
+		rowSheetPostComments = 2;
+		
+		Row rowCommentsTitle = sheetPostComments.createRow(rowSheetPostComments);
+		rowCommentsTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentsTitle = rowCommentsTitle.createCell(0);
+		cellCommentsTitle.setCellValue("COMENTÁRIOS");
+		cellCommentsTitle.setCellStyle(cellStyleHeaderData);
+		
+		sheetPostComments.addMergedRegion(new CellRangeAddress(rowSheetPostComments, rowSheetPostComments, 0, 12));
+		
+		rowSheetPostComments++;
+		Row rowPostHeader = sheetPostComments.createRow(rowSheetPostComments);
+		rowPostHeader.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellPostHeaderTitle = rowPostHeader.createCell(0);
+		cellPostHeaderTitle.setCellValue("Post ID");
+		cellPostHeaderTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellPostHeaderValue = rowPostHeader.createCell(1);
+		cellPostHeaderValue.setCellValue(reportFacebookPostComments.getFaceReportPostDTO().getPostId());
+		
+		rowSheetPostComments += 2;
+		Row rowCommentsSubTitle = sheetPostComments.createRow(rowSheetPostComments);
+		rowCommentsSubTitle.setHeightInPoints(headerDataRowHeight);
+		
+		Cell cellCommentDateTitle = rowCommentsSubTitle.createCell(0);
+		cellCommentDateTitle.setCellValue("Data");
+		cellCommentDateTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellCommentTimeTitle = rowCommentsSubTitle.createCell(1);
+		cellCommentTimeTitle.setCellValue("Hora");
+		cellCommentTimeTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellCommentTitle = rowCommentsSubTitle.createCell(2);
+		cellCommentTitle.setCellValue("Comentário");
+		cellCommentTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellCommentAuthorTitle = rowCommentsSubTitle.createCell(3);
+		cellCommentAuthorTitle.setCellValue("Autor");
+		cellCommentAuthorTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		Cell cellCommentInteractionsTitle = rowCommentsSubTitle.createCell(4);
+		cellCommentInteractionsTitle.setCellValue("Interações");
+		cellCommentInteractionsTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentLikesTitle = rowCommentsSubTitle.createCell(5);
+		cellCommentLikesTitle.setCellValue("Likes");
+		cellCommentLikesTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentRepliesTitle = rowCommentsSubTitle.createCell(6);
+		cellCommentRepliesTitle.setCellValue("Respostas");
+		cellCommentRepliesTitle.setCellStyle(cellSecondaryHeaderNumber);
+		
+		Cell cellCommentAttachmentTitle = rowCommentsSubTitle.createCell(7);
+ 		cellCommentAttachmentTitle.setCellValue("Anexo (link)");
+		cellCommentAttachmentTitle.setCellStyle(cellSecondaryHeaderData);
+		
+		rowSheetPostComments++;
+		for (FaceReportPostCommentDTO faceReportPostComment : reportFacebookPostComments.getComments()) {
+			
+			Row rowCommentContent = sheetPostComments.createRow(rowSheetPostComments);
+			
+			Cell cellCommentDate = rowCommentContent.createCell(0);
+			cellCommentDate.setCellValue(new SimpleDateFormat("dd/MM/yyyy").format(faceReportPostComment.getCreatedTime()));
+			
+			Cell cellCommentTime = rowCommentContent.createCell(1);
+			cellCommentTime.setCellValue(new SimpleDateFormat("HH:mm").format(faceReportPostComment.getCreatedTime()));
+			
+			Cell cellComment = rowCommentContent.createCell(2);
+			cellComment.setCellValue(faceReportPostComment.getMessage());
+			
+			Cell cellCommentAuthor = rowCommentContent.createCell(3);
+			cellCommentAuthor.setCellValue(faceReportPostComment.getUserId());
+			
+			Cell cellCommentInteractions = rowCommentContent.createCell(4);
+			cellCommentInteractions.setCellValue(faceReportPostComment.getLikes() + faceReportPostComment.getComments());
+			
+			Cell cellCommentLikes = rowCommentContent.createCell(5);
+			cellCommentLikes.setCellValue(faceReportPostComment.getLikes());
+			
+			Cell cellCommentReplies = rowCommentContent.createCell(6);
+			cellCommentReplies.setCellValue(faceReportPostComment.getComments());
+			
+			Cell cellCommentAttachment = rowCommentContent.createCell(7);
+	 		cellCommentAttachment.setCellValue(faceReportPostComment.getAttachmentUrl());
+			
+			if(faceReportPostComment.getAttachmentUrl() != null) {
+				
+				Hyperlink hyperLink = createHelper.createHyperlink(Hyperlink.LINK_URL);
+	    		hyperLink.setAddress(faceReportPostComment.getAttachmentUrl());
+				
+	    		cellCommentAttachment.setHyperlink((org.apache.poi.ss.usermodel.Hyperlink) hyperLink);
+	    		cellCommentAttachment.setCellStyle(cellStyleHLink);	
+			}
+			rowSheetPostComments++;
+		}
+	}
+	
+	private void initiateDefautStyles() {
+		
+		fontHeader = wb.createFont();
+		fontHeader.setFontHeightInPoints((short) 12);
+		fontHeader.setBold(true);
+		fontHeader.setColor(IndexedColors.WHITE.index);
+		
+		HSSFPalette palette = wb.getCustomPalette();
+		palette.setColorAtIndex(IndexedColors.SKY_BLUE.index, (byte) 102, (byte) 153, (byte) 204);
+		palette.setColorAtIndex(IndexedColors.YELLOW.index, (byte) 255, (byte) 211, (byte) 32);
+		palette.setColorAtIndex(IndexedColors.GREEN.index, (byte) 174, (byte) 207, (byte) 0);
+		
+		cellStyleHeader = wb.createCellStyle();
+		cellStyleHeader.setFillForegroundColor(IndexedColors.SKY_BLUE.index);
+		cellStyleHeader.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeader.setFont(fontHeader);
+		cellStyleHeader.setBorderBottom(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderTop(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderLeft(CellStyle.BORDER_THIN);
+		cellStyleHeader.setBorderRight(CellStyle.BORDER_THIN);
+		cellStyleHeader.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+		
+		fontHeaderData = wb.createFont();
+		fontHeaderData.setFontHeightInPoints((short) 11);
+		fontHeaderData.setBold(true);
+		
+		cellStyleHeaderData = wb.createCellStyle();
+		cellStyleHeaderData.setFillForegroundColor(IndexedColors.YELLOW.index);
+		cellStyleHeaderData.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderData.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataPositive = wb.createCellStyle();
+		cellStyleHeaderDataPositive.setFillForegroundColor(IndexedColors.GREEN.index);
+		cellStyleHeaderDataPositive.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataPositive.setFont(fontHeaderData);
+		
+		cellStyleHeaderDataNegative = wb.createCellStyle();
+		cellStyleHeaderDataNegative.setFillForegroundColor(IndexedColors.RED.index);
+		cellStyleHeaderDataNegative.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStyleHeaderDataNegative.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderData = wb.createCellStyle();
+		cellSecondaryHeaderData.setFont(fontHeaderData);
+		
+		cellSecondaryHeaderNumber = wb.createCellStyle();
+		cellSecondaryHeaderNumber.setFont(fontHeaderData);
+		cellSecondaryHeaderNumber.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		cellSecondaryHeaderCenter = wb.createCellStyle();
+		cellSecondaryHeaderCenter.setFont(fontHeaderData);
+		cellSecondaryHeaderCenter.setAlignment(CellStyle.ALIGN_CENTER);
+		
+		cellStylePreAnalysis = wb.createCellStyle();
+		cellStylePreAnalysis.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysis.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysis.setFont(fontHeaderData);
+		
+		cellStylePreAnalysisResult = wb.createCellStyle();
+		cellStylePreAnalysisResult.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.index);
+		cellStylePreAnalysisResult.setFillPattern(CellStyle.SOLID_FOREGROUND);
+		cellStylePreAnalysisResult.setAlignment(CellStyle.ALIGN_RIGHT);
+		
+		createHelper = wb.getCreationHelper();
+		
+		cellDateStyle = wb.createCellStyle();
+	    cellDateStyle.setDataFormat(
+	        createHelper.createDataFormat().getFormat("dd/mm/yyyy hh:mm"));
+	        
+    	//by default hyperlinks are blue and underlined
+    	cellStyleHLink = wb.createCellStyle();
+    	
+    	Font fontHLink = wb.createFont();
+    	fontHLink.setUnderline(Font.U_SINGLE);
+    	fontHLink.setColor(IndexedColors.BLUE.getIndex());
+    	
+    	cellStyleHLink.setFont(fontHLink);
+    	
+    	cellDataPercentage = wb.createCellStyle();
+    	cellDataPercentage.setAlignment(CellStyle.ALIGN_RIGHT);
+	}
+	
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
+	public String getFormattedFileName() {
+		return formattedFileName;
+	}
+
+	public void setFormattedFileName(String formattedFileName) {
+		this.formattedFileName = formattedFileName;
+	}
+
+}

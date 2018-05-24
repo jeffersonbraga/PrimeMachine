@@ -1,0 +1,90 @@
+package br.com.opsocial.server.actions.reports.twitter;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterOverviewDTO;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportControlRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.UtilReports;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportTwitterOverviewAction extends ServerAction {
+
+	private Profile profile;
+	private Integer period;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@CrossOrigin
+	@RequestMapping(value = "/report_twitter_overview",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ReportTwitterOverviewDTO> doActionNew(Long idProfile, Long dateFrom, Long dateUntil) throws Exception, OptimisticLockException {
+		
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote) 
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		profile = remote.getById(idProfile);
+		
+		Calendar fromDate = Calendar.getInstance();
+		fromDate.setTimeInMillis(dateFrom);
+		
+		Calendar untilDate = Calendar.getInstance();
+		untilDate.setTimeInMillis(dateUntil);
+		
+		genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+		
+		if(!reportControlRemote.hasReportTwitterForProfile(profile.getNetworkId(), Profile.TWITTER)) {
+			profile.setReportState(Profile.REPORT_GENERATING);
+		} else {
+			profile.setReportState(Profile.REPORT_FINALIZED);
+		}
+		
+		ReportTwitterOverviewDTO reportTwitterOverview = UtilReports.mountReportTwitterOverviewDTO(profile, genericDateInterval, 5);
+		
+		return new ResponseEntity<>(reportTwitterOverview, HttpStatus.OK);
+	}
+
+	private void getDatesByPeriod(Integer period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+    }
+
+    private void getDates(Calendar fromDate, Calendar untilDate) {
+    	genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+    }
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

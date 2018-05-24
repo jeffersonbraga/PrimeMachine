@@ -1,0 +1,122 @@
+package br.com.opsocial.client.entity.report.twitter;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class TwitterFollowerDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Long followerId;
+	private Long idProfile;
+	private String screenName;
+	private String avatar;
+	private Long followersCount;
+	private String location;
+	private Long lastTweetDate;
+	private Character gender;
+	private Long lastUpdateDate;
+	private Character isStillFollower;
+	private Long followingDate;
+	private String profileUrl;
+	
+	public TwitterFollowerDTO() {
+		
+	}
+
+	public Long getFollowerId() {
+		return followerId;
+	}
+
+	public void setFollowerId(Long followerId) {
+		this.followerId = followerId;
+	}
+
+	public Long getIdProfile() {
+		return idProfile;
+	}
+
+	public void setIdProfile(Long idProfile) {
+		this.idProfile = idProfile;
+	}
+
+	public String getScreenName() {
+		return screenName;
+	}
+
+	public void setScreenName(String screenName) {
+		this.screenName = screenName;
+	}
+
+	public String getAvatar() {
+		return avatar;
+	}
+
+	public void setAvatar(String avatar) {
+		this.avatar = avatar;
+	}
+
+	public Long getFollowersCount() {
+		return followersCount;
+	}
+
+	public void setFollowersCount(Long followersCount) {
+		this.followersCount = followersCount;
+	}
+
+	public String getLocation() {
+		return location;
+	}
+
+	public void setLocation(String location) {
+		this.location = location;
+	}
+
+	public Long getLastTweetDate() {
+		return lastTweetDate;
+	}
+
+	public void setLastTweetDate(Long lastTweetDate) {
+		this.lastTweetDate = lastTweetDate;
+	}
+
+	public Character getGender() {
+		return gender;
+	}
+
+	public void setGender(Character gender) {
+		this.gender = gender;
+	}
+
+	public Long getLastUpdateDate() {
+		return lastUpdateDate;
+	}
+
+	public void setLastUpdateDate(Long lastUpdateDate) {
+		this.lastUpdateDate = lastUpdateDate;
+	}
+
+	public Character getIsStillFollower() {
+		return isStillFollower;
+	}
+
+	public void setIsStillFollower(Character isStillFollower) {
+		this.isStillFollower = isStillFollower;
+	}
+
+	public Long getFollowingDate() {
+		return followingDate;
+	}
+
+	public void setFollowingDate(Long followingDate) {
+		this.followingDate = followingDate;
+	}
+
+	public String getProfileUrl() {
+		return profileUrl;
+	}
+
+	public void setProfileUrl(String profileUrl) {
+		this.profileUrl = profileUrl;
+	}
+
+}

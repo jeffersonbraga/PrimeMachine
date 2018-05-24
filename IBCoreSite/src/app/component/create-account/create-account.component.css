@@ -1,0 +1,124 @@
+.text-secondary {
+    color: #6d5cae;
+}
+.bg-secondary {
+    background-color: #6d5cae;
+}
+.text-lightblue {
+    color: #1791d6;
+}
+.w-20  {
+    width: 20px;
+}
+.h-20 {
+    height: 20px;
+}
+
+
+/* PAYMENT */
+
+@media (min-width: 768px) {
+    .tr-plan td {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+    }
+}
+
+.tr-plan .radio label:before {
+    top: 15px;
+}
+
+.tr-plan .radio.radio-primary input[type=radio]:checked + label:before,
+.confirm-check.checkbox.check-primary input[type=checkbox]:checked + label:before {
+    border-color: #6d5cae;
+}
+
+tr.selected {
+    background-color: #ebebeb;
+}
+
+tr.selected .plan-title{
+    color: #6d5cae;
+}
+
+tr.selected .plan-description{
+    font-weight: 600;
+}
+
+.no-ellipsis, .no-ellipsis *{
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+.fa-shopping-cart{
+    color: #969696;
+}
+
+select.form-control{
+    height: 37px;
+}
+
+a.disabled, a.disabled:hover, a.disabled:focus, a.disabled:link{
+    color: #aaa;
+}
+
+.user-none {
+    user-select: none;
+}
+
+.number-of-profiles {
+    display: inline-block;
+    width: 20px;
+}
+
+.custom-payment {
+    text-align: center;
+    position: relative;
+    top: -2px;
+}
+
+i.custom-payment {
+    top: -4px;
+}
+
+.chat-view .chat-bubble.from-me {
+    background: #d4fbff !important;
+}
+
+#cards-container {
+    width: calc(100% - 160px);
+    text-align: right;
+    top: 6px;
+    position: relative;
+}
+
+#cards {
+    width: 80%;
+    vertical-align: bottom !important;
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+    .xs-lh-large {
+        line-height: 30px;
+    }
+
+    .xs-va-tt {
+        vertical-align: text-top!important;
+    }
+
+    .text-right {
+        text-align: inherit!important;
+    }
+
+    #cards-container {
+        width: 100%;
+        text-align: left;
+        top: 0px;
+    }
+    
+    #cards {
+        width: 100%;
+    }
+}

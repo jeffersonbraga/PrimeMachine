@@ -1,0 +1,91 @@
+package br.com.opsocial.server.actions.reports.twitter;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.Date;
+import br.com.opsocial.client.entity.report.twitter.ReportTwitterOverviewDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.ejb.das.MaintenanceReportControlRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportTwitterOverviewAction extends ServerAction {
+
+	private Profile profile;
+	private Integer period;
+	
+	private GenericDateInterval genericDateInterval;
+	
+	@Override
+	@RequestMapping(value = "/report_twitter_overview",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceReportControlRemote reportControlRemote = (MaintenanceReportControlRemote) 
+				RecoverMaintenance.recoverMaintenance("ReportControl");
+		
+		profile = (Profile) getParameters().get("profile");
+		
+		if(getParameters().containsKey("period")) {
+			
+            period = (Integer) getParameters().get("period");
+            getDatesByPeriod(period);
+            
+        } else {
+        	
+            Date dateFrom = (Date) getParameters().get("dateFrom");
+            Date dateUntil = (Date) getParameters().get("dateUntil");
+
+            Calendar fromDate = new GregorianCalendar(dateFrom.getValue().getYear() + 1900,dateFrom.getValue().getMonth(), dateFrom.getValue().getDate());
+            Calendar untilDate = new GregorianCalendar(dateUntil.getValue().getYear() + 1900,dateUntil.getValue().getMonth(), dateUntil.getValue().getDate());
+
+            getDates(fromDate, untilDate);
+            
+        }
+		
+		setParameters(new HashMap<String, Object>());
+		
+		if(!reportControlRemote.hasReportTwitterForProfile(profile.getNetworkId(), Profile.TWITTER)) {
+			profile.setReportState(Profile.REPORT_GENERATING);
+		} else {
+			profile.setReportState(Profile.REPORT_FINALIZED);
+		}
+		
+		ReportTwitterOverviewDTO reportTwitterOverview = UtilReports.mountReportTwitterOverviewDTO(profile, genericDateInterval, 5);
+		
+		getParameters().put("reportTwitterOverview", reportTwitterOverview);
+		getParameters().put("profile", profile);
+	}
+
+	private void getDatesByPeriod(Integer period) {
+
+        Calendar untilDate = new GregorianCalendar();
+        untilDate.set(Calendar.DAY_OF_MONTH,untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+        Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+                                                    untilDate.get(Calendar.MONTH),
+                                                    untilDate.get(Calendar.DAY_OF_MONTH));
+        fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+
+        genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+    }
+
+    private void getDates(Calendar fromDate, Calendar untilDate) {
+    	genericDateInterval = new GenericDateInterval(UtilFunctions.getDateForTwitterReport(fromDate), UtilFunctions.getDateForTwitterReport(untilDate));
+    }
+
+}

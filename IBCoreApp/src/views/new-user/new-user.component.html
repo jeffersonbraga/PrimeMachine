@@ -1,0 +1,65 @@
+<div class="col-sm-12 text-center" *ngIf="loading">
+	<div class="progress-circle-indeterminate progress-circle-complete m-t-45" data-color="complete"></div>
+	<br>
+	<p class="small hint-text">Loading activation data</p>
+</div>
+
+<div *ngIf="!loading" >
+	<div class="container m-t-50" *ngIf="found">
+		<div class="row">
+			<div class="col-md-6 col-md-offset-3">
+				<img src="assets/img/logo-svg-fundo-branco.svg" alt="Woop Logo" width="150">
+
+				<h2><strong>Hello,</strong></h2>
+				<p>You were invited by <strong>{{ user.nameUserInvitation }} </strong> to be part of a Team in Woop.
+				 Fill the form below to start.</p>
+
+				<form>
+					<div class="row">
+						<div class="col-xs-12">
+							<div class="form-group form-group-default">
+								<label>Name</label>
+								<input #N="ngModel" type="text" name="name" id="name" class="form-control" [(ngModel)]="user.name" (keyup)="validateForm()">
+								<label *ngIf="!user.name && !N.pristine" class="error" for="name">Name is required.</label>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xs-12">
+							<div class="form-group form-group-default">
+								<label>E-mail (login)</label>
+								<input #E="ngModel" type="text" name="email" id="email" class="form-control" [(ngModel)]="user.email" (blur)="validateEmail()" (focus)="emailValid = true" (keyup)="validateForm()">
+								<label *ngIf="!user.email && !E.pristine" class="error" for="email">Email is required.</label>
+								<label *ngIf="user.email && !emailValid" class="error" for="email">Enter a valid email address.</label>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xs-6">
+							<div class="form-group form-group-default">
+								<label>Password</label>
+								<input #P="ngModel" type="password" name="password" id="password" class="form-control" [(ngModel)]="user.password" (keyup)="validateForm()">
+								<label *ngIf="!user.password && !P.pristine" class="error" for="password">Password is required.</label>
+							</div>
+						</div>
+						<div class="col-xs-6">
+							<div class="form-group form-group-default">
+								<label>Confirm password</label>
+								<input #PS="ngModel" type="password" name="passwordRepeat" id="passwordRepeat" class="form-control" [(ngModel)]="passwordRepeat" (keyup)="validateForm()">
+								<label *ngIf="user.password != passwordRepeat && !PS.pristine" class="error" for="cname">Password doesn't match.</label>
+							</div>
+						</div>
+					</div>
+				</form>
+
+				<button class="btn btn-complete pull-right" (click)="saveUser()" [disabled]="!formValid">Save</button>
+				
+			</div>
+		</div>
+	</div>
+
+	<div class="container m-t-50 text-center" *ngIf="!found">
+		<img src="assets/img/logo-svg-fundo-branco.svg" alt="Woop Logo" width="150">
+		<h1>Ops! The activation key was not found or is expired.</h1>
+	</div>
+</div>

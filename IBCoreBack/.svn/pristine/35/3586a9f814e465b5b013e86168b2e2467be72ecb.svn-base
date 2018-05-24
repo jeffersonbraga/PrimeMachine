@@ -1,0 +1,89 @@
+package br.com.opsocial.server.actions.config;
+
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.validation.Valid;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class ActivateUserAction extends ServerAction{
+	
+	MaintenanceUserRemote remote;
+
+	@CrossOrigin
+	@RequestMapping(value = "/activate_user",
+    method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> doAction(@Valid @RequestBody User user) throws Exception, OptimisticLockException {
+
+		remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+
+		User userDB = remote.getByUrlActivation(user.getUrlActivation());
+		String message = verifyUsers(user.getEmail(), user);
+		
+		if(message == null){
+			if(userDB == null){
+				message = "Chave de ativação inválida!";
+			}else{
+				String password = user.getPassword();
+				PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+				String hashedPassword = passwordEncoder.encode(password);
+				userDB.setPassword(hashedPassword);
+				userDB.setActive('T');
+				userDB.setName(user.getName());
+				userDB.setEmail(user.getEmail());
+				
+				remote.setIdUserSession(userDB.getId());
+				
+				remote.save(userDB);
+				
+				message = "OK";
+			}
+		}
+		
+		return new ResponseEntity<>(message, HttpStatus.OK);
+	}
+	
+	private String verifyUsers(String email, User user) {
+		
+		User userDB = remote.getByEmail(email);
+		
+		if(userDB == null) {
+		
+ 			List<User> users = remote.listUsersByAccount(user.getAccount().getIdAccount());
+			
+			if(user.getAccount().getPlanType().equals(Account.FREE)) {
+				return "Você possui a conta TESTE, que não permite a inserção de membros na equipe. Para inserir membros na equipe contrate um dos nossos planos.";
+		
+			} else if(users.size() == 10) {
+				return "Você só pode adicionar no máximo 10 membros na equipe";
+			}
+		} else if(!user.getIdUser().equals(userDB.getIdUser())){
+			return "Email do usuário já cadastrado no sistema";
+		}
+		
+		return null;
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {		
+	}
+}

@@ -1,0 +1,335 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.List;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.ejb.entity.report.FanPageGrowth;
+import br.com.opsocial.ejb.entity.report.SumByDate;
+
+public class ReportFacebookDashboardDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Long dateFrom;
+	private Long dateUntil;
+	
+	private List<FanPageGrowth> fanPageGrowth;
+	private Long fansUntilDateFrom;
+	
+	private Long balanceFans;
+	
+	private List<FanPageGrowth> likesByDay;
+	private List<FanPageGrowth> unlikesByDay;
+	
+	private Integer balanceFansPerformance;
+	private Integer postsReachPerformance;
+	private Integer postsImpressionsPerformance;
+	
+	private Integer postsInteractionsPerformance;
+	private Integer postsLikesPerformance;
+	private Integer postsCommentsPerformance;
+	private Integer postsSharesPerformance;
+	private Integer postsClicksPerformance;
+	
+	private Long postsReachCount;
+	private List<SumByDate> postsReachByDay;
+	
+	private Long postsReachOrganicCount;
+	private Long postsReachPaidCount;
+	
+	private Long postsImpressionsCount;
+	private List<SumByDate> postsImpressionsByDay;
+	
+	private Long postsImpressionsOrganicCount;
+	private Long postsImpressionsPaidCount;
+	
+	private List<SumByDate> postsInteractionsByDay;
+	private List<SumByDate> postsLikeByDay;
+	private List<SumByDate> postsCommmentByDay;
+	private List<SumByDate> postsShareByDay;
+	private List<SumByDate> postsClickByDay;
+	
+	private Long postsInteractionsCount;
+	private Long postsLikeCount;
+	private Long postsCommentCount;
+	private Long postsShareCount;
+	private Long postsClickCount;
+
+	private List<FaceReportPostDTO> postsMostEngaged;
+
+	public ReportFacebookDashboardDTO() {
+		
+	}
+
+	public Long getDateFrom() {
+		return dateFrom;
+	}
+
+	public void setDateFrom(Long dateFrom) {
+		this.dateFrom = dateFrom;
+	}
+
+	public Long getDateUntil() {
+		return dateUntil;
+	}
+
+	public void setDateUntil(Long dateUntil) {
+		this.dateUntil = dateUntil;
+	}
+
+	public List<FanPageGrowth> getFanPageGrowth() {
+		return fanPageGrowth;
+	}
+
+	public void setFanPageGrowth(List<FanPageGrowth> fanPageGrowth) {
+		this.fanPageGrowth = fanPageGrowth;
+	}
+
+	public Long getFansUntilDateFrom() {
+		return fansUntilDateFrom;
+	}
+
+	public void setFansUntilDateFrom(Long fansUntilDateFrom) {
+		this.fansUntilDateFrom = fansUntilDateFrom;
+	}
+
+	public List<FanPageGrowth> getLikesByDay() {
+		return likesByDay;
+	}
+
+	public void setLikesByDay(List<FanPageGrowth> likesByDay) {
+		this.likesByDay = likesByDay;
+	}
+
+	public List<FanPageGrowth> getUnlikesByDay() {
+		return unlikesByDay;
+	}
+
+	public void setUnlikesByDay(List<FanPageGrowth> unlikesByDay) {
+		this.unlikesByDay = unlikesByDay;
+	}
+
+	public Long getBalanceFans() {
+		return balanceFans;
+	}
+
+	public void setBalanceFans(Long balanceFans) {
+		this.balanceFans = balanceFans;
+	}
+
+	public Long getPostsReachOrganicCount() {
+		return postsReachOrganicCount;
+	}
+
+	public void setPostsReachOrganicCount(Long postsReachOrganicCount) {
+		this.postsReachOrganicCount = postsReachOrganicCount;
+	}
+
+	public Long getPostsReachPaidCount() {
+		return postsReachPaidCount;
+	}
+
+	public void setPostsReachPaidCount(Long postsReachPaidCount) {
+		this.postsReachPaidCount = postsReachPaidCount;
+	}
+
+	public Long getPostsImpressionsOrganicCount() {
+		return postsImpressionsOrganicCount;
+	}
+
+	public void setPostsImpressionsOrganicCount(Long postsImpressionsOrganicCount) {
+		this.postsImpressionsOrganicCount = postsImpressionsOrganicCount;
+	}
+
+	public Long getPostsImpressionsPaidCount() {
+		return postsImpressionsPaidCount;
+	}
+
+	public void setPostsImpressionsPaidCount(Long postsImpressionsPaidCount) {
+		this.postsImpressionsPaidCount = postsImpressionsPaidCount;
+	}
+
+	public List<SumByDate> getPostsReachByDay() {
+		return postsReachByDay;
+	}
+
+	public void setPostsReachByDay(List<SumByDate> postsReachByDay) {
+		this.postsReachByDay = postsReachByDay;
+	}
+
+	public List<SumByDate> getPostsImpressionsByDay() {
+		return postsImpressionsByDay;
+	}
+
+	public void setPostsImpressionsByDay(List<SumByDate> postsImpressionsByDay) {
+		this.postsImpressionsByDay = postsImpressionsByDay;
+	}
+
+	public Long getPostsReachCount() {
+		return postsReachCount;
+	}
+
+	public void setPostsReachCount(Long postsReachCount) {
+		this.postsReachCount = postsReachCount;
+	}
+
+	public Long getPostsImpressionsCount() {
+		return postsImpressionsCount;
+	}
+
+	public void setPostsImpressionsCount(Long postsImpressionsCount) {
+		this.postsImpressionsCount = postsImpressionsCount;
+	}
+
+	public List<SumByDate> getPostsLikeByDay() {
+		return postsLikeByDay;
+	}
+
+	public void setPostsLikeByDay(List<SumByDate> postsLikeByDay) {
+		this.postsLikeByDay = postsLikeByDay;
+	}
+
+	public List<SumByDate> getPostsCommmentByDay() {
+		return postsCommmentByDay;
+	}
+
+	public void setPostsCommmentByDay(List<SumByDate> postsCommmentByDay) {
+		this.postsCommmentByDay = postsCommmentByDay;
+	}
+
+	public List<SumByDate> getPostsShareByDay() {
+		return postsShareByDay;
+	}
+
+	public void setPostsShareByDay(List<SumByDate> postsShareByDay) {
+		this.postsShareByDay = postsShareByDay;
+	}
+
+	public List<SumByDate> getPostsClickByDay() {
+		return postsClickByDay;
+	}
+
+	public void setPostsClickByDay(List<SumByDate> postsClickByDay) {
+		this.postsClickByDay = postsClickByDay;
+	}
+
+	public Long getPostsLikeCount() {
+		return postsLikeCount;
+	}
+
+	public void setPostsLikeCount(Long postsLikeCount) {
+		this.postsLikeCount = postsLikeCount;
+	}
+
+	public Long getPostsCommentCount() {
+		return postsCommentCount;
+	}
+
+	public void setPostsCommentCount(Long postsCommentCount) {
+		this.postsCommentCount = postsCommentCount;
+	}
+
+	public Long getPostsShareCount() {
+		return postsShareCount;
+	}
+
+	public void setPostsShareCount(Long postsShareCount) {
+		this.postsShareCount = postsShareCount;
+	}
+
+	public Long getPostsClickCount() {
+		return postsClickCount;
+	}
+
+	public void setPostsClickCount(Long postsClickCount) {
+		this.postsClickCount = postsClickCount;
+	}
+
+	public List<SumByDate> getPostsInteractionsByDay() {
+		return postsInteractionsByDay;
+	}
+
+	public void setPostsInteractionsByDay(List<SumByDate> postsInteractionsByDay) {
+		this.postsInteractionsByDay = postsInteractionsByDay;
+	}
+
+	public Long getPostsInteractionsCount() {
+		return postsInteractionsCount;
+	}
+
+	public void setPostsInteractionsCount(Long postsInteractionsCount) {
+		this.postsInteractionsCount = postsInteractionsCount;
+	}
+
+	public List<FaceReportPostDTO> getPostsMostEngaged() {
+		return postsMostEngaged;
+	}
+
+	public void setPostsMostEngaged(List<FaceReportPostDTO> postsMostEngaged) {
+		this.postsMostEngaged = postsMostEngaged;
+	}
+
+	public Integer getBalanceFansPerformance() {
+		return balanceFansPerformance;
+	}
+
+	public void setBalanceFansPerformance(Integer balanceFansPerformance) {
+		this.balanceFansPerformance = balanceFansPerformance;
+	}
+
+	public Integer getPostsReachPerformance() {
+		return postsReachPerformance;
+	}
+
+	public void setPostsReachPerformance(Integer postsReachPerformance) {
+		this.postsReachPerformance = postsReachPerformance;
+	}
+
+	public Integer getPostsImpressionsPerformance() {
+		return postsImpressionsPerformance;
+	}
+
+	public void setPostsImpressionsPerformance(Integer postsImpressionsPerformance) {
+		this.postsImpressionsPerformance = postsImpressionsPerformance;
+	}
+
+	public Integer getPostsInteractionsPerformance() {
+		return postsInteractionsPerformance;
+	}
+
+	public void setPostsInteractionsPerformance(Integer postsInteractionsPerformance) {
+		this.postsInteractionsPerformance = postsInteractionsPerformance;
+	}
+
+	public Integer getPostsLikesPerformance() {
+		return postsLikesPerformance;
+	}
+
+	public void setPostsLikesPerformance(Integer postsLikesPerformance) {
+		this.postsLikesPerformance = postsLikesPerformance;
+	}
+
+	public Integer getPostsCommentsPerformance() {
+		return postsCommentsPerformance;
+	}
+
+	public void setPostsCommentsPerformance(Integer postsCommentsPerformance) {
+		this.postsCommentsPerformance = postsCommentsPerformance;
+	}
+
+	public Integer getPostsSharesPerformance() {
+		return postsSharesPerformance;
+	}
+
+	public void setPostsSharesPerformance(Integer postsSharesPerformance) {
+		this.postsSharesPerformance = postsSharesPerformance;
+	}
+
+	public Integer getPostsClicksPerformance() {
+		return postsClicksPerformance;
+	}
+
+	public void setPostsClicksPerformance(Integer postsClicksPerformance) {
+		this.postsClicksPerformance = postsClicksPerformance;
+	}
+}

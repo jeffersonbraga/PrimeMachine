@@ -1,0 +1,97 @@
+<!-- START FOOTER -->
+<footer class="p-b-15 p-t-20 hidden-sm hidden-xs">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-2 col-md-offset-1">
+				<a href="/">
+					<img id="logo-footer" src="assets/images/logo-svg-fundo-roxo.svg" width="125" alt="">
+				</a>
+			</div>
+			<div class="col-md-2 p-t-11">
+				<span class="bold all-caps text-white fs-13">Contact Us</span>
+			</div>
+			<div class="col-md-2 p-t-11">
+				<span class="bold all-caps text-white fs-13">Follow Us</span>
+			</div>
+			<div class="col-md-2 p-t-11">
+				<span class="bold all-caps text-white fs-13">Woop</span>
+			</div>
+			<div class="col-md-2 p-t-11">
+				<span class="bold all-caps text-white fs-13">Use for Free</span>
+			</div>
+		</div>
+		<div class="row adjust-padding">
+			<div class="col-md-2 col-md-offset-3">
+				<a href="javascript:void(0)" (click)="contactModal.showModal()" target="_blank" class="bold all-caps text-white fs-13">Email Us</a>
+			</div>
+			<div class="col-md-2">
+				<a href="https://www.facebook.com/wearewoop/" class="text-white fs-13" target="_blank"><i class="fa fa-facebook-official" aria-hidden="true"></i> Facebook</a>
+			</div>
+			<div class="col-md-2">
+				<a href="/#features" class="text-white fs-13">Features</a>
+			</div>
+			<div class="col-md-2">
+				<a href="/create" class="text-white fs-13">Register</a>
+			</div>
+		</div>
+		<div class="row adjust-padding">
+			<!-- <div class="col-md-2 col-md-offset-3">
+				<a href="#" class="bold all-caps text-white fs-13">Help Center</a>
+			</div> -->
+			<div class="col-md-2 col-md-offset-5">
+				<a href="https://twitter.com/woopsocial" class="text-white fs-13" target="_blank"><i class="fa fa-twitter-square" aria-hidden="true"></i> Twitter</a>
+			</div>
+			<div class="col-md-2">
+				<a href="/plans" class="text-white fs-13">Pricing</a>
+			</div>
+			<div class="col-md-2">
+				<a href="javascript:void(0)" class="text-white fs-13" (click)="loginModal.showModal()">Login</a>
+			</div>
+		</div>
+		<div class="row adjust-padding">
+			<div class="col-md-2 col-md-offset-1">
+				<span class="text-white fs-13">Woop Social, 2018.</span>
+			</div>
+			<div class="col-md-2 col-md-offset-2">
+				<a href="https://www.instagram.com/woopsocial/" target="_blank" class="text-white fs-13"><i class="fa fa-instagram" aria-hidden="true"></i> Instagram</a>
+			</div>
+			<div class="col-md-2">
+				<a [routerLink]="['/terms']" target="_blank" class="text-white fs-13">Terms of use</a>
+			</div>
+		</div>
+		<!-- DESCOMENTAR SE FOR POR LINKEDIN -->
+		<!-- <div class="row adjust-padding">
+			<div class="col-md-2 col-md-offset-1">
+				<span class="text-white fs-13">Woop Social, 2018.</span>
+			</div>
+			<div class="col-md-2 col-md-offset-2">
+				<a href="#" target="_blank" class="text-white fs-13"><i class="fa fa-linkedin-square" aria-hidden="true"></i> Linkedin</a>
+			</div>
+		</div> -->
+	</div>
+</footer> 
+
+ <generic-modal #contactModal [currentModal]="contactModal" componentClassName="ContactComponent"></generic-modal>
+ <generic-modal #loginModal [currentModal]="loginModal" componentClassName="LoginComponent"></generic-modal>
+ 
+ <!-- START FOOTER -->
+ <footer class="p-b-15 p-t-20 hidden-md hidden-lg hidden-xlg">
+	<div class="container">
+		<div class="row">
+			<div class="m-r-30 p-b-20 col-sm-3 col-xs-3 hidden-xxs">
+				<a href="/">
+					<img id="logo-footer" src="assets/images/logo-svg-fundo-roxo.svg" width="125" alt="">
+				</a>
+			</div>
+			<div class="m-t-8 col-sm-offset-1 col-xs-offset-1 col-xxs-offset-0 col-sm-1 col-xs-2">
+				<a href="https://www.facebook.com/wearewoop/" class="text-white fs-13" target="_blank"><i class="fa fa-facebook-official fa-3x" aria-hidden="true"></i></a>
+			</div>
+			<div class="m-t-8 col-sm-1 col-xs-2">
+				<a href="https://twitter.com/woopsocial" class="text-white fs-13" target="_blank"><i class="fa fa-twitter-square fa-3x" aria-hidden="true"></i></a>
+			</div>
+			<div class="m-t-8 col-sm-1 col-xs-2">
+				<a href="https://www.instagram.com/woopsocial/" target="_blank" class="text-white fs-13"><i class="fa fa-instagram fa-3x" aria-hidden="true"></i></a>
+			</div>
+		</div>
+	</div>
+</footer>

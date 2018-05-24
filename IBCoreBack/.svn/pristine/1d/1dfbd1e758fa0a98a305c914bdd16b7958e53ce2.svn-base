@@ -1,0 +1,110 @@
+ package br.com.opsocial.server.actions.monitorings;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.application.MonitoringDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.client.entity.monitoring.TwitterPostMonitoringDTO;
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.client.entity.primitive.Long;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterPostMonitoringRemote;
+import br.com.opsocial.ejb.entity.twitter.TwitterPostMonitoring;
+
+@RestController
+@RequestMapping("opsocial")
+public class MonitoringTwitterAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/monitoring_twitter",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		MaintenanceMonitoringPostTagRemote monitoringPostTagRemote = (MaintenanceMonitoringPostTagRemote)
+				RecoverMaintenance.recoverMaintenance("MonitoringPostTag");
+		
+		List<java.lang.Character> profileTypes = new ArrayList<java.lang.Character>();
+		profileTypes.add(Profile.TWITTER);
+		List<Profile> profiles = profileRemote.getEntityByNetworkType(profileTypes, getUser().getAccount().getIdAccount());
+		
+		if(!profiles.isEmpty()) {
+
+			MonitoringDTO monitoring = (MonitoringDTO) getParameters().get("monitoring");
+			Long mostRecent = (Long) getParameters().get("mostRecent");
+			Long elder = (Long) getParameters().get("elder");
+			
+			// Carregar tags ------------------------------------
+
+			MaintenanceMonitoringTagRemote monitoringTagRemote = (MaintenanceMonitoringTagRemote) RecoverMaintenance.recoverMaintenance("MonitoringTag");
+			
+			monitoring.setMonitoringTags(MountDTO.mountMonitoringTag(
+					monitoringTagRemote.listByMonitoring(monitoring.getIdMonitoring(), monitoring.getAccount().getIdAccount())));
+			
+			//------------------------------------------------------
+			
+			MaintenanceTwitterPostMonitoringRemote remote = (MaintenanceTwitterPostMonitoringRemote) 
+					RecoverMaintenance.recoverMaintenance("TwitterPostMonitoring");
+			
+			List<TwitterPostMonitoring> twitterPostMonitorings = new ArrayList<TwitterPostMonitoring>();
+			
+			if(mostRecent != null) {
+				if(mostRecent.getValue() != null) {
+					twitterPostMonitorings = remote.listMostRecents(mostRecent.getValue(), monitoring.getIdMonitoring());
+					getParameters().put("requestType", new Character('N'));
+				} else {
+					twitterPostMonitorings = remote.listMostRecents(monitoring.getIdMonitoring(), 50);		
+				}
+				
+			} else if(elder != null) {
+				twitterPostMonitorings = remote.listElder(elder.getValue(), monitoring.getIdMonitoring(), 50);
+				getParameters().put("requestType", new Character('O'));
+				
+			} else {
+				twitterPostMonitorings = remote.listMostRecents(monitoring.getIdMonitoring(), 50);			
+			}
+			
+			List<PostMonitoringDTO> posts = new ArrayList<PostMonitoringDTO>();
+			
+			for(TwitterPostMonitoring twitterPostMonitoring : twitterPostMonitorings) {
+				
+				TwitterPostMonitoringDTO twitterPostMonitoringDTO = MountDTO.mountTwitterPostMonitoring(twitterPostMonitoring); 
+				twitterPostMonitoringDTO.setMonitoringPostTags(
+						MountDTO.mountMonitoringPostTag(monitoringPostTagRemote.listByMonitoringPost(twitterPostMonitoring.getTwitterPost().getStatusId().toString(), 
+							monitoring.getIdMonitoring(), twitterPostMonitoring.getTerm(), Profile.TWITTER)));
+				
+				posts.add(twitterPostMonitoringDTO);
+			}
+			
+			Date now = new Date();
+			
+			Date createTime = new Date(monitoring.getCreatedAt() * 1000);
+			createTime.setMinutes(createTime.getMinutes() + 5);
+			
+			if(now.after(createTime) && posts.isEmpty() && (mostRecent == null || mostRecent.getValue() == null)) {
+				getParameters().put("no_results", new Boolean(true));
+			} else {
+				getParameters().put("posts", posts);
+				getParameters().put("monitoring", monitoring);
+			}
+		} else {
+			getParameters().put("message", new StringUtil("É necessário possuir pelo menos 01 perfil do twitter adicionado para poder efetuar monitoramentos"));
+		}
+	}
+}

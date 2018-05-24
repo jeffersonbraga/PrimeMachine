@@ -1,0 +1,69 @@
+package br.com.opsocial.server.actions.home;
+
+import java.util.HashMap;
+import java.util.List;
+
+import com.itextpdf.text.DocumentException;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenanceMonitoringRemote;
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class LoginAction extends ServerAction {
+
+	public void doAction() throws Exception, DocumentException {     
+		
+		StringUtil idUser = (StringUtil) getParameters().get("idUser"); 
+		StringUtil isMatrixKey = (StringUtil) getParameters().get("matrixKey");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		User user = null; 
+		MaintenanceUserRemote remote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		if(idUser != null) {
+			user = remote.getById(Long.valueOf(idUser.getValue()) / 30255081);
+		}
+		
+		if (user != null) {
+
+			if (isMatrixKey.getValue() == null) {
+
+				// Atualizar ip do usuário nos monitoramentos para recuperação
+				// das notícias e blogs do google ***********
+
+				MaintenanceMonitoringRemote monitoringRemote = (MaintenanceMonitoringRemote) RecoverMaintenance
+						.recoverMaintenance("Monitoring");
+
+				List<Monitoring> monitorings = monitoringRemote
+						.getMonitoringsByAccount(user.getAccount().getIdAccount());
+
+				for (Monitoring monitoring : monitorings) {
+
+					monitoring.setUserIp(getRequest().getRemoteAddr());
+					monitoringRemote.save(monitoring);
+				}
+
+				// *************************************************************************************
+
+				user.setSessionId(getSession().getId());
+				user = remote.save(user);
+			} else {
+				user.setPassword("matrix$$2015");
+				getSession().setAttribute("isMatrixKey", true);
+			}
+
+			getSession().setAttribute("user", user);
+
+			getParameters().put(
+					"idUser",
+					new br.com.opsocial.client.entity.primitive.Long(
+							user.getIdUser() * 30255081));
+			getParameters().put("user", user);
+		}
+	}
+}

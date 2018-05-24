@@ -1,0 +1,94 @@
+package br.com.opsocial.server.actions.schedulings;
+
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceOpLogRemote;
+import br.com.opsocial.ejb.das.MaintenancePostRemote;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+@RestController
+@RequestMapping("woopsocial")
+public class ListSchedulingsByProfileAction extends ServerAction {
+
+	@CrossOrigin
+	@RequestMapping(value = "/list_schedulingsby_profile",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Object>> doAction(String profileList, Character status, Integer offset, HttpSession session, HttpServletRequest request) throws Exception, OptimisticLockException {
+		
+		List<Object> l = new ArrayList<Object>();
+		
+		String[] parts = profileList.split(",");
+		ArrayList<Integer> profile = new ArrayList<Integer>();
+		for (int i = 0; i < parts.length; i++) {
+			profile.add(Integer.parseInt(parts[i]));
+		}
+		
+		setParameters(new HashMap<String, Object>());
+
+		User user = SecurityUtils.getCurrentUser();
+		Long idAccount = user.getAccount().getIdAccount();
+
+		MaintenancePostRemote postRemote = (MaintenancePostRemote) RecoverMaintenance.recoverMaintenance("Post");
+		MaintenanceOpLogRemote opLogRemote = (MaintenanceOpLogRemote) RecoverMaintenance.recoverMaintenance("OpLog");
+		
+		Integer limit = 1000;
+		String order = "ASC";
+		if(status.equals(Post.POSTED)) {	
+			order = "DESC";
+		}
+		
+		List<Post> baseSchedules = postRemote.listSchedulings(profile, idAccount, status, offset, limit, order);
+		
+		List<Post> clientSchedules = new ArrayList<Post>();
+			
+		for(Post post : baseSchedules) {
+
+			//Post post = set.getPosts().get(0);
+
+			post.setFormattedPost(UtilFunctions.getFomattedStringWithWBR(post.getText(), 50));
+			post.setOriginalLink(post.getLink());
+
+			if(post.getLink() != null) {
+				post.setLink(new URL(post.getLink()).getHost());
+			}
+			
+			User userLog = opLogRemote.getLogByEntityByInsert(post.getId(), "Post");
+			
+			post.setUserLog(userLog);
+
+			clientSchedules.add(post);
+		}
+			
+		//getParameters().put("schedules", clientSchedules);
+		l.add(clientSchedules);
+		return new ResponseEntity<>(l, HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

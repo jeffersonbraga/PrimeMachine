@@ -1,0 +1,36 @@
+package br.com.opsocial.client.entity.googleplus;
+
+import br.com.opsocial.client.entity.monitoring.PostMonitoringDTO;
+import br.com.opsocial.ejb.entity.monitoring.Monitoring;
+
+public class GooglePlusPostMonitoringDTO extends PostMonitoringDTO {
+	
+	private static final long serialVersionUID = 1L;
+	
+	private GooglePlusPostDTO googlePlusPostDTO;
+	private Character garbage;
+	
+	public GooglePlusPostMonitoringDTO() {
+	}
+
+	public GooglePlusPostDTO getGooglePlusPostDTO() {
+		return googlePlusPostDTO;
+	}
+
+	public void setGooglePlusPostDTO(GooglePlusPostDTO googlePlusPostDTO) {
+		this.googlePlusPostDTO = googlePlusPostDTO;
+	}
+
+	public Character getGarbage() {
+		return garbage;
+	}
+
+	public void setGarbage(Character garbage) {
+		this.garbage = garbage;
+	}
+
+	public Monitoring getMonitoringDTO() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}

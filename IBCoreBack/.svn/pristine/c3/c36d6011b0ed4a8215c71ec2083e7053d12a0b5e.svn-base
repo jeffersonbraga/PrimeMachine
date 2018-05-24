@@ -1,0 +1,22 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.AuthFacebookCallbackServlet;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.networksintegrations.InstagramIntegration;
+
+public class InsertInstagramAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {	
+		
+		getSession().setAttribute("instagram_auth_action", AuthFacebookCallbackServlet.GET_ACCESS_TOKEN);
+		
+		getParameters().put("authenticationurl", new StringUtil("https://api.instagram.com/oauth/authorize/?client_id=" + 
+				InstagramIntegration.CLIENT_ID + "&redirect_uri=" + Persistent.SERVER_PATH + "&response_type=token&scope=likes+basic+public_content+follower_list"));
+		
+	}
+}

@@ -1,0 +1,259 @@
+<h6 class="fs-14">
+  <i class="fa fa-facebook-square m-r-5 v-align-middle"></i>
+  <span class="v-align-middle"><strong>{{ profile.screenName }} • Post to Post • </strong>Data from {{ dateFrom | date:"MM/dd/yyyy" }} to {{ dateUntil | date:"MM/dd/yyyy" }}</span>
+  <!-- <span class="v-align-middle"><strong>{{ profile.screenName }} • Post a Post • </strong>Dados de {{ dateFrom | date:"dd/MM/yyyy" }} à {{ dateUntil | date:"dd/MM/yyyy" }}</span> -->
+</h6>
+<nav class="buttons-downloads hidden-print hidden-xs hidden-sm">
+  <button class="btn btn-default" (click)="getXLS()">Exportar XLS</button>
+  <button class="btn btn-default" (click)="getPDF()">Exportar PDF</button>
+</nav>
+<div class="hidden-print sm-gutter">
+  <table class="table table-condensed no-footer dataTable" *ngIf="reportFacebookPostToPost.posts">
+    <thead>
+      <tr>
+        <th [ngStyle]="{'width': '10%'}">Data</th>
+        <th [ngStyle]="{'width': '25%'}">Post</th>
+        <th [ngStyle]="{'width': '20%'}">Alcance</th>
+        <th [ngStyle]="{'width': '45%'}">Interações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-template ngFor let-post [ngForOf]="reportFacebookPostToPost.posts" let-i="index">
+        <tr>
+          <td class="text-center" [ngClass]="{'dash': post.type == '128'}">
+            <div>
+              <span class="fa fa-calendar"></span>
+              <span class="date">
+                <strong class="text-uppercase">{{post.createdTime | date:"dd"}} {{post.createdTime | date:"MM" | monthName}}</strong>
+              </span>
+              <span class="year">{{post.createdTime | date:"yyyy"}}</span>
+            </div>
+            <div class="time">
+              <span class="fa fa-clock-o"></span>
+              <span class="hour"><strong>{{post.createdTime | date:"HH:mm"}}</strong></span>
+            </div>
+          </td>
+          <td [ngClass]="{'dash': post.type == '128'}">
+            <div *ngIf="post.type == '247' || post.type == '128'" class="img-adjust-table-chart pull-left">
+              <img src="{{post.photoSrc}}">
+            </div>
+            {{post.message | truncate : 200 : '...'}}
+          </td>
+          <td [ngClass]="{'dash': post.type == '128'}">
+            <div>
+              <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold pull-left">Alcance</h5>
+              <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold pull-right">{{ post.reach | abbreviateNumber }}</h4>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" [ngStyle]="{'width': post.organicReachPercentage + '%', 'background-color': '#00d6f6'}" data-toggle="tooltip"
+                data-placement="top" title="Organic {{post.organicReach}} ({{post.organicReachPercentage}}%)"></div>
+              <div class="progress-bar" [ngStyle]="{'width': post.paidReachPercentage + '%', 'background-color': '#00aed9'}" data-toggle="tooltip"
+                data-placement="top" title="Paid {{post.paidReach}} ({{post.paidReachPercentage}}%)"></div>
+            </div>
+          </td>
+          <td [ngClass]="{'dash': post.type == '128'}">
+            <div class="row">
+              <div class="col-md-12 col-lg-7">
+                <div class="row">
+                  <div class="col-lg-4 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].likeData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-4 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].loveData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-4 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].hahaData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-4 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].wowData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-4 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].sorryData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-4 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].angerData"></aside-horizontal-text-icon>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12 col-lg-5">
+                <div class="row">
+                  <div class="col-lg-6 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].commentsData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-6 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].sharesData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-6 col-md-4 col-sm-4 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].clicksData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-lg-6 col-md-4 m-b-10 m-t-3">
+                    <div>
+                      <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold pull-left">{{ post.interactions }}</h4>
+                      <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 m-l-4 bold pull-left">Total</h5>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="post.type == '128'">
+          <td>
+            <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold pull-left">retenção do público</h5>
+          </td>
+          <td>
+            <small-line-chart [data]="postsData[i].videoRetentionData" [height]="120"></small-line-chart>
+          </td>
+          <td>
+            <div>
+              <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold pull-left">Visualizações</h5>
+              <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold pull-right">{{ post.videoViews | abbreviateNumber }}</h4>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" [ngStyle]="{'width': post.videoOrganicViewsPercentage + '%', 'background-color': '#00d6f6'}" data-toggle="tooltip"
+                data-placement="top" title="Organic {{post.videoOrganicViews}} ({{post.videoOrganicViewsPercentage}}%)"></div>
+              <div class="progress-bar" [ngStyle]="{'width': post.videoPaidViewsPercentage + '%', 'background-color': '#00aed9'}" data-toggle="tooltip"
+                data-placement="top" title="Paid {{post.videoPaidViews}} ({{post.videoPaidViewsPercentage}}%)"></div>
+            </div>
+          </td>
+          <td>
+            <div class="row">
+              <div class="col-md-5">
+                <aside-pie-chart-double [data]="postsData[i].videoViewsTypeData"></aside-pie-chart-double>
+              </div>
+              <div class="col-md-7">
+                <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold">Gênero por faixa etária</h5>
+                <bar-chart [reduceXTicks]="false" [isStacked]="true" [height]="75" [data]="postsData[i].videoViewTimeByAgeGenderData"></bar-chart>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </tbody>
+  </table>
+</div>
+
+<div id="content-pdf">
+  <table class="table table-condensed no-footer dataTable" *ngIf="reportFacebookPostToPost.posts">
+    <thead>
+      <tr>
+        <th [ngStyle]="{'width': '18%'}">Data</th>
+        <th [ngStyle]="{'width': '30%'}">Post</th>
+        <th [ngStyle]="{'width': '17%'}">Alcance</th>
+        <th [ngStyle]="{'width': '35%'}">Interações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-template ngFor let-post [ngForOf]="reportFacebookPostToPost.posts" let-i="index">
+        <tr>
+          <td class="text-center">
+            <div>
+              <span class="fa fa-calendar"></span>
+              <span class="date">
+                    <strong class="text-uppercase">{{post.createdTime | date:"dd"}} {{post.createdTime | date:"MM" | monthName}}</strong>
+                  </span>
+              <span class="year">{{post.createdTime | date:"yyyy"}}</span>
+            </div>
+            <div class="time">
+              <span class="fa fa-clock-o"></span>
+              <span class="hour"><strong>{{post.createdTime | date:"HH:mm"}}</strong></span>
+            </div>
+          </td>
+          <td>
+            <div *ngIf="post.type == '247'" class="img-adjust-table-chart pull-left">
+              <img src="{{post.photoSrc}}">
+            </div>
+            <br>{{post.message}}</td>
+          <td>
+            <div class="text-center">
+              <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold">Alcance</h5>
+              <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold">{{ post.reach | abbreviateNumber }}</h4>
+            </div>
+            <div class="progress">
+              <div class="progress-bar progress-bar-complete" [ngStyle]="{'width': post.organicReachPercentage + '%', 'background-color': '#00d6f6'}" data-toggle="tooltip"
+                data-placement="top" title="Organic {{post.organicReach}} ({{post.organicReachPercentage}}%)"></div>
+              <div class="progress-bar" [ngStyle]="{'width': post.paidReachPercentage + '%', 'background-color': '#00aed9'}" data-toggle="tooltip"
+                data-placement="top" title="Paid {{post.paidReach}} ({{post.paidReachPercentage}}%)"></div>
+            </div>
+          </td>
+          <td>
+            <div class="row">
+              <div class="col-md-12 col-lg-7">
+                <div class="row">
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].likeData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].loveData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].hahaData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].wowData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].sorryData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].angerData"></aside-horizontal-text-icon>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-12 col-lg-5">
+                <div class="row">
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].commentsData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].sharesData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3">
+                    <aside-horizontal-text-icon [data]="postsData[i].clicksData"></aside-horizontal-text-icon>
+                  </div>
+                  <div class="col-xs-6 m-b-10 m-t-3 text-center">
+                    <div>
+                      <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold ">{{ post.interactions }}</h4>
+                      <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 m-l-4 bold">Total</h5>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="post.type == '128'">
+          <td>
+            <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold pull-left">retenção do<br>público</h5>
+          </td>
+          <td>
+            <small-line-chart [data]="postsData[i].videoRetentionData" [height]="96"></small-line-chart>
+          </td>
+          <td>
+            <div class="text-center">
+              <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold ">Visualizações</h5>
+              <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold ">{{ post.videoViews | abbreviateNumber }}</h4>
+            </div>
+            <div class="progress">
+              <div class="progress-bar progress-bar-complete" [ngStyle]="{'width': post.videoOrganicViewsPercentage + '%', 'background-color': '#00d6f6'}" data-toggle="tooltip"
+                data-placement="top" title="Organic {{post.videoOrganicViews}} ({{post.videoOrganicViewsPercentage}}%)"></div>
+              <div class="progress-bar" [ngStyle]="{'width': post.videoPaidViewsPercentage + '%', 'background-color': '#00aed9'}" data-toggle="tooltip"
+                data-placement="top" title="Paid {{post.videoPaidViews}} ({{post.videoPaidViewsPercentage}}%)"></div>
+            </div>
+          </td>
+          <td>
+            <div class="row">
+              <div class="col-xs-12">
+                <aside-pie-chart-double [data]="postsData[i].videoViewsTypeData"></aside-pie-chart-double>
+              </div>
+              <div class="col-xs-12">
+                <h5 class="font-montserrat text-uppercase fs-12 hint-text m-t-0 m-b-0 bold">Gênero por faixa etária</h5>
+                <bar-chart [reduceXTicks]="false" [isStacked]="true" [height]="75" [data]="postsData[i].videoViewTimeByAgeGenderData"></bar-chart>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </tbody>
+  </table>
+</div>

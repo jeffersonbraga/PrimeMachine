@@ -1,0 +1,155 @@
+package br.com.opsocial.server.utils.sets;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.facebook.FacebookAPI;
+import br.com.opsocial.server.utils.instagram.InstagramAPI;
+import br.com.opsocial.server.utils.twitter.TwitterAPI;
+import br.com.opsocial.ejb.das.MaintenanceNotificationRemote;
+import br.com.opsocial.ejb.das.MaintenancePostRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.application.Notification;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.ejb.entity.sets.Set;
+
+public class PostMessage implements Runnable {
+
+	private Post post;
+	private Profile profile;
+	
+	public PostMessage(Post post, Profile profile) {
+		this.post = post;
+		this.profile = profile;
+	}
+	
+	@Override
+	public void run() {
+		
+		MaintenanceSetRemote setRemote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+		MaintenancePostRemote postRemote = (MaintenancePostRemote) RecoverMaintenance.recoverMaintenance("Post");
+		
+		Boolean wasSent = true;
+		String notificationMessage = "";
+		Boolean tryToPostAgain = false;
+		
+		try {
+			
+			post.setPosted(Post.POSTING);
+			post.setCountPostingAttempts(post.getCountPostingAttempts() + 1);
+			postRemote.save(post);
+			
+			if(profile.getType().equals(Profile.TWITTER)) {
+
+				wasSent = new TwitterAPI().post(post, profile);
+
+				if(!wasSent) {
+					notificationMessage = "O agendamento feito com o perfil " + profile.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profile.getType()) + 
+							" na data de " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(post.getPostDate()) + " não pode ser enviado" +
+							" devido a uma instabilidade na API do Twitter.";
+				}
+				
+			} else if(profile.getType().equals(Profile.FACEBOOK) ||
+					profile.getType().equals(Profile.FACEBOOK_PAGE)) {
+
+				wasSent = new FacebookAPI().post(post, profile);
+
+				if(!wasSent) {
+					notificationMessage = "O agendamento feito com o perfil " + profile.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profile.getType()) + 
+							" na data de " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(post.getPostDate()) + " não pode ser enviado" +
+							" devido a uma instabilidade na API do Facebook.";
+				}
+				
+			} else if(profile.getType().equals(Profile.INSTAGRAM)) {
+				
+				InstagramAPI instagramAPI = new InstagramAPI();	
+				
+				try {
+	
+					wasSent = instagramAPI.post(post, profile);
+
+					if(!wasSent) {
+						notificationMessage = "O agendamento feito com o perfil " + profile.getScreenName() + 
+								" para o " + UtilFunctions.getNetworkName(profile.getType()) + 
+								" na data de " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(post.getPostDate()) + " não pode ser enviado. " +
+								instagramAPI.extractSendImageErrorMessage();
+					}
+
+				} catch (Exception e) {
+					System.out.println("Exception interceptada com sucesso!!!");
+					wasSent = false;
+					notificationMessage = "O agendamento feito com o perfil " + profile.getScreenName() + 
+							" para o " + UtilFunctions.getNetworkName(profile.getType()) + 
+							" na data de " + new SimpleDateFormat("dd/MM/yyyy HH:mm").format(post.getPostDate()) + " não pode ser enviado" +
+							" devido a uma instabilidade na API do Instagram.";
+					e.printStackTrace();
+				}
+				
+				tryToPostAgain = instagramAPI.tryToPostAgain();
+			}
+			
+			post = postRemote.getById(post.getIdPost());
+			
+			if(wasSent) {
+				
+				post.setPosted(Post.POSTED);
+				postRemote.save(post);
+				
+				Set set = setRemote.getById(post.getSet().getIdSet());
+
+				set.setState(Set.OFF);
+				set.setStatus(Set.FINALIZED);
+
+				setRemote.save(set);
+			} else {
+				
+				// Verifica se houve algum problema temporário no envio da postagem, 
+				// que pode ser reenviada no próximo minuto.
+				if(!tryToPostAgain) {
+					
+					post.setPosted(Post.ERROR_POSTING);
+					postRemote.save(post);
+					
+					MaintenanceNotificationRemote notificationRemote = (MaintenanceNotificationRemote)
+							RecoverMaintenance.recoverMaintenance("Notification");
+					
+					MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote)
+							RecoverMaintenance.recoverMaintenance("Profile");
+					
+					profile = profileRemote.getById(profile.getIdProfile());
+					
+					Notification notification = new Notification();
+					notification.setAction("ListSchedulingsAction");
+					notification.setProfile(profile);
+					notification.setAccount(profile.getAccount());							
+					notification.setDate(new Date());
+					notification.setMessage(notificationMessage);
+					notification.setUnread(true);
+					
+					try {
+						notificationRemote.save(notification);
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					
+					new Thread(new PostNotDeliveredEmail(post, notificationMessage)).start();
+				}
+				
+			}
+			
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}	
+}

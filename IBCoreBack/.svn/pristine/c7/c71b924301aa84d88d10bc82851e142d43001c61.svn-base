@@ -1,0 +1,27 @@
+package br.com.opsocial.server.actions.profiles;
+
+import br.com.opsocial.client.entity.primitive.Boolean;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+
+public class RefreshTokenByTwitterContents extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception {
+		
+		if(getSession().getAttribute("message") != null) {
+			getParameters().put("message", getSession().getAttribute("message"));
+		}
+		
+		if(getSession().getAttribute("alr_rec_twitter") != null) {
+			getParameters().put("alrRecTwitter", getSession().getAttribute("alr_rec_twitter"));
+			if(((Boolean) getSession().getAttribute("alr_rec_twitter")).getValue()) {
+				getSession().removeAttribute("message");
+				getSession().removeAttribute("alr_rec_twitter");
+				
+				ValidateTokensController.validatingTokens(getUser().getAccount(), getContext());
+			}
+		}
+	}
+
+}

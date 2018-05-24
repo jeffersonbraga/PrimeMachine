@@ -1,0 +1,46 @@
+package br.com.opsocial.server.actions.reports.facebook;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookOverviewDTO;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.server.utils.reports.xls.ReportFacebookOverviewXLS;
+import entity.application.Profile;
+
+@RestController
+@RequestMapping("opsocial")
+public class ReportFacebookOverviewXLSAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/report_facebook_overview_xls",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		
+		setParameters(new HashMap<String, Object>());
+		
+		ReportFacebookOverviewDTO reportFacebookOverview = UtilReports.mountReportFacebookOverviewDTO(profile, new GenericDateInterval(dateFrom, dateUntil), null);
+
+		ReportFacebookOverviewXLS reportFacebookOverviewXLS = new ReportFacebookOverviewXLS(reportFacebookOverview, profile);
+		reportFacebookOverviewXLS.createXLS();
+
+		getParameters().put("xlsToDownload", new StringUtil(reportFacebookOverviewXLS.getFileName()));
+		getParameters().put("xlsNameToDownload", new StringUtil(reportFacebookOverviewXLS.getFormattedFileName()));
+		getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(profile.getAccount().getIdAccount()));
+	}
+	
+}

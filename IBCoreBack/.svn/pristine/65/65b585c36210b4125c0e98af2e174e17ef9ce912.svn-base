@@ -1,0 +1,271 @@
+package br.com.opsocial.server.utils.twitter;
+
+import java.io.File;
+import java.util.Date;
+
+import br.com.opsocial.ejb.das.MaintenanceConversationRemote;
+import br.com.opsocial.ejb.das.MaintenanceMessageRemote;
+import br.com.opsocial.ejb.das.MaintenanceNotificationRemote;
+import br.com.opsocial.ejb.entity.application.Notification;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.mailbox.Conversation;
+import br.com.opsocial.ejb.entity.mailbox.Message;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.DirectMessage;
+import twitter4j.ResponseList;
+import twitter4j.Status;
+import twitter4j.StatusUpdate;
+import twitter4j.Twitter;
+import twitter4j.UploadedMedia;
+import twitter4j.media.ImageUpload;
+import twitter4j.media.ImageUploadFactory;
+import twitter4j.media.MediaProvider;
+
+public class TwitterAPI {
+
+	public TwitterAPI() {
+	}
+	
+	public boolean post(Post post, Profile profile) {
+	
+		Boolean wasSent = true;
+		String tempPath = ServicesImpl.context.getInitParameter("uploadDirTemp") + "/";
+		String videoPostsPath = ServicesImpl.context.getInitParameter("uploadDirVideoPosts") + "/"; 
+		
+		try {
+			
+			TwitterIntegration twitterIntegration = new TwitterIntegration();
+			Twitter twitter = twitterIntegration.getTwitter(profile.getToken(), profile.getTokenSecret());
+
+			if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_PICTURE)) {
+				ImageUpload upload = new ImageUploadFactory(
+						twitterIntegration.getConfigurationBuilderForMedia(profile.getToken(), profile.getTokenSecret())).
+						getInstance(MediaProvider.TWITTER);
+				
+				String pathName = tempPath + post.getPicture().substring(post.getPicture().lastIndexOf("/") + 1);
+				
+				try {
+					
+					upload.upload(new File(pathName), post.getText());
+					wasSent = true;
+
+				} catch (Exception e) {
+					wasSent = false;
+					e.printStackTrace();
+				}
+			} else if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_VIDEO)) {
+
+				System.out.println("Uploading video file: " + videoPostsPath + post.getVideoName());
+				UploadedMedia uploadedMedia = twitter.uploadMedia(new File(videoPostsPath + post.getVideoName()));
+				System.out.println("Upload completed");
+				System.out.println("Posting...");
+				StatusUpdate statusUpdate = new StatusUpdate(post.getText());
+				statusUpdate.setMediaIds(new long[]{uploadedMedia.getMediaId()});
+				Status status = twitter.updateStatus(statusUpdate);
+				System.out.println("Posted: " + status.getId());
+
+				wasSent = true;
+				
+			} else {
+				try {
+					
+					twitter.updateStatus(post.getText());
+					wasSent = true;
+					
+				} catch (Exception e) {
+					wasSent = false;
+					e.printStackTrace();
+				}
+			}
+		} catch (Exception e) {
+			wasSent = false;
+			e.printStackTrace();
+		}
+		
+		return wasSent;
+	}
+	
+	public void saveTwitterMessages(Profile profile) {
+		
+		MaintenanceConversationRemote conversationRemote = (MaintenanceConversationRemote) RecoverMaintenance.recoverMaintenance("Conversation");
+
+		MaintenanceMessageRemote messageRemote = (MaintenanceMessageRemote) RecoverMaintenance.recoverMaintenance("Message");
+
+		MaintenanceNotificationRemote notificationRemote = (MaintenanceNotificationRemote) RecoverMaintenance.recoverMaintenance("Notification");
+
+		try {
+		
+			TwitterIntegration twitterIntegration = new TwitterIntegration();
+
+			Twitter twitter = twitterIntegration.getTwitter(profile.getToken(), profile.getTokenSecret());
+
+			ResponseList<DirectMessage> directMessages = twitter.getDirectMessages();
+
+			for(DirectMessage directMessage : directMessages) {
+
+				Conversation conversation = conversationRemote.getByNetworkConversationId(String.valueOf(directMessage.getSenderId()), profile.getIdProfile());
+
+				if(conversation == null) {
+					conversation = new Conversation();
+					conversation.setNetworkConversationId(String.valueOf(directMessage.getSenderId()));
+					conversation.setUserName(directMessage.getSenderScreenName());
+					conversation.setUserId(String.valueOf(directMessage.getSenderId()));
+					conversation.setProfile(profile);
+					conversation.setUnread(true);
+				}
+
+				conversation.setUpdatedTime(directMessage.getCreatedAt().getTime());
+				conversation.setUserAvatar(directMessage.getSender().getProfileImageURLHttps());
+
+				try {
+					conversation = conversationRemote.save(conversation);
+				} catch (IllegalArgumentException e1) {
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+
+				Message message = messageRemote.getByIdAndConversation(String.valueOf(directMessage.getId()), conversation.getIdConversation());
+
+				if(message == null) {
+
+					try {
+						conversation = conversationRemote.getById(conversation.getIdConversation());
+						conversation.setUpdatedTime(directMessage.getCreatedAt().getTime());
+						conversation.setUnread(true);
+						conversation = conversationRemote.save(conversation);
+					} catch (IllegalArgumentException e1) {
+						e1.printStackTrace();
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+
+					message = new Message();
+					message.setNetworkMessageId(String.valueOf(directMessage.getId()));
+					message.setConversation(conversation);
+					message.setCreatedTime(directMessage.getCreatedAt().getTime());
+					message.setMessage(directMessage.getText());
+					message.setUserId(String.valueOf(directMessage.getSenderId()));
+					message.setUserName(directMessage.getSenderScreenName());
+
+					try {
+						messageRemote.save(message);
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					Integer unreadConversations = conversationRemote.listUnreadConversations(profile.getIdProfile());
+
+					Notification notification = notificationRemote.getByProfile(profile.getIdProfile());
+
+					if(notification == null) {
+						notification = new Notification();
+						notification.setAction("ShowMailboxAction");
+						notification.setProfile(profile);
+						notification.setAccount(profile.getAccount());
+					} 
+
+					notification.setDate(new Date());
+					notification.setMessage(profile.getScreenName() + " possui " + unreadConversations + " novas mensagens");
+					notification.setUnread(true);
+
+					try {
+						notificationRemote.save(notification);
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}	
+				}
+			}
+
+			ResponseList<DirectMessage> sentMessages = twitter.getSentDirectMessages();
+
+			for(DirectMessage sentMessage : sentMessages) {
+
+				Conversation conversation = conversationRemote.getByNetworkConversationId(String.valueOf(sentMessage.getRecipientId()), profile.getIdProfile());
+
+				if(conversation == null) {
+					conversation = new Conversation();
+					conversation.setNetworkConversationId(String.valueOf(sentMessage.getRecipientId()));
+					conversation.setUserName(sentMessage.getRecipientScreenName());
+					conversation.setUserId(String.valueOf(sentMessage.getRecipientId()));
+					conversation.setProfile(profile);
+					conversation.setUnread(true);
+				}
+
+				conversation.setUpdatedTime(sentMessage.getCreatedAt().getTime());
+
+				try {
+					conversation = conversationRemote.save(conversation);
+				} catch (IllegalArgumentException e1) {
+					e1.printStackTrace();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+
+				Message message = messageRemote.getByIdAndConversation(String.valueOf(sentMessage.getId()), conversation.getIdConversation());
+
+				if(message == null) {
+
+					try {	
+						conversation = conversationRemote.getById(conversation.getIdConversation());
+						conversation.setUnread(true);
+						conversation.setUpdatedTime(sentMessage.getCreatedAt().getTime());
+						conversation = conversationRemote.save(conversation);
+					} catch (IllegalArgumentException e1) {
+						e1.printStackTrace();
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+
+					message = new Message();
+					message.setConversation(conversation);
+					message.setNetworkMessageId(String.valueOf(sentMessage.getId()));
+					message.setCreatedTime(sentMessage.getCreatedAt().getTime());
+					message.setMessage(sentMessage.getText());
+					message.setUserId(String.valueOf(sentMessage.getSenderId()));
+					message.setUserName(sentMessage.getSenderScreenName());
+
+					try {
+						message = messageRemote.save(message);
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					Integer unreadConversations = conversationRemote.listUnreadConversations(profile.getIdProfile());
+
+					Notification notification = notificationRemote.getByProfile(profile.getIdProfile());
+
+					if(notification == null) {
+						notification = new Notification();
+						notification.setAction("ShowMailboxAction");
+						notification.setProfile(profile);
+						notification.setAccount(profile.getAccount());
+					} 
+
+					notification.setDate(new Date());
+					notification.setMessage(profile.getScreenName() + " possui " + unreadConversations + " novas mensagens");
+					notification.setUnread(true);
+
+					try {
+						notificationRemote.save(notification);
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}	
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}

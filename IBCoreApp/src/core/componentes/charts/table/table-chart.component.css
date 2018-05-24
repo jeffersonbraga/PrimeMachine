@@ -1,0 +1,77 @@
+.left{
+	text-align: left !important;
+}
+
+.right{
+	text-align: right !important;
+}
+
+.table:not(.dataTable) thead tr th {
+    color: rgba(44,44,44,0.35);
+    border-bottom: 1px solid rgba(210, 209, 209, 0.7);
+}
+
+.table:not(.dataTable) thead tr th:first-child {
+    color: #2c2c2c;
+}
+
+.dataTable td, .dataTable th{
+    color: #626262 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+
+.dataTable .cyan{
+    color: #00d6f6;
+}
+
+.dataTable strong {
+    position: relative;
+    top: -2px;
+}
+
+table.dataTable{
+    table-layout: auto !important;
+}
+
+table.dataTable .sorting_asc, table.dataTable .sorting_desc{
+    color: #2c2c2c !important;
+}
+
+table.dataTable .sorting{
+    color: rgba(44,44,44,0.35) !important;
+}
+
+.table tbody td{
+    height: 55px;
+}
+
+.img-adjust-table-chart {
+    max-height: 70px;
+    max-width: 120px;
+    margin-right: 10px;
+}
+
+.img-adjust-table-chart img {
+    height: 70px;
+    width: 120px;
+    object-fit: fill;
+}
+
+@media print{
+    .img-adjust-table-chart {
+        max-height: 75px;
+        max-width: 160px;
+        margin-bottom: 10px;
+    }
+
+    .img-adjust-table-chart img {
+        height: 75px;
+        width: 160px;
+    }
+}
+
+.table-chart th, .table-chart td {
+    padding: 12px 5px !important;
+}

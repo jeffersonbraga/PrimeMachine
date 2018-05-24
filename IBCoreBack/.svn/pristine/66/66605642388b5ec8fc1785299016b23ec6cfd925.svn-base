@@ -1,0 +1,27 @@
+package br.com.opsocial.server.actions.feeds.instagram;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.services.ServerAction;
+
+@RestController
+@RequestMapping("woopsocial")
+public class RecoverInstagramContentsAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/recover_instagram_contents",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		getParameters().put("profile", getSession().getServletContext().getAttribute("profile"));
+		getSession().getServletContext().setAttribute("profile", null);
+		getParameters().put("message", new StringUtil((String) getSession().getServletContext().getAttribute("message")));
+		getSession().getServletContext().setAttribute("message", null);
+	}
+}

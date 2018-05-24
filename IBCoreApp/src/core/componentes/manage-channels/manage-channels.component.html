@@ -1,0 +1,66 @@
+<div class="panel panel-transparent m-b-0">
+  <div class="panel-heading">
+    <div class="panel-title">
+      adicionar novos canais
+    </div>
+  </div>
+  <div class="panel-body p-t-0 p-b-0">
+    <div class="row">
+      <div class="col-md-3">
+        <button class="btn btn-info btn-facebook btn-mobile" type="button" (click)="openFacebookAuthPage()">
+          <span class="pull-left m-l-3">
+            <i class="fa fa-facebook fs-16"></i>
+          </span>
+          <span class="bold m-l-5 m-r-4">Adicionar Facebook</span>
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-info btn-twitter btn-mobile" type="button" (click)="openTwitterAuthPage()">
+          <span class="pull-left sm-m-l-0 m-l-11">
+            <i class="fa fa-twitter fs-16"></i>
+          </span>
+          <span class="bold m-l-5 m-r-11">Adicionar Twitter</span>
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-info btn-linkedin btn-mobile" type="button" (click)="openLinkedInAuthPage()">
+          <span class="pull-left sm-m-l-0 m-l-5">
+            <i class="fa fa-linkedin fs-16"></i>
+          </span>
+          <span class="bold m-l-5 m-r-5">Adicionar Linkedin</span>
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-info btn-instagram btn-mobile" type="button" (click)="openInstagramAuthPage()">
+          <span class="pull-left">
+            <i class="fa fa-instagram fs-16"></i>
+          </span>
+          <span class="bold sm-m-l-0 m-l-6">Adicionar Instagram</span>
+        </button>
+      </div>
+    </div>
+    <div [class.invisible]="!hasError" class="alert alert-warning m-t-10 m-b-0" role="alert" style="transition: none !important;">
+      <button class="close" (click)="hideErrorMessage()"></button>
+      <strong>Ops! </strong>{{errorMessage}}
+    </div>
+  </div>
+</div>
+<div class="panel panel-transparent">
+  <div class="panel-heading">
+    <div class="panel-title p-t-10">
+      meus canais
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="row">
+      <div *ngFor="let item of profiles; let i = index">
+        <div class="clearfix" *ngIf="i % 3 == 0"></div>
+        <div class="col-md-4">
+          <button_channels [profile]="item" 
+            [isEditable]="item.type == 'I'" [isExcludable]="true" 
+            [isSelectable]="false" (profileToEdit)="editInstagramChannel($event)" (profileToDelete)="deleteChannel($event)"></button_channels>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

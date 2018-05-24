@@ -1,0 +1,31 @@
+ul {
+    list-style-position: inside;
+    list-style-type: none;
+    padding-left: 0px;
+}
+
+li {
+    cursor: pointer;
+}
+
+.left-collumn {
+    border-right: 1px solid #e6e6e6;
+}
+
+.tutorial {
+    line-height: 24px;
+    letter-spacing: normal;
+}
+
+.active {
+    font-weight: bold;
+}
+
+.marker, .active {
+    color: #630baf;
+}
+
+.tutorial-img {
+    max-width: 100%;
+    max-height: 232px;
+}

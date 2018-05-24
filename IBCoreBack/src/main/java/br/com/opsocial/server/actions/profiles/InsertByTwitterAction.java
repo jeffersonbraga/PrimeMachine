@@ -1,0 +1,58 @@
+package br.com.opsocial.server.actions.profiles;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonObject;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+import br.com.opsocial.server.services.AuthFacebookCallbackServlet;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import twitter4j.Twitter;
+import twitter4j.auth.RequestToken;
+
+@RestController
+@RequestMapping("woopsocial")
+public class InsertByTwitterAction extends ServerAction {
+	
+	@CrossOrigin
+	@RequestMapping(value = "/insertby_twitter",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<String> doActionNew(HttpSession session, HttpServletRequest request) throws Exception {
+		
+		Twitter twitterSystem = new TwitterIntegration().getSystemTwitter();
+		
+		session.setAttribute("twitter_auth_action", AuthFacebookCallbackServlet.GET_ACCESS_TOKEN);
+		session.setAttribute("alr_rec_twitter", new Boolean(false));
+		session.setAttribute("twitterSystem", twitterSystem);
+		
+		String callbackURL = OpSocialBackApplication.SERVER_PATH + "/woopsocial/refresh_tokenby_twitter/callback";
+
+        RequestToken requestToken = twitterSystem.getOAuthRequestToken(callbackURL);
+        
+        session.setAttribute("requestToken", requestToken);
+        
+        JsonObject response = new JsonObject();
+	    response.addProperty("authenticationUrl", requestToken.getAuthorizationURL());
+		
+		return new ResponseEntity<String>(response.toString(), HttpStatus.OK);
+	}
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		// TODO Auto-generated method stub
+		
+	}
+}

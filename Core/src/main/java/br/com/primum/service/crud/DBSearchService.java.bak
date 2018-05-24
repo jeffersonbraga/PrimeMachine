@@ -1,0 +1,48 @@
+package br.com.primum.service.crud;
+
+import java.util.List;
+
+import br.com.primum.bo.crud.DBSearchBO;
+
+public class DBSearchService {
+
+	private DBSearchBO dbSearch;
+
+	public DBSearchBO getDbSearch() {
+		return dbSearch;
+	}
+
+	public void setDbSearch(DBSearchBO dbSearch) {
+		this.dbSearch = dbSearch;
+	}
+
+	public Object efetuarBuscaValor(String tabela, String campo, String valor, String classeJava) throws Exception {
+		this.setDbSearch(new DBSearchBO());
+		return this.getDbSearch().efetuarBuscaValor(tabela, campo, valor, classeJava);
+	}
+
+	public List<?> buscarTodosRegistros(String tabela, String classeJava) {
+		this.setDbSearch(new DBSearchBO());
+		return this.getDbSearch().buscarTodosRegistros(tabela, classeJava);
+	}
+
+	public List<?> buscarTodosRegistrosCompleto(String tabela, String classeJava) {
+		this.setDbSearch(new DBSearchBO());
+		return this.getDbSearch().buscarTodosRegistrosCompleto(tabela, classeJava);
+	}
+
+	public Object efetuarBuscaValorCompleto(String tabela, String campo, String valor, String classeJava) throws Exception {
+		this.setDbSearch(new DBSearchBO());
+		return this.getDbSearch().efetuarBuscaValorCompleto(tabela, campo, valor, classeJava);
+	}
+
+	public Object efetuarBuscaValorFiltro(String tabela, String campo, String valor, String classeJava, String campoFiltro, Object valorFiltro) throws Exception {
+		this.setDbSearch(new DBSearchBO());
+		return this.getDbSearch().efetuarBuscaValorFiltro(tabela, campo, valor, classeJava, campoFiltro, valorFiltro);
+	}
+
+	public List<?> buscarRegistrosFiltro(String tabela, String classeJava, String campoFiltro, Object valorFiltro) {
+		this.setDbSearch(new DBSearchBO());
+		return this.getDbSearch().buscarRegistrosFiltro(tabela, classeJava, campoFiltro, valorFiltro);
+	}	
+}

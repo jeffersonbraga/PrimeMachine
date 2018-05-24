@@ -1,0 +1,63 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class ComposeAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/compose_action",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception {
+		
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+
+		User user = (User) getSession().getAttribute("user");
+		
+		List<Character> types = new ArrayList<Character>();
+		types.add(Profile.FACEBOOK);
+		types.add(Profile.FACEBOOK_PAGE);
+		types.add(Profile.TWITTER);
+		types.add(Profile.INSTAGRAM);
+
+		List<Profile> profiles = remote.getEntityByNetworkType(types, user.getAccount().getIdAccount());
+
+		List<Profile> profileDTOs = new ArrayList<Profile>();
+
+		// Carregar primeiro Páginas/Perfis Facebook.
+		for(Profile profile : profiles) {
+			if(profile.getType().equals(Profile.FACEBOOK_PAGE) || profile.getType().equals(Profile.FACEBOOK)) {
+				profileDTOs.add(profile);
+			}
+		}
+
+		// Carregar restante das redes.
+		for(Profile profile : profiles) {
+			if(!profile.getType().equals(Profile.FACEBOOK_PAGE) && !profile.getType().equals(Profile.FACEBOOK)) {
+				if(profile.getType().equals(Profile.INSTAGRAM)) {
+					if(profile.getIsSchedulingAuthenticated() == Profile.ACTIVE) {
+						profileDTOs.add(profile);
+					}
+				} else {
+					profileDTOs.add(profile);
+				}
+			}			
+		}
+		
+		getParameters().put("profiles", profileDTOs);
+	}
+}

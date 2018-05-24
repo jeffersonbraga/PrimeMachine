@@ -1,0 +1,55 @@
+package br.com.opsocial.client.entity.report.instagram;
+
+import entity.generic.Persistent;
+
+public class InstagramInteractionRankingDTO extends Persistent implements Comparable<InstagramInteractionRankingDTO> {
+
+	private static final long serialVersionUID = 1L;
+	
+	private Integer hour;
+	private Long count; 
+	private Double percentage;
+	
+	public InstagramInteractionRankingDTO() {
+		
+	}
+	
+	public Long getCount() {
+		return count;
+	}
+
+	public void setCount(Long count) {
+		this.count = count;
+	}
+
+	public Integer getHour() {
+		return hour;
+	}
+
+	public void setHour(Integer hour) {
+		this.hour = hour;
+	}
+
+	public Double getPercentage() {
+		return percentage;
+	}
+
+	public void setPercentage(Double percentage) {
+		this.percentage = percentage;
+	}
+
+	@Override
+	public int compareTo(InstagramInteractionRankingDTO o) {
+		
+		if (this.count < o.count) {  
+            return -1;  
+        }  
+		
+        if (this.count > o.count) {  
+            return 1;  
+        }
+        
+        return 0;
+	}
+	
+}

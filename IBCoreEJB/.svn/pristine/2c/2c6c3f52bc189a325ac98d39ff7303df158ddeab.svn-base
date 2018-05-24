@@ -1,0 +1,113 @@
+package br.com.opsocial.ejb.entity.instagram;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
+import javax.persistence.Table;
+
+import br.com.opsocial.ejb.entity.application.idclass.InstagramFollowerId;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@Entity
+@Table(name="instagramfollowers", schema="opsocial")
+@IdClass(InstagramFollowerId.class)
+public class InstagramFollower extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	@Id
+	@Column(name="idprofile")
+	private String idProfile;
+	
+	@Id
+	@Column(name="followerid")
+	private String followerId;
+	
+	@Column(name="username")
+	private String userName;
+	
+	@Column(name="fullname")
+	private String fullName;
+	
+	@Column(name="profilepicture")
+	private String profilePicture;
+	
+	@Column(name = "isstillfollower")
+	private Character isStillFollower;
+	
+	@Column(name = "followingdate")
+	private Long followingDate;
+	
+	@Column(name = "unfollowdate")
+	private Long unfollowDate;
+	
+	public InstagramFollower() {
+		
+	}
+
+	public String getIdProfile() {
+		return idProfile;
+	}
+
+	public void setIdProfile(String idProfile) {
+		this.idProfile = idProfile;
+	}
+
+	public String getFollowerId() {
+		return followerId;
+	}
+
+	public void setFollowerId(String followerId) {
+		this.followerId = followerId;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public String getProfilePicture() {
+		return profilePicture;
+	}
+
+	public void setProfilePicture(String profilePicture) {
+		this.profilePicture = profilePicture;
+	}
+
+	public Character getIsStillFollower() {
+		return isStillFollower;
+	}
+
+	public void setIsStillFollower(Character isStillFollower) {
+		this.isStillFollower = isStillFollower;
+	}
+
+	public Long getFollowingDate() {
+		return followingDate;
+	}
+
+	public void setFollowingDate(Long followingDate) {
+		this.followingDate = followingDate;
+	}
+
+	public String getFullName() {
+		return fullName;
+	}
+
+	public void setFullName(String fullName) {
+		this.fullName = fullName;
+	}
+
+	public Long getUnfollowDate() {
+		return unfollowDate;
+	}
+
+	public void setUnfollowDate(Long unfollowDate) {
+		this.unfollowDate = unfollowDate;
+	}
+	
+}

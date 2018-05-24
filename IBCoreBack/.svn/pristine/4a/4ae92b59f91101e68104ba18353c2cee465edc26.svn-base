@@ -1,0 +1,1250 @@
+package br.com.opsocial.server.utils.instagram;
+
+import java.awt.Color;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.util.Date;
+import java.util.UUID;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import com.google.api.client.http.HttpStatusCodes;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.instagram.InstagramDevice;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.services.ServicesImpl;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+
+public class InstagramPostHelper {
+	
+	private InstagramProxyClient instagramProxyClient;
+	private String loginResponse;
+	private String sendImageResponse;
+	private String configImageResponse;
+	private String sendVideoMessage;
+	private String sendChunkVideoMessage;
+	private String configVideoResponse;
+	private Boolean isAccountLocked;
+	private Boolean isAccountAuthenticated;
+	private Integer statusCodeOfLastRequest;
+	
+	private String jsonResponseError;
+	private Integer statusCode;
+	
+	private String rankToken;
+	
+	public static final String LOGIN_URL = "https://i.instagram.com/api/v1/accounts/login/";
+	public static final String GET_CSRF_TOKEN_URL = "https://i.instagram.com/api/v1/si/fetch_headers/";
+	public static final String SYNC_FEATURES_URL = "https://i.instagram.com/api/v1/qe/sync/"; 
+	public static final String AUTO_COMPLETE_USER_LIST_URL = "https://i.instagram.com/api/v1/friendships/autocomplete_user_list/";
+	public static final String TIMELINE_FEED_URL = "https://i.instagram.com/api/v1/feed/timeline/";
+	public static final String RANKED_RECIPIENTS_URL = "https://i.instagram.com/api/v1/direct_v2/ranked_recipients/";
+	public static final String RECENT_RECIPIENTS_URL = "https://i.instagram.com/api/v1/direct_share/recent_recipients/";
+	public static final String MEGAPHONE_LOG_URL = "https://i.instagram.com/api/v1/megaphone/log/";
+	public static final String DIRECT_V2_INBOX_URL = "https://i.instagram.com/api/v1/direct_v2/inbox/";
+	public static final String NEWS_INBOX_URL = "https://i.instagram.com/api/v1/news/inbox/";
+	public static final String FEED_REELS_TRAY_URL = "https://i.instagram.com/api/v1/feed/reels_tray/";
+	public static final String DISCOVER_EXPLORE_URL = "https://i.instagram.com/api/v1/discover/explore/";
+	
+	public static final String UPLOAD_IMAGE_URL = "https://i.instagram.com/api/v1/upload/photo/";
+	public static final String CONFIGURE_IMAGE_URL = "https://i.instagram.com/api/v1/media/configure/";
+	
+	public static final String UPLOAD_VIDEO_URL = "https://i.instagram.com/api/v1/upload/video/";
+	public static final String CONFIGURE_VIDEO_URL = "https://i.instagram.com/api/v1/media/configure/?video=1";
+	
+	public static final String CHECKPOINT_REQUIRED = "checkpoint_required";
+	public static final String PASSWORD_INCORRECT = "The password you entered is incorrect. Please try again.";
+	public static final String PASSWORD_INCORRECT_ALT_VERSION = "The password you entered is incorrect. Please try again or log in with Facebook.";
+	public static final String PASSWORD_INCORRECT_IN_PT_BR = "A senha que você inseriu está incorreta. Tente novamente.";
+	public static final String USERNAME_TO_LOGIN = "Please use your username to login";
+	public static final String USERNAME_NOT_EXIST = "The username you entered doesn't appear to belong to an account. Please check your username and try again.";
+	
+	public static final String NOT_ALLOWED_ASPECT_RATIO = "Uploaded image isn't in an allowed aspect ratio";
+	
+	public static final String REPORT_SCHEDULE_ERROR_MESSAGE = "Ocorreu um erro durante o login. Tente novamente.";
+	public static final String CHECKPOINT_REQUIRED_PT_BR = "Você precisa fornecer uma autorização no seu dispositivo móvel. O Instagram enviou uma notificação em sua conta, você deverá marcar o novo dispositivo como seguro para que o agendamento possa funcionar corretamente.";
+	public static final String PASSWORD_INCORRECT_PT_BR = "A senha que você digitou está incorreta. Por favor, tente novamente.";
+	public static final String USERNAME_TO_LOGIN_PT_BR = "Por favor, use seu nome de usuário para acessar.";
+	public static final String USERNAME_NOT_EXIST_PT_BR = "O nome de usuário que você digitou não parece pertencer a uma conta. Por favor, verifique seu nome de usuário e tente novamente.";
+	
+	public static final String NOT_ALLOWED_ASPECT_RATIO_PT_BR = "Imagem não está dentro das dimensões permitidas pelo Instagram.";
+	public static final String SEND_IMAGE_ERROR_MESSAGE = "Ocorreu um erro durante o envio. Tente novamente mais tarde.";
+	
+	public static final String BAD_GATEWAY_ERROR_MESSAGE = "Ocorreu uma instabilidade na API do Instagram. Tente novamente mais tarde.";
+	public static final String INTERNAL_SERVER_ERROR_MESSAGE = "O Instagram não foi capaz de completar a operação. Tente novamente mais tarde.";
+	public static final String SERVICE_UNAVAILABLE_ERROR_MESSAGE = "Instagram API temporariamente indisponível. Tente novamente mais tarde.";
+	
+	public static final Integer POST_STUCK_TIME = 900; // 15 minutes in seconds.
+	
+	public static final String X_IG_CAPABILITIES = "3ToAAA==";
+	public static final String LOGIN_EXPERIMENTS = "ig_android_reg_login_btn_active_state,ig_android_ci_opt_in_at_reg,ig_android_one_click_in_old_flow,ig_android_merge_fb_and_ci_friends_page,ig_android_non_fb_sso,ig_android_mandatory_full_name,ig_android_reg_enable_login_password_btn,ig_android_reg_phone_email_active_state,ig_android_analytics_data_loss,ig_fbns_blocked,ig_android_contact_point_triage,ig_android_reg_next_btn_active_state,ig_android_prefill_phone_number,ig_android_show_fb_social_context_in_nux,ig_android_one_tap_login_upsell,ig_fbns_push,ig_android_phoneid_sync_interval";
+	public static final String EXPERIMENTS = "ig_android_ad_holdout_16m5_universe,ig_android_progressive_jpeg,ig_creation_growth_holdout,ig_android_oppo_app_badging,ig_android_ad_remove_username_from_caption_universe,ig_android_enable_share_to_whatsapp,ig_android_direct_drawing_in_quick_cam_universe,ig_android_ad_always_send_ad_attribution_id_universe,ig_android_universe_video_production,ig_android_direct_plus_button,ig_android_ads_heatmap_overlay_universe,ig_android_http_stack_experiment_2016,ig_android_infinite_scrolling,ig_fbns_blocked,ig_android_post_auto_retry_v7_21,ig_fbns_push,ig_android_video_playback_bandwidth_threshold,ig_android_direct_link_preview,ig_android_direct_typing_indicator,ig_android_preview_capture,ig_android_feed_pill,ig_android_profile_link_iab,ig_android_story_caption,ig_android_network_cancellation,ig_android_histogram_reporter,ig_android_anrwatchdog,ig_android_search_client_matching,ig_android_follow_request_text_buttons,ig_android_feed_zoom,ig_android_drafts_universe,ig_android_disable_comment,ig_android_user_detail_endpoint,ig_android_os_version_blocking,ig_android_blocked_list,ig_android_event_creation,ig_android_high_res_upload_2,ig_android_2fac,ig_android_mark_reel_seen_on_Swipe_forward,ig_android_comment_redesign,ig_android_ad_sponsored_label_universe,ig_android_mentions_dismiss_rule,ig_android_disable_chroma_subsampling,ig_android_share_spinner,ig_android_video_reuse_surface,ig_explore_v3_android_universe,ig_android_media_favorites,ig_android_nux_holdout,ig_android_insta_video_universe,ig_android_search_null_state,ig_android_universe_reel_video_production,liger_instagram_android_univ,ig_android_direct_emoji_picker,ig_feed_holdout_universe,ig_android_direct_send_auto_retry_universe,ig_android_samsung_app_badging,ig_android_disk_usage,ig_android_business_promotion,ig_android_direct_swipe_to_inbox,ig_android_feed_reshare_button_nux,ig_android_react_native_boost_post,ig_android_boomerang_feed_attribution,ig_fbns_shared,ig_fbns_dump_ids,ig_android_react_native_universe,ig_show_promote_button_in_feed,ig_android_ad_metadata_behavior_universe,ig_android_video_loopcount_int,ig_android_inline_gallery_backoff_hours_universe,ig_android_rendering_controls,ig_android_profile_photo_as_media,ig_android_async_stack_image_cache,ig_video_max_duration_qe_preuniverse,ig_video_copyright_whitelist,ig_android_render_stories_with_content_override,ig_android_ad_intent_to_highlight_universe,ig_android_swipe_navigation_x_angle_universe,ig_android_disable_comment_public_test,ig_android_profile,ig_android_direct_blue_tab,ig_android_enable_share_to_messenger,ig_android_fetch_reel_tray_on_resume_universe,ig_android_promote_again,ig_feed_event_landing_page_channel,ig_ranking_following,ig_android_pending_request_search_bar,ig_android_feed_ufi_redesign,ig_android_pending_edits_dialog_universe,ig_android_business_conversion_flow_universe,ig_android_show_your_story_when_empty_universe,ig_android_ad_drop_cookie_early,ig_android_app_start_config,ig_android_fix_ise_two_phase,ig_android_ppage_toggle_universe,ig_android_pbia_normal_weight_universe,ig_android_profanity_filter,ig_ios_su_activity_feed,ig_android_search,ig_android_boomerang_entry,ig_android_mute_story,ig_android_inline_gallery_universe,ig_android_ad_remove_one_tap_indicator_universe,ig_android_view_count_decouple_likes_universe,ig_android_contact_button_redesign_v2,ig_android_periodic_analytics_upload_v2,ig_android_send_direct_typing_indicator,ig_android_ad_holdout_16h2m1_universe,ig_android_react_native_comment_moderation_settings,ig_video_use_sve_universe,ig_android_inline_gallery_no_backoff_on_launch_universe,ig_android_immersive_viewer,ig_android_discover_people_icon,ig_android_profile_follow_back_button,is_android_feed_seen_state,ig_android_dense_feed_unit_cards,ig_android_drafts_video_universe,ig_android_exoplayer,ig_android_add_to_last_post,ig_android_ad_remove_cta_chevron_universe,ig_android_ad_comment_cta_universe,ig_android_search_event_icon,ig_android_channels_home,ig_android_feed,ig_android_dv2_realtime_private_share,ig_android_non_square_first,ig_android_video_interleaved_v2,ig_android_video_cache_policy,ig_android_react_native_universe_kill_switch,ig_android_video_captions_universe,ig_android_follow_search_bar,ig_android_last_edits,ig_android_two_step_capture_flow,ig_android_video_download_logging,ig_android_share_link_to_whatsapp,ig_android_facebook_twitter_profile_photos,ig_android_swipeable_filters_blacklist,ig_android_ad_pbia_profile_tap_universe,ig_android_use_software_layer_for_kc_drawing_universe,ig_android_react_native_ota,ig_android_direct_mutually_exclusive_experiment_universe,ig_android_following_follower_social_context";
+	
+	public InstagramPostHelper() {	
+		
+	}
+
+	private String generateSignature(String msg, String keyString) {
+		
+		String result = null;
+
+		try {
+			
+			byte[] keyBytes = keyString.getBytes();
+			SecretKeySpec signingKey = new SecretKeySpec(keyBytes, "HmacSHA256");
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(signingKey);
+			byte[] rawHmac = mac.doFinal(msg.getBytes(Charset.forName("UTF-8")));
+			byte[] hexBytes = new Hex().encode(rawHmac);
+			result = new String(hexBytes, "UTF-8");
+		} catch (Exception e) {
+
+		}
+		
+		return result;
+	}
+	
+	private String syncFeatures(InstagramDevice instagramDevice, String instagramGUID, String networkId, Boolean preLogin) {
+		
+		String sonuc = "";
+
+		try {
+
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+
+			Header[] headers = new Header[5];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Content-type", "application/x-www-form-urlencoded; charset=UTF-8");
+			headers[2] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[3] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[4] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			String data = "";
+			if(preLogin) {
+				data = "{\"id\":\"" + instagramGUID + "\",\"experiments\":\"" + LOGIN_EXPERIMENTS + "\"}";
+			} else {
+				
+				String CSRFToken = instagramProxyClient.getCSRFToken();
+				
+				data = "{\"_uuid\":\"" + instagramGUID + "\",\"_uid\":\"" + networkId + "\",\"_csrftoken\":\"" + CSRFToken + "\",\"id\":\"" + networkId + "\",\"experiments\":\"" + EXPERIMENTS + "\"}";
+			}
+			
+			String sig = generateSignature(data, instagramDevice.getIgSigKey());
+			data = "signed_body=" + sig + "." + URLEncoder.encode(data, "UTF-8") + "&ig_sig_key_version=4";
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestPOST(SYNC_FEATURES_URL, data, headers);
+
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
+
+		return sonuc;
+	}
+	
+	private String generateCSRFToken(InstagramDevice instagramDevice, String instagramGUID) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(GET_CSRF_TOKEN_URL))
+		            .addParameter("challenge_type", "signup")
+		            .addParameter("guid", instagramGUID.replaceAll("-", ""));
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
+		
+		return sonuc;
+	}
+	
+	private String autoCompleteUserList(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(AUTO_COMPLETE_USER_LIST_URL)).addParameter("version", "2");
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
+		
+		return sonuc;
+	}
+	
+	private String timelineFeed(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(TIMELINE_FEED_URL)).
+					addParameter("rank_token", rankToken).
+					addParameter("ranked_content", "true");
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String getRankedRecipients(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(RANKED_RECIPIENTS_URL)).
+					addParameter("show_threads", "true");
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String getRecentRecipients(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(RECENT_RECIPIENTS_URL));
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String getV2Inbox(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(DIRECT_V2_INBOX_URL));
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String getRecentActivity(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(NEWS_INBOX_URL)).
+					addParameter("activity_module", "all");
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String getReelsTrayFeed(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(FEED_REELS_TRAY_URL));
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String explore(InstagramDevice instagramDevice) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+	
+			Header[] headers = new Header[4];
+			headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headers[1] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[2] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[3] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			URIBuilder uriBuilder = new URIBuilder(new URI(DISCOVER_EXPLORE_URL));
+		    URI uri = uriBuilder.build();
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestGET(uri, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	private String megaphoneLog(InstagramDevice instagramDevice, String instagramGUID, String deviceId) {
+	
+		String sonuc = "";
+		
+		try {
+			
+			String CSRFToken = instagramProxyClient.getCSRFToken();
+
+			String data = "type=feed_aysf&action=seen&reason=&_uuid="+ instagramGUID+ "&device_id="+ deviceId + "&_csrftoken=" + CSRFToken;
+			
+//			String data = "{\"type\":\"feed_aysf\",\"action\":\"seen\",\"reason\":\"\",\"_uuid\":\"" + instagramGUID + "\",\"device_id\":\"" + deviceId + "\",\"_csrftoken\":\"" + CSRFToken + "\"}";
+//					"\"uuid\":\"" + MessageDigest.getInstance("MD5").digest(new Long(new Date().getTime() / 1000L).toString().getBytes(Charset.forName("UTF-8"))) + "\"}";
+			
+			//Login Request
+			sonuc = getJSONStringAndPostData(MEGAPHONE_LOG_URL, data, instagramDevice.getDeviceUserAgent());
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+
+	private String getJSONStringAndPostData(String jsonAddress, String postData, String agent) {
+		
+		String sonuc = "";
+		
+		try {
+			
+			if(instagramProxyClient == null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+			
+			Header[] headers = new Header[5];
+			headers[0] = new BasicHeader("User-Agent", agent);
+			headers[1] = new BasicHeader("Content-type", "application/x-www-form-urlencoded; charset=UTF-8");
+			headers[2] = new BasicHeader("Accept-Language", "pt-BR");
+			headers[3] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headers[4] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) instagramProxyClient.requestPOST(jsonAddress, postData, headers);
+			
+			instagramProxyClient.getCookies();
+			instagramProxyClient.getAllRequestHeaders();
+			instagramProxyClient.getAllResponseHeaders();
+			
+			statusCode = response.getStatusLine().getStatusCode();
+			statusCodeOfLastRequest = response.getStatusLine().getStatusCode();
+			sonuc = extractJSONResponse(response);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return sonuc;
+		}
+		
+		return sonuc;
+	}
+	
+	public Boolean authenticateUser(String networkId, String userName, String password, InstagramDevice instagramDevice, String instagramGUID, String instagramDeviceId, String instagramPhoneId) {
+		
+		try {
+			
+			if(instagramProxyClient != null) {
+				instagramProxyClient = new InstagramProxyClient(InstagramProxyClient.BRAZIL);
+			}
+			
+			syncFeatures(instagramDevice, instagramGUID, networkId, true);
+			generateCSRFToken(instagramDevice, instagramGUID);
+			
+			String deviceId = instagramDeviceId;
+			String phoneId = instagramPhoneId;
+			String CSRFToken = instagramProxyClient.getCSRFToken();
+			String GUID = instagramGUID;
+			String loginAttemptCount = "0";
+			
+			String data = "{\"phone_id\":\"" + phoneId + "\",\"_csrftoken\":\"" + CSRFToken + "\",\"username\":\"" + userName + "\",\"guid\":\"" + GUID + "\",\"device_id\":\"" + deviceId + "\",\"password\":\"" + password + "\",\"login_attempt_count\":\"" + loginAttemptCount + "\"}";
+			String sig = generateSignature(data, instagramDevice.getIgSigKey());
+			data = "signed_body=" + sig + "." + URLEncoder.encode(data, "UTF-8") + "&ig_sig_key_version=4";
+			
+			//Login Request
+			loginResponse = getJSONStringAndPostData(LOGIN_URL, data, instagramDevice.getDeviceUserAgent());
+			
+			JSONParser parser = new JSONParser();
+			Object obj = parser.parse(loginResponse);
+			JSONObject jsonObject = (JSONObject) obj;
+			if (((String) jsonObject.get("status")).equals("ok")) { //Login SuccessFul
+				
+				isAccountAuthenticated = true;
+				
+				rankToken = networkId + "_" + instagramGUID;
+				
+				// Simulates the calls that the app does when the user log in.
+				syncFeatures(instagramDevice, instagramGUID, networkId, false);
+				autoCompleteUserList(instagramDevice);
+				timelineFeed(instagramDevice);
+				getRankedRecipients(instagramDevice);
+				getRecentRecipients(instagramDevice);
+				megaphoneLog(instagramDevice, instagramGUID, deviceId);
+				getV2Inbox(instagramDevice);
+				getRecentActivity(instagramDevice);
+				getReelsTrayFeed(instagramDevice);
+				explore(instagramDevice);
+				
+				return true;
+			} else {
+				isAccountAuthenticated = false;
+				if(jsonObject.containsKey("lock")) {
+					isAccountLocked = (Boolean) jsonObject.get("lock");
+				}
+				return false;
+			}
+			
+		} catch (Exception e) {
+			System.out.println("Login Response..: " + loginResponse);
+			e.printStackTrace();
+			return false;
+		}
+	}
+	
+	public Boolean sendVideo(Profile profile, InstagramDevice instagramDevice, Post post, File file) {
+		
+		Boolean wasSend = false;
+		
+		try {
+			
+			// Verificação de novos parâmetros em nova versão do APP do Instagram.
+			if(profile.getInstagramDeviceId() == null || profile.getInstagramPhoneId() == null) {
+				
+				MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+				
+				profile.setInstagramDeviceId("android-" + UtilFunctions.generateMD5Hash(profile.getScreenName() + profile.getInstagramPassword()));
+				profile.setInstagramPhoneId(UUID.randomUUID().toString());
+				
+				profileRemote.save(profile);
+			}
+			
+			if(authenticateUser(profile.getNetworkId(), profile.getScreenName(), profile.getInstagramPassword(), instagramDevice, profile.getInstagramGUID(),
+					profile.getInstagramDeviceId(), profile.getInstagramPhoneId())) { //Login SuccessFul
+				
+				wasSend = startUploadVideo(profile, instagramDevice, post.getText(), file, post);
+			} else {
+				jsonResponseError = loginResponse;
+				wasSend = false;
+			}
+			
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			wasSend = false;
+		}
+		
+		return wasSend;
+	}
+	
+	private Boolean startUploadVideo(Profile profile, InstagramDevice instagramDevice, String caption, File file, Post post) throws Exception { 
+		
+		// Starting the upload video process.
+		String uploadId = Long.toString((new Date()).getTime());
+		
+		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+		multipartEntityBuilder.addPart("upload_id", new StringBody(uploadId, ContentType.TEXT_PLAIN));
+		multipartEntityBuilder.addPart("_csrftoken", new StringBody(instagramProxyClient.getCSRFToken(), ContentType.TEXT_PLAIN));
+		multipartEntityBuilder.addPart("media_type", new StringBody(Integer.toString(2), ContentType.TEXT_PLAIN));
+		multipartEntityBuilder.addPart("_uuid", new StringBody(profile.getInstagramGUID(), ContentType.TEXT_PLAIN));
+		multipartEntityBuilder.setBoundary(profile.getInstagramGUID());
+		multipartEntityBuilder.setCharset(Charset.forName("UTF-8"));
+		
+		HttpEntity httpEntity = multipartEntityBuilder.build();
+		
+		Header[] headers = new Header[5];
+		headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+		headers[1] = new BasicHeader("Content-type", "multipart/form-data; boundary=" + profile.getInstagramGUID());
+		headers[2] = new BasicHeader("Accept-Language", "pt-BR");
+		headers[3] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+		headers[4] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+		
+		CloseableHttpResponse response = (CloseableHttpResponse) 
+				instagramProxyClient.requestPOST(UPLOAD_VIDEO_URL, httpEntity, headers);
+		
+		instagramProxyClient.getCookies();
+		
+		sendVideoMessage = extractJSONResponse(response);
+
+		JSONParser parser = new JSONParser();
+		Object uploadResponse = parser.parse(sendVideoMessage);
+		JSONObject uploadResponseObject = (JSONObject) uploadResponse;
+		if (((String) uploadResponseObject.get("status")).equals("ok")) { //Upload Video Initiation SuccessFul
+			return uploadVideo(file, getVideoUploadUrl(uploadResponseObject), post, uploadId, instagramDevice, profile);
+		} else {
+			jsonResponseError = sendVideoMessage;
+			return false;
+		}
+	}
+	
+	private Boolean uploadVideo(File file, JSONObject videoUploadURL, Post post, String uploadId, InstagramDevice instagramDevice, Profile profile) throws Exception {
+		
+		String uploadUrl = videoUploadURL.get("url").toString();
+		String job = videoUploadURL.get("job").toString();
+		
+		Integer requestSize = Double.valueOf(Math.floor(post.getVideoSize().doubleValue())).intValue() / 4;
+		
+		Integer lastRequestExtra = post.getVideoSize().intValue() - (requestSize * 4);
+		
+		ByteArrayInputStream bis = new ByteArrayInputStream(Files.readAllBytes(file.toPath()));
+		for (int i = 0; i <= 3; i++) {
+			
+			Integer start = i * requestSize;
+			Integer end = (i + 1) * requestSize + (i == 3 ? lastRequestExtra : 0);
+			int length = Math.min(requestSize, post.getVideoSize().intValue() - i + 1) + (i == 3 ? lastRequestExtra : 0);
+			
+			Header[] headersVideoUpload = new Header[9];
+			headersVideoUpload[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+			headersVideoUpload[1] = new BasicHeader("Content-type", "application/octet-stream");
+			headersVideoUpload[2] = new BasicHeader("Accept-Language", "pt-BR");
+			headersVideoUpload[3] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+			headersVideoUpload[4] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+			headersVideoUpload[5] = new BasicHeader("Session-ID", uploadId);
+			headersVideoUpload[6] = new BasicHeader("Content-Disposition", "attachment; filename=\"video.mov\"");
+			headersVideoUpload[7] = new BasicHeader("Content-Range", "bytes " + start + "-" + String.valueOf(end - 1) + "/" + post.getVideoSize());
+			headersVideoUpload[8] = new BasicHeader("job", job);
+			
+			byte[] bytes = new byte[length];
+		    bis.read(bytes);
+		    
+			ByteArrayEntity byteArrayEntity = new ByteArrayEntity(bytes); 
+			
+			CloseableHttpResponse responseVideoUpload = (CloseableHttpResponse) 
+					instagramProxyClient.requestPOST(uploadUrl, byteArrayEntity, headersVideoUpload);
+			
+			sendChunkVideoMessage = extractJSONResponse(responseVideoUpload);
+		}
+		
+		JSONParser parser = new JSONParser();
+		Object uploadChunkResponse = parser.parse(sendChunkVideoMessage);
+		JSONObject uploadChunkResponseObject = (JSONObject) uploadChunkResponse;
+		if (((String) uploadChunkResponseObject.get("status")).equals("ok")) { //Upload Video SuccessFul		
+			uploadPhoto(profile, instagramDevice, post.getText(), file, uploadId);
+			return configureVideo(profile, instagramDevice, post, file, uploadId);
+		} else {
+			jsonResponseError = sendChunkVideoMessage;
+			return false;
+		}
+	}
+	
+	public String removeLetterSpecialCharacter(String value) {
+
+		value = value.replaceAll("[ÂÀÁÄÃ]", "A");
+		value = value.replaceAll("[âãàáä]", "a");
+		value = value.replaceAll("[ÊÈÉË]", "E");
+		value = value.replaceAll("[êèéë]", "e");
+		value = value.replaceAll("ÎÍÌÏ", "I");
+		value = value.replaceAll("îíìï", "i");
+		value = value.replaceAll("[ÔÕÒÓÖ]", "O");
+		value = value.replaceAll("[ôõòóö]", "o");
+		value = value.replaceAll("[ÛÙÚÜ]", "U");
+		value = value.replaceAll("[ûúùü]", "u");
+		value = value.replaceAll("Ç", "C");
+		value = value.replaceAll("ç", "c");
+
+		return value;
+	}
+	
+	private Boolean configureVideo(Profile profile, InstagramDevice instagramDevice, Post post, File file, String uploadId) throws Exception {
+		
+		String data;
+		String sig;
+		
+		String caption = post.getText() == null ? "" : post.getText();
+		
+		JsonObject mainObject = new JsonObject();
+		mainObject.addProperty("_csrftoken", instagramProxyClient.getCSRFToken());
+		mainObject.addProperty("source_type", "3");
+		mainObject.addProperty("_uid", instagramProxyClient.getUserId());
+		mainObject.addProperty("_uuid", profile.getInstagramGUID());
+		mainObject.addProperty("caption", caption);
+		mainObject.addProperty("upload_id", uploadId);
+		mainObject.addProperty("poster_frame_index", 0);
+		mainObject.addProperty("length", 0.00F);
+		mainObject.addProperty("audio_muted", false);
+		mainObject.addProperty("filter_type", "0");
+		mainObject.addProperty("video_result", "deprecated");
+		
+		JsonObject clipsObject = new JsonObject();
+		clipsObject.addProperty("length", post.getVideoDuration());
+		clipsObject.addProperty("source_type", "3");
+		clipsObject.addProperty("camera_position", "back");
+		
+		JsonObject deviceObject = new JsonObject();
+		deviceObject.addProperty("manufacturer", instagramDevice.getManufacturer());
+		deviceObject.addProperty("model", instagramDevice.getModel());
+		deviceObject.addProperty("android_version", instagramDevice.getAndroidVersion().toString());
+		deviceObject.addProperty("android_release", instagramDevice.getAndroidRelease());
+		
+		JsonObject extraObject = new JsonObject();
+		extraObject.addProperty("source_width", 960);
+		extraObject.addProperty("source_height", 1280);
+		
+		mainObject.add("device", deviceObject);
+		mainObject.add("extra", extraObject);
+		mainObject.add("clips", clipsObject);
+		
+		String jsonToSend = mainObject.toString();
+		
+		sig = generateSignature(jsonToSend, instagramDevice.getIgSigKey());
+
+		data = "signed_body=" + sig + "." + URLEncoder.encode(jsonToSend, "UTF-8") + "&ig_sig_key_version=4";
+		
+		//Configure Photo
+		configVideoResponse = getJSONStringAndPostData(CONFIGURE_VIDEO_URL, data, instagramDevice.getDeviceUserAgent());
+		
+		JSONParser parser = new JSONParser();
+		Object configResponse = parser.parse(configVideoResponse);
+		JSONObject configResponseObject = (JSONObject) configResponse;
+		if (((String) configResponseObject.get("status")).equals("ok")) { //Login SuccessFul
+			return true;
+		} else {
+			jsonResponseError = configVideoResponse;
+			return false;
+		}	
+	}
+
+	public Boolean sendImage(Profile profile, InstagramDevice instagramDevice, String caption, File file) {
+		
+		Boolean wasSend = false;
+		
+		try {
+			
+			// Verificação de novos parâmetros em nova versão do APP do Instagram.
+			if(profile.getInstagramDeviceId() == null || profile.getInstagramPhoneId() == null) {
+				
+				MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+				
+				profile.setInstagramDeviceId("android-" + UtilFunctions.generateMD5Hash(profile.getScreenName() + profile.getInstagramPassword()));
+				profile.setInstagramPhoneId(UUID.randomUUID().toString());
+				
+				profileRemote.save(profile);
+			}
+			
+			if(authenticateUser(profile.getNetworkId(), profile.getScreenName(), profile.getInstagramPassword(), instagramDevice, profile.getInstagramGUID(),
+					profile.getInstagramDeviceId(), profile.getInstagramPhoneId())) { //Login SuccessFul
+				
+				//Post Image
+				wasSend = uploadPhoto(profile, instagramDevice, caption, file, null);
+				
+			} else {
+				jsonResponseError = loginResponse;
+				wasSend = false;
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			wasSend = false;
+		}
+		
+		try {
+			
+			instagramProxyClient.close();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return wasSend;
+	}
+	
+	private Boolean uploadPhoto(Profile profile, InstagramDevice instagramDevice, String caption, File file, String uploadId) throws Exception {
+		
+		if(uploadId != null) {
+			file = createVideoIcon(file);
+		} else {
+			uploadId = Long.toString((new Date()).getTime());
+		}
+		
+		byte[] imageByteArray;
+		if(file.getPath().endsWith(".png")) {
+			imageByteArray = Files.readAllBytes(convertPNGToJPEG(file).toPath());
+		} else {
+			imageByteArray = Files.readAllBytes(file.toPath());
+		}
+		
+		Long dateInMilliseconds = new Date().getTime();
+		String fileName = "pending_media_" + dateInMilliseconds.toString() +  ".jpg";
+		
+		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+		multipartEntityBuilder.addPart("_csrftoken", new StringBody(instagramProxyClient.getCSRFToken(), ContentType.TEXT_PLAIN));
+		multipartEntityBuilder.addPart("_uuid", new StringBody(profile.getInstagramGUID(), ContentType.TEXT_PLAIN));
+		
+		multipartEntityBuilder.addBinaryBody("photo", imageByteArray, ContentType.APPLICATION_OCTET_STREAM, fileName);
+		multipartEntityBuilder.setBoundary(profile.getInstagramGUID());
+		multipartEntityBuilder.setCharset(Charset.forName("UTF-8"));
+		
+		multipartEntityBuilder.addPart("upload_id", new StringBody(uploadId, ContentType.TEXT_PLAIN));
+		multipartEntityBuilder.addPart("image_compression", new StringBody("{\"lib_name\":\"jt\",\"lib_version\":\"1.3.0\",\"quality\":\"87\"}", ContentType.APPLICATION_JSON));
+		
+		HttpEntity httpEntity = multipartEntityBuilder.build();
+		
+		Header[] headers = new Header[5];
+		headers[0] = new BasicHeader("User-Agent", instagramDevice.getDeviceUserAgent());
+		headers[1] = new BasicHeader("Content-type", "multipart/form-data; boundary=" + profile.getInstagramGUID());
+		headers[2] = new BasicHeader("Accept-Language", "pt-BR");
+		headers[3] = new BasicHeader("X-IG-Connection-Type", "WIFI");
+		headers[4] = new BasicHeader("X-IG-Capabilities", X_IG_CAPABILITIES);
+		
+		CloseableHttpResponse response = (CloseableHttpResponse) 
+				instagramProxyClient.requestPOST(UPLOAD_IMAGE_URL, httpEntity, headers);
+		
+		instagramProxyClient.getCookies();
+		
+		sendImageResponse = extractJSONResponse(response);
+		
+		JSONParser parser = new JSONParser();
+		Object uploadResponse = parser.parse(sendImageResponse);
+		JSONObject uploadResponseObject = (JSONObject) uploadResponse;
+		if (((String) uploadResponseObject.get("status")).equals("ok")) {
+			return configurePhoto(profile, instagramDevice, caption, file, (String) uploadResponseObject.get("upload_id"));
+		} else {
+			jsonResponseError = sendImageResponse;
+			return false;
+		}
+	}
+	
+	private Boolean configurePhoto(Profile profile, InstagramDevice instagramDevice, String caption, File file, String uploadId) throws Exception {
+
+		String data;
+		String sig;
+		
+		caption = caption == null ? "" : caption;
+		
+		BufferedImage bimg = ImageIO.read(file);
+		Integer photoWidth = bimg.getWidth();
+		Integer photoHeight = bimg.getHeight();
+		
+		JsonObject mainObject = new JsonObject();
+		mainObject.addProperty("_csrftoken", instagramProxyClient.getCSRFToken());
+		mainObject.addProperty("media_folder", "Instagram");
+		mainObject.addProperty("source_type", "4");
+		mainObject.addProperty("_uid", instagramProxyClient.getUserId());
+		mainObject.addProperty("_uuid", profile.getInstagramGUID());
+		mainObject.addProperty("caption", caption);
+		mainObject.addProperty("upload_id", uploadId);
+		
+		JsonObject deviceObject = new JsonObject();
+		deviceObject.addProperty("manufacturer", instagramDevice.getManufacturer());
+		deviceObject.addProperty("model", instagramDevice.getModel());
+		deviceObject.addProperty("android_version", instagramDevice.getAndroidVersion().toString());
+		deviceObject.addProperty("android_release", instagramDevice.getAndroidRelease());
+		
+		JsonArray cropOriginalSize = new JsonArray();
+		cropOriginalSize.add(new JsonPrimitive(photoWidth));
+		cropOriginalSize.add(new JsonPrimitive(photoHeight));
+		
+		JsonArray cropCenter = new JsonArray();
+		cropCenter.add(new JsonPrimitive(0.0F));
+		cropCenter.add(new JsonPrimitive(-0.0F));
+		
+		JsonObject editObject = new JsonObject();
+		editObject.add("crop_original_size", cropOriginalSize);
+		editObject.add("crop_center", cropCenter);
+		editObject.addProperty("crop_zoom", 1);
+		
+		JsonObject extraObject = new JsonObject();
+		extraObject.addProperty("source_width", photoWidth);
+		extraObject.addProperty("source_height", photoHeight);
+		
+		mainObject.add("device", deviceObject);
+		mainObject.add("edits", editObject);
+		mainObject.add("extra", extraObject);
+		
+		String jsonToSend = mainObject.toString();
+		
+		sig = generateSignature(jsonToSend, instagramDevice.getIgSigKey());
+
+		data = "signed_body=" + sig + "." + URLEncoder.encode(jsonToSend, "UTF-8") + "&ig_sig_key_version=4";
+		
+		//Configure Photo
+		configImageResponse = getJSONStringAndPostData(CONFIGURE_IMAGE_URL, data, instagramDevice.getDeviceUserAgent());
+		
+		JSONParser parser = new JSONParser();
+		Object configResponse = parser.parse(configImageResponse);
+		JSONObject configResponseObject = (JSONObject) configResponse;
+		if (((String) configResponseObject.get("status")).equals("ok")) { //Login SuccessFul
+			return true;
+		} else {
+			jsonResponseError = configImageResponse;
+			return false;
+		}	
+	}
+	
+	private File convertPNGToJPEG(File filePNG) throws Exception {
+		
+		StringBuilder fileJPGName = new StringBuilder(filePNG.getPath());
+		fileJPGName.replace(filePNG.getPath().lastIndexOf(".png"), filePNG.getPath().lastIndexOf(".png") + 4, ".jpg");
+		
+		File fileJPEG = new File(fileJPGName.toString());
+		
+		//read image file
+		BufferedImage bufferedImage = ImageIO.read(filePNG);
+
+		// create a blank, RGB, same width and height, and a black background
+		BufferedImage newBufferedImage = new BufferedImage(bufferedImage.getWidth(),
+		bufferedImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+		newBufferedImage.createGraphics().drawImage(bufferedImage, 0, 0, Color.BLACK, null);
+
+		// write to jpeg file
+		ImageIO.write(newBufferedImage, "jpg", fileJPEG);
+		
+		return fileJPEG;
+	}
+	
+	public String extractSendImageErrorMessage() {
+		
+		String errorMessage = SEND_IMAGE_ERROR_MESSAGE;
+		
+		try {
+			
+			JSONParser parser = new JSONParser();
+			Object obj = parser.parse(jsonResponseError);
+			JSONObject jsonObject = (JSONObject) obj;
+			if (((String) jsonObject.get("status")).equals("fail")) {
+				errorMessage = translateSendImageErrorMessage((String) jsonObject.get("message")); 
+			}
+			
+		} catch (Exception e) {
+			if(statusCodeOfLastRequest != HttpStatusCodes.STATUS_CODE_OK) {
+				errorMessage = getSendImageErrorMessageHTTPCode();
+			}
+			e.printStackTrace();
+		}
+		
+		return errorMessage;
+	}
+	
+	public String extractLoginErrorMessage() {
+		
+		String errorMessage = "";
+		
+		try {
+			
+			JSONParser parser = new JSONParser();
+			Object obj = parser.parse(loginResponse);
+			JSONObject jsonObject = (JSONObject) obj;
+			if (((String) jsonObject.get("status")).equals("fail")) {
+				errorMessage = translateErrorMessage((String) jsonObject.get("message")); 
+			}
+			
+		} catch (Exception e) {
+			System.out.println("Login Response..: " + loginResponse);
+			e.printStackTrace();
+		}
+		
+		return errorMessage;
+	}
+	
+	public String getSendImageErrorMessageHTTPCode() {
+		
+		String errorMessage = SEND_IMAGE_ERROR_MESSAGE;
+		
+		if(statusCodeOfLastRequest.equals(HttpStatusCodes.STATUS_CODE_BAD_GATEWAY)) {
+			errorMessage = BAD_GATEWAY_ERROR_MESSAGE;
+		} else if(statusCodeOfLastRequest.equals(HttpStatusCodes.STATUS_CODE_SERVER_ERROR)) {
+			errorMessage = INTERNAL_SERVER_ERROR_MESSAGE;
+		} else if(statusCodeOfLastRequest.equals(HttpStatusCodes.STATUS_CODE_SERVICE_UNAVAILABLE)) {
+			errorMessage = SERVICE_UNAVAILABLE_ERROR_MESSAGE;
+		}
+		
+		return errorMessage;
+	}
+	
+	private String translateSendImageErrorMessage(String message) {
+		
+		String errorMessage = "";
+		
+		if(message.equals(CHECKPOINT_REQUIRED)) {
+			errorMessage = CHECKPOINT_REQUIRED_PT_BR;
+		} else if(message.equals(PASSWORD_INCORRECT) || message.equals(PASSWORD_INCORRECT_ALT_VERSION)) {
+			errorMessage = PASSWORD_INCORRECT_PT_BR;
+		} else if(message.equals(USERNAME_TO_LOGIN)) {
+			errorMessage = USERNAME_TO_LOGIN_PT_BR;
+		} else if(message.equals(USERNAME_NOT_EXIST)) {
+			errorMessage = USERNAME_NOT_EXIST_PT_BR;
+		} else if(message.equals(NOT_ALLOWED_ASPECT_RATIO)) {
+			errorMessage = NOT_ALLOWED_ASPECT_RATIO_PT_BR;
+		} else {
+			errorMessage = SEND_IMAGE_ERROR_MESSAGE;
+		}
+		
+		return errorMessage;
+		
+	}
+	
+	private String translateErrorMessage(String message) {
+		
+		String errorMessage = "";
+		
+		if(message.equals(CHECKPOINT_REQUIRED)) {
+			errorMessage = CHECKPOINT_REQUIRED_PT_BR;
+		} else if(message.equals(PASSWORD_INCORRECT) || message.equals(PASSWORD_INCORRECT_ALT_VERSION) || message.equals(PASSWORD_INCORRECT_IN_PT_BR)) {
+			errorMessage = PASSWORD_INCORRECT_PT_BR;
+		} else if(message.equals(USERNAME_TO_LOGIN)) {
+			errorMessage = USERNAME_TO_LOGIN_PT_BR;
+		} else if(message.equals(USERNAME_NOT_EXIST)) {
+			errorMessage = USERNAME_NOT_EXIST_PT_BR;
+		} else {
+			errorMessage = REPORT_SCHEDULE_ERROR_MESSAGE;
+		}
+		
+		return errorMessage;
+	}
+	
+	public void deactivateProfileScheduling(Long idProfile) {
+		
+		try {
+			
+			if(!isAccountAuthenticated()) {
+				
+				MaintenanceProfileRemote profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+				Profile profile = profileRemote.getById(idProfile);
+				
+				profile.setIsSchedulingAuthenticated(Profile.INACTIVE);
+				profileRemote.save(profile);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public boolean tryToPostAgain() {
+		
+		if(statusCode != null) {
+			return statusCode.equals(HttpStatus.SC_BAD_GATEWAY) ? true : false;
+		} else {
+			return false;
+		}
+	}
+	
+	private String extractJSONResponse(CloseableHttpResponse response) throws Exception {
+		
+		String jsonResponse = "";
+
+		if (response.getStatusLine().getStatusCode() != 200) {
+			System.out.println("Failed : HTTP error code : " + response.getStatusLine().getStatusCode());
+		}
+
+		System.out.println(response.getStatusLine());
+		HttpEntity entity2 = response.getEntity();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(entity2.getContent(), Charset.forName("UTF-8")));
+
+		String line;
+		System.out.println("--------- Response Body --------");
+		while ((line = br.readLine())!= null) {
+			System.out.println(line);
+			jsonResponse += line;
+		}
+		
+		EntityUtils.consume(entity2);
+
+		response.close();
+		
+		return jsonResponse;
+	}
+	
+	private JSONObject getVideoUploadUrl(JSONObject jsonObject) {
+		
+		JSONArray videoUploadUrls = (JSONArray) jsonObject.get("video_upload_urls");
+		
+		JSONObject videoUploadUrl = (JSONObject)videoUploadUrls.get(3);
+		
+		return videoUploadUrl;
+	}
+	
+	private File createVideoIcon(File videoFile) throws Exception {
+		
+		String uploadDirThumbnails = ServicesImpl.context.getInitParameter("uploadDirThumbnails") + "/";
+		String previewVideo = uploadDirThumbnails + RandomStringUtils.randomAlphanumeric(12) + ".jpg";
+		String previewVideoThumbnail = uploadDirThumbnails + RandomStringUtils.randomAlphanumeric(12) + "_thumb.jpg";
+
+		//capture video preview
+		String command = "ffmpeg -i " + videoFile.toString() + " -f mjpeg -ss 00:00:01 -vframes 1 " + previewVideo;
+		Process p = Runtime.getRuntime().exec(command);
+		p.waitFor();
+		p.getInputStream().close();
+
+		BufferedImage imgThumbnail = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+		imgThumbnail.createGraphics().drawImage(ImageIO.read(new File(previewVideo)).getScaledInstance(100, 100, Image.SCALE_SMOOTH),0,0,null);
+		ImageIO.write(imgThumbnail, "jpg", new File(previewVideoThumbnail));
+
+		return new File(previewVideoThumbnail);
+	}
+
+	public String getLoginResponse() {
+		return loginResponse;
+	}
+
+	public void setLoginResponse(String loginResponse) {
+		this.loginResponse = loginResponse;
+	}
+
+	public Boolean getIsAccountLocked() {
+		return isAccountLocked;
+	}
+
+	public void setIsAccountLocked(Boolean isAccountLocked) {
+		this.isAccountLocked = isAccountLocked;
+	}
+
+	public Boolean isAccountAuthenticated() {
+		return isAccountAuthenticated;
+	}
+
+	public void setIsAccountAuthenticated(Boolean isAccountAuthenticated) {
+		this.isAccountAuthenticated = isAccountAuthenticated;
+	}
+
+	public int getStatusCode() {
+		return statusCode;
+	}
+
+	public void setStatusCode(int statusCode) {
+		this.statusCode = statusCode;
+	}
+
+}

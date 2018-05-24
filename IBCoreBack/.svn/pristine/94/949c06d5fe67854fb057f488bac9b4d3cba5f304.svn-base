@@ -1,0 +1,58 @@
+package br.com.opsocial.server.actions.application;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.ejb.das.MaintenanceNotificationRemote;
+import br.com.opsocial.ejb.entity.application.Notification;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class UpdateNotificationsAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		MaintenanceNotificationRemote notificationRemote = (MaintenanceNotificationRemote) 
+				RecoverMaintenance.recoverMaintenance("Notification");
+		
+		Date dateLastNotification;
+			
+		if(getParameters().get("reset") != null) {
+		
+			List<Notification> notifications = notificationRemote.listUnreadNotifications(getUser().getAccount().getIdAccount());
+			
+			for(Notification notification : notifications) {
+				
+				notification.setUnread(false);
+				
+				notificationRemote.save(notification);
+			}
+		}
+		
+		// Get New Interactions
+		List<Notification> newNotifications;
+		if(!getParameters().containsKey("dateLastNotification")) {
+			
+			dateLastNotification = new Date();
+			
+			newNotifications = 
+					notificationRemote.listNextNotifications(getUser().getAccount().getIdAccount(), dateLastNotification, 5);
+		} else {
+			
+			dateLastNotification = ((br.com.opsocial.client.entity.primitive.Date) getParameters().get("dateLastNotification")).getValue();
+			
+			newNotifications = 
+					notificationRemote.listLastNotifications(getUser().getAccount().getIdAccount(), dateLastNotification, 5);
+		}
+
+		getParameters().put("newNotifications", newNotifications);
+		
+		Long unreadNotifications = notificationRemote.countUnreadNotifications(getUser().getAccount().getIdAccount());
+
+		getParameters().put("unreadNotifications", unreadNotifications);
+	}
+
+}

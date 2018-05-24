@@ -1,0 +1,481 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.apache.commons.lang3.StringUtils;
+
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import br.com.opsocial.server.utils.reports.ReportFacebook;
+import br.com.opsocial.server.utils.reports.ReportFacebookPosts;
+import br.com.opsocial.server.utils.reports.ReportGenerateRunnable;
+import br.com.opsocial.server.utils.reports.ReportGenerateVerification;
+import br.com.opsocial.ejb.das.MaintenanceExceptionRemote;
+import br.com.opsocial.ejb.das.MaintenanceFacebookInfluentialUserRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportDetailedRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.FacebookInfluentialUserId;
+import br.com.opsocial.ejb.entity.report.FacebookInfluentialUser;
+import br.com.opsocial.ejb.entity.report.ReportDetailed;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import facebook4j.Facebook;
+import facebook4j.FacebookException;
+import facebook4j.User;
+import facebook4j.auth.AccessToken;
+
+public class FacebookInsightsController {
+
+	private Timer timer;
+
+	public FacebookInsightsController() {
+
+		timer = new Timer();
+
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.set(Calendar.HOUR_OF_DAY, 2);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+
+		Date taskTime = taskDate.getTime();
+
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+
+	class Task extends TimerTask {
+		
+		private MaintenanceReportGenerateRemote reportGenerateRemote;
+		private MaintenanceProfileRemote profileRemote;
+		
+		
+		public void run() {
+
+			Calendar reportDate = Calendar.getInstance();
+			reportDate.set(Calendar.DAY_OF_MONTH, reportDate.get(Calendar.DAY_OF_MONTH) - 3);
+			reportDate.setTimeZone(TimeZone.getTimeZone("America/Phoenix"));
+			reportDate.set(Calendar.AM_PM, Calendar.AM);
+			reportDate.set(Calendar.HOUR_OF_DAY, 0);
+			reportDate.set(Calendar.MINUTE, 0);
+			reportDate.set(Calendar.SECOND, 0);
+
+			Long reportDateStamp = reportDate.getTimeInMillis() / 1000L;
+
+			reportGenerateRemote = (MaintenanceReportGenerateRemote) 
+					RecoverMaintenance.recoverMaintenance("ReportGenerate");
+
+			profileRemote = (MaintenanceProfileRemote)
+					RecoverMaintenance.recoverMaintenance("Profile");
+			
+			List<Profile> profilesAll = profileRemote.listActivesByType(Profile.FACEBOOK_PAGE);
+			HashSet<String> profilesAllMap = new HashSet<String>();
+			
+			// Verifica se páginas com menos de 30 likes ultrapassaram ou não os 30 likes para que possam ser recuperados seus insights.
+			verifyUnavailableReportPages();
+			
+			for (Profile profile : profilesAll) {
+				
+				try {
+					
+					if(!profilesAllMap.contains(profile.getNetworkId())) {
+						generateReport(profile.getNetworkId(), profile.getToken(), reportDateStamp);
+					}
+					
+					profilesAllMap.add(profile.getNetworkId());
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			profilesAllMap.clear();
+			
+			for (Profile profile : profilesAll) {
+				
+				if(!profilesAllMap.contains(profile.getNetworkId())) {
+					updatePostsLastDays(profile.getNetworkId(), profile.getToken());
+				}
+				
+				profilesAllMap.add(profile.getNetworkId());
+			}
+			
+			profilesAllMap.clear();
+			
+			for (Profile profile : profilesAll) {
+				
+				if(!profilesAllMap.contains(profile.getNetworkId())) {
+					identifyInfluentialUsersToUpdate(profile.getNetworkId());
+				}
+				
+				profilesAllMap.add(profile.getNetworkId());
+			}
+			
+		}
+		
+		private void verifyUnavailableReportPages() {
+			
+			try {
+			
+				List<ReportGenerate> reportGeneratesUnavailable = reportGenerateRemote.getEntities(ReportFacebook.UNAVAILABLE);
+	
+				for(ReportGenerate reportGenerate : reportGeneratesUnavailable) {
+	
+					try {
+	
+						if(ReportGenerateVerification.isReportActive(reportGenerate)) {
+							
+							reportGenerate.setState(ReportFacebook.GENERATING);
+							reportGenerate = reportGenerateRemote.save(reportGenerate);
+	
+							Profile profile = new Profile();
+							profile.setNetworkId(reportGenerate.getNetworkId());
+							profile.setType(reportGenerate.getNetworkType());
+							profile.setToken(reportGenerate.getTokenSecret());
+							
+							new ReportGenerateRunnable(profile, ReportGenerateRunnable.REPORT_DAYS).run();
+						}
+	
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (FacebookException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		private void generateReport(String networkid, String pageAccessToken, Long reportDateStamp) {
+
+			try {
+				
+				ReportGenerate reportGenerate = reportGenerateRemote.getEntity(networkid, Profile.FACEBOOK_PAGE);
+
+				if(reportGenerateRemote.hasEntity(networkid, Profile.FACEBOOK_PAGE) && reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+
+					// Resgata os insights do último dia.
+					ReportFacebook reportFacebook = new ReportFacebook(networkid, pageAccessToken);
+					reportFacebook.retrieveAllInsightsForDay(reportDateStamp);
+					reportFacebook.retrieveInsightsForLifetime(reportDateStamp);
+
+					// Verificação de dias em que os relatórios não foram gerados (Verifica diretamente a tabela ReportControl).
+					List<Long> reportDaysMain = ReportGenerateVerification.getListDaysForFacebookReport(networkid, Profile.FACEBOOK_PAGE, ReportFacebook.GROUP_MAIN);
+
+					for(Long reportDay : reportDaysMain) {
+						new ReportFacebook(networkid, pageAccessToken).retrieveAllInsightsForDay(reportDay);
+					}
+
+					MaintenanceReportDetailedRemote reportDetailedRemote = (MaintenanceReportDetailedRemote) 
+							RecoverMaintenance.recoverMaintenance("ReportDetailed");
+
+					// Verificação de possíveis insights que não tenham sido recuperados em algum dia por algum motivo, por exemplo, indisponibilidade do Facebook.
+					List<Long> datesReportInsights = reportDetailedRemote.getDatesWithoutValue(networkid);
+
+					for(Long date : datesReportInsights) {
+
+						Map<String, List<ReportDetailed>> reportDetaileds = reportDetailedRemote.getEntitiesWithoutValue(networkid, date);
+						if(!reportDetaileds.isEmpty()) {
+							reportFacebook.recalculateStatistics(reportDetaileds, date);
+						}
+					}
+
+					// Verificação exclusiva para Insights do grupo GROUP_IMP_CITY, que possivelmente não tenham sido recuperados do facebook, por exemplo, devido a indisponibilidade do Facebook.
+					List<Long> reportDaysImpCity = ReportGenerateVerification.getListDaysForFacebookReport(networkid, Profile.FACEBOOK_PAGE, ReportFacebook.GROUP_IMP_CITY);
+
+					if(!reportDaysImpCity.isEmpty()) {
+						ReportFacebook reportFacebookImpCity = new ReportFacebook(networkid, pageAccessToken);
+						reportFacebookImpCity.calcStatisticsImpCity(reportDaysImpCity);
+					}
+
+					// Verificação exclusiva para Insights do grupo GROUP_VIEWS_EXTERNAL, que possivelmente não tenham sido recuperados do facebook, por exemplo, devido a indisponibilidade do Facebook.
+					List<Long> reportDaysViewExternal = ReportGenerateVerification.getListDaysForFacebookReport(networkid, Profile.FACEBOOK_PAGE, ReportFacebook.GROUP_VIEWS_EXTERNAL);
+
+					if(!reportDaysViewExternal.isEmpty()) {
+						ReportFacebook reportFacebookViewExternal = new ReportFacebook(networkid, pageAccessToken);
+						reportFacebookViewExternal.calcStatisticsViewsExternal(reportDaysViewExternal);
+					}
+				}
+				
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}	
+		}
+		
+		private void updatePostsLastDays(String networkid, String pageAccessToken) {
+			
+			ReportGenerate reportGenerate = reportGenerateRemote.getEntity(networkid, Profile.FACEBOOK_PAGE);
+
+			if(reportGenerateRemote.hasEntity(networkid, Profile.FACEBOOK_PAGE) && reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+
+				try {
+
+					// Atualizar insights dos posts.
+					ReportFacebookPosts reportFacebookPosts = new ReportFacebookPosts(pageAccessToken, reportGenerate.getNetworkId());
+					reportFacebookPosts.updatePostsInsights();
+
+					// Atualizar comentários dos posts.
+					ReportFacebookPosts reportFacebookPostsComments = new ReportFacebookPosts(pageAccessToken, reportGenerate.getNetworkId());
+					reportFacebookPostsComments.updatePostsComments();
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}	
+			}
+		}
+
+		// Identificar usuários influenciadores, para os novos scope app user ids.
+		private void identifyInfluentialUsersToUpdate(String networkId) {
+
+			ReportGenerate reportGenerate = reportGenerateRemote.getEntity(networkId, Profile.FACEBOOK_PAGE);
+
+			if(reportGenerateRemote.hasEntity(networkId, Profile.FACEBOOK_PAGE) && reportGenerate.getState().equals(ReportFacebook.FINALIZED)) {
+				
+				MaintenanceFacebookInfluentialUserRemote facebookInfluentialUserRemote = 
+						(MaintenanceFacebookInfluentialUserRemote) RecoverMaintenance.recoverMaintenance("FacebookInfluentialUser");
+
+				Integer limit = 100;
+
+				List<FacebookInfluentialUser> facebookInfluentialUsers = new ArrayList<FacebookInfluentialUser>();
+
+				do {
+
+					facebookInfluentialUsers = facebookInfluentialUserRemote.getInfluentialFansByPage(reportGenerate.getNetworkId(), 'F', limit);
+
+					if(!facebookInfluentialUsers.isEmpty()) {
+
+						try {
+
+							AccessToken accessToken = new AccessToken(reportGenerate.getTokenSecret(), null);
+
+							Facebook facebook = new FacebookIntegration().getFacebook(accessToken);
+
+							String appScopedUserId = "";
+
+							List<User> users = facebook.getUsers(getUsersIdsList(facebookInfluentialUsers));
+
+							for (User user : users) {
+
+								FacebookInfluentialUserId facebookInfluentialUserId = new FacebookInfluentialUserId();
+								facebookInfluentialUserId.setPageId(reportGenerate.getNetworkId());
+								facebookInfluentialUserId.setUserId(user.getId());
+
+								FacebookInfluentialUser facebookInfluentialUser = facebookInfluentialUserRemote.getById(facebookInfluentialUserId);
+
+								if(user.getLink().toString().contains("app_scoped_user_id")) {
+
+									appScopedUserId = user.getLink().getPath().substring(20).replace("/", "");
+
+									if(user.getId().equals(appScopedUserId)) {
+										facebookInfluentialUser.setHasAppScopedUserId('T');
+									} else {
+										facebookInfluentialUser.setAppScopedUserId(appScopedUserId);
+									}
+								} else {
+									facebookInfluentialUser.setHasAppScopedUserId('T');
+								}
+
+								facebookInfluentialUser.setIsVerified('T');
+
+								try {
+
+									facebookInfluentialUserRemote.save(facebookInfluentialUser);
+
+								} catch (IllegalArgumentException e) {								
+									e.printStackTrace();
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+
+						} catch (facebook4j.FacebookException e) {
+							
+							for (FacebookInfluentialUser facebookInfluentialUser : facebookInfluentialUsers) {
+
+								try {
+
+									facebookInfluentialUser.setIsVerified('T');
+									facebookInfluentialUserRemote.save(facebookInfluentialUser);
+
+								} catch (IllegalArgumentException iae) {								
+									iae.printStackTrace();
+								} catch (Exception e1) {
+									e1.printStackTrace();
+								}
+							}
+							
+							StringWriter printStackTrace = new StringWriter();
+							
+							e.printStackTrace(new PrintWriter(printStackTrace));
+							
+							MaintenanceExceptionRemote exceptionRemote = (MaintenanceExceptionRemote)
+									RecoverMaintenance.recoverMaintenance("Exception");
+							
+							br.com.opsocial.ejb.entity.application.Exception exception = new br.com.opsocial.ejb.entity.application.Exception();
+							exception.setObjectId(reportGenerate.getNetworkId());
+							exception.setDate(new Date());
+							exception.setException(printStackTrace.toString());
+							exception.setCode(br.com.opsocial.ejb.entity.application.Exception.FACE_INFL_USERS_NOT_UPDATED);
+							
+							try {
+								
+								exceptionRemote.save(exception);
+								
+							} catch (Exception e1) {
+								e1.printStackTrace();
+							}
+							
+						} catch (Exception e) {
+							
+							StringWriter printStackTrace = new StringWriter();
+							
+							e.printStackTrace(new PrintWriter(printStackTrace));
+							
+							MaintenanceExceptionRemote exceptionRemote = (MaintenanceExceptionRemote)
+									RecoverMaintenance.recoverMaintenance("Exception");
+							
+							br.com.opsocial.ejb.entity.application.Exception exception = new br.com.opsocial.ejb.entity.application.Exception();
+							exception.setObjectId(reportGenerate.getNetworkId());
+							exception.setDate(new Date());
+							exception.setException(printStackTrace.toString());
+							exception.setCode(br.com.opsocial.ejb.entity.application.Exception.FACE_INFL_USERS_UPDATE_ERROR);
+							
+							try {
+								
+								exceptionRemote.save(exception);
+								
+							} catch (Exception e1) {
+								e1.printStackTrace();
+							}
+							
+							break;
+						}
+					}
+
+				} while (!facebookInfluentialUsers.isEmpty());	
+				
+				updateInfluentialUsers(reportGenerate.getNetworkId());
+			}
+			
+		}
+		
+		// Atualizar usuários influenciadores para os novos scope app user ids.
+		private void updateInfluentialUsers(String networkId) {
+			
+			MaintenanceFacebookInfluentialUserRemote facebookInfluentialUserRemote = 
+					(MaintenanceFacebookInfluentialUserRemote) RecoverMaintenance.recoverMaintenance("FacebookInfluentialUser");
+			
+			Integer limit = 100;
+
+			List<FacebookInfluentialUser> facebookInfluentialUsers = new ArrayList<FacebookInfluentialUser>();
+			List<FacebookInfluentialUser> facebookInfluentialUsersToDelete = new ArrayList<FacebookInfluentialUser>();
+			
+			do {
+
+				facebookInfluentialUsers = facebookInfluentialUserRemote.getInfUsersWithAppSocopedUserId(networkId, limit);
+
+				for (FacebookInfluentialUser facebookInfluentialUser : facebookInfluentialUsers) {
+
+					FacebookInfluentialUserId facebookInfluentialUserId = new FacebookInfluentialUserId();
+					facebookInfluentialUserId.setPageId(facebookInfluentialUser.getPageId());
+					facebookInfluentialUserId.setUserId(facebookInfluentialUser.getAppScopedUserId());
+
+					FacebookInfluentialUser facebookInfluentialUserNew = facebookInfluentialUserRemote.getById(facebookInfluentialUserId);
+
+					if(facebookInfluentialUserNew == null) {
+
+						try {
+							
+							facebookInfluentialUserNew = new FacebookInfluentialUser();
+							facebookInfluentialUserNew.setPageId(facebookInfluentialUser.getPageId());
+							facebookInfluentialUserNew.setUserId(facebookInfluentialUser.getAppScopedUserId());
+							facebookInfluentialUserNew.setName(facebookInfluentialUser.getName());
+							facebookInfluentialUserNew.setLikes(facebookInfluentialUser.getLikes());
+							facebookInfluentialUserNew.setComments(facebookInfluentialUser.getComments());
+							facebookInfluentialUserNew.setHasAppScopedUserId('T');
+							facebookInfluentialUserNew.setIsVerified('T');
+							facebookInfluentialUserNew.setAppScopedUserId(null);
+							
+							facebookInfluentialUserRemote.save(facebookInfluentialUserNew);
+							
+							facebookInfluentialUsersToDelete.add(facebookInfluentialUser);
+
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+					} else {
+
+						try {
+
+							facebookInfluentialUserNew.setLikes(facebookInfluentialUser.getLikes() + facebookInfluentialUserNew.getLikes());
+							facebookInfluentialUserNew.setComments(facebookInfluentialUser.getComments() + facebookInfluentialUserNew.getComments());
+
+							facebookInfluentialUserRemote.save(facebookInfluentialUserNew);
+							
+							facebookInfluentialUsersToDelete.add(facebookInfluentialUser);
+
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+					}
+				}
+
+				// Exclui usuários duplicados com ids velhos.
+				for (FacebookInfluentialUser facebookInfluentialUser : facebookInfluentialUsersToDelete) {
+
+					try {
+
+						facebookInfluentialUserRemote.delete(facebookInfluentialUser, false);
+
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (IllegalStateException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+				facebookInfluentialUsersToDelete.clear();
+
+			} while(!facebookInfluentialUsers.isEmpty());
+			
+		}
+
+		private String getUsersIdsList(List<FacebookInfluentialUser> facebookInfluentialUsers) {
+
+			List<String> usersIds = new ArrayList<String>();
+
+			for (FacebookInfluentialUser facebookInfluentialUser : facebookInfluentialUsers) {
+				usersIds.add(facebookInfluentialUser.getUserId());
+			}
+
+			return StringUtils.join(usersIds, ',');
+		}
+	}
+
+}

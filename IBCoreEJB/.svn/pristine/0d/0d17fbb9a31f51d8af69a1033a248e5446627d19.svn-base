@@ -1,0 +1,186 @@
+package br.com.opsocial.ejb.das;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+
+import br.com.opsocial.ejb.dao.InstagramReportPostDAO;
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.das.generic.AbstractDASImpl;
+import br.com.opsocial.ejb.entity.instagram.InstagramReportPost;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+import br.com.opsocial.ejb.entity.report.FilterLikesComments;
+
+@Stateless
+public class MaintenanceInstagramReportPostBean extends AbstractDASImpl<InstagramReportPost> implements MaintenanceInstagramReportPostRemote {
+
+	private static final long serialVersionUID = 1L;
+
+	@EJB
+	InstagramReportPostDAO dao; 
+	
+	@Override
+	public void setDao(AbstractDAO<InstagramReportPost> dao) {
+		this.dao = (InstagramReportPostDAO) dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramReportPost> getDao() {
+		return dao;
+	}
+
+	@Override
+	public AbstractDAO<InstagramReportPost> getDAO() {
+		return dao;
+	}
+	
+	@Override
+	public InstagramReportPost save(InstagramReportPost object) throws IllegalArgumentException, Exception {
+		return super.save(object);
+	}
+
+	@Override
+	public Long getLastIdMedia(Long idInstagramUser) {
+		return dao.getLastIdMedia(idInstagramUser);
+	}
+
+	@Override
+	public Long getCountOfPosts(Long idInstagramUser) {
+		return dao.getCountOfPosts(idInstagramUser);
+	}
+
+	@Override
+	public Long getCountOfLikes(Long idInstagramUser) {
+		return dao.getCountOfLikes(idInstagramUser);
+	}
+
+	@Override
+	public Long getCountOfComments(Long idInstagramUser) {
+		return dao.getCountOfComments(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getFilterMostUsed(Long idInstagramUser) {
+		return dao.getFilterMostUsed(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getFilterLessUsed(Long idInstagramUser) {
+		return dao.getFilterLessUsed(idInstagramUser);
+	}
+
+	@Override
+	public Map<Integer, Long> getPostsPerMonthYear(Long idInstagramUser, Integer year) {
+		return dao.getPostsPerMonthYear(idInstagramUser, year);
+	}
+
+	@Override
+	public Long getCountOfPosts(Long idInstagramUser, Integer year) {
+		return dao.getCountOfPosts(idInstagramUser, year);
+	}
+
+	@Override
+	public Object[] getMonthWithMorePosts(Long idInstagramUser, Integer year) {
+		return dao.getMonthWithMorePosts(idInstagramUser, year);
+	}
+
+	@Override
+	public Map<Integer, Long> getPostsPerWeek(Long idInstagramUser) {
+		return dao.getPostsPerWeek(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getWeekDayWithMorePosts(Long idInstagramUser) {
+		return dao.getWeekDayWithMorePosts(idInstagramUser);
+	}
+
+	@Override
+	public Map<Integer, Long> getPostsPerHour(Long idInstagramuser) {
+		return dao.getPostsPerHour(idInstagramuser);
+	}
+
+	@Override
+	public Object[] getHourWithMorePosts(Long idInstagramUser) {
+		return dao.getHourWithMorePosts(idInstagramUser);
+	}
+
+	@Override
+	public List<InstagramReportPost> getPostsWithMoreLikes(Long idInstagramUser) {
+		return dao.getPostsWithMoreLikes(idInstagramUser);
+	}
+
+	@Override
+	public List<InstagramReportPost> getPostsWithMoreComments(Long idInstagramUser) {
+		return dao.getPostsWithMoreComments(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getFilterWithMoreLikes(Long idInstagramUser) {
+		return dao.getFilterWithMoreLikes(idInstagramUser);
+	}
+
+	@Override
+	public Object[] getFilterWithMoreComments(Long idInstagramUser) {
+		return dao.getFilterWithMoreComments(idInstagramUser);
+	}
+
+	@Override
+	public List<FilterLikesComments> getFilterLikesComments(Long idInstagramUser) {
+		return dao.getFilterLikesComments(idInstagramUser);
+	}
+
+	@Override
+	public List<InstagramReportPost> getPostsWithMoreLikes(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getPostsWithMoreLikes(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<InstagramReportPost> getPostsWithMoreComments(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getPostsWithMoreComments(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<InstagramReportPost> getPostsWithMoreInteractions(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getPostsWithMoreInteractions(idInstagramUser, dateFrom, dateUntil);
+	}
+	
+	@Override
+	public Map<String, Long> getFiltersCounts(Long idInstagramUser) {
+		return dao.getFiltersCounts(idInstagramUser);
+	}
+
+	@Override
+	public Map<String, Long> getInteractionsPerDay(Long idInstagramUser, Long dateFrom, Long dateUntil) {
+		return dao.getInteractionsPerDay(idInstagramUser, dateFrom, dateUntil);
+	}
+
+	@Override
+	public List<InstagramSimpleDataDTO> getPostsPerMonthYearSimpleData(Long valueOf, int i) {
+		return dao.getPostsPerMonthYearSimpleData(valueOf, i);
+	}
+
+	@Override
+	public List<InstagramSimpleDataDTO> getPostsPerHourSimpleData(Long valueOf) {
+		return dao.getPostsPerHourSimpleData(valueOf);
+	}
+
+	@Override
+	public List<InstagramSimpleDataDTO> getPostsPerWeekSimpleData(Long valueOf) {
+		return dao.getPostsPerWeekSimpleData(valueOf);
+	}
+
+	@Override
+	public void setIdUserSession(Long idUserSession) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Long getIdUserSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

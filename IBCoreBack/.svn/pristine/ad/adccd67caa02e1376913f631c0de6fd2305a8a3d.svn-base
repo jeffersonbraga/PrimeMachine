@@ -1,0 +1,106 @@
+package br.com.opsocial.server.actions.sets;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.sets.Set;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.tasks.PostsController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+
+public class ActiveSetAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception {
+		
+		Set setDTO = (Set) getParameters().get("set");
+		StringUtil state = (StringUtil) getParameters().get("state");
+		
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+
+		Set set = remote.getById(setDTO.getIdSet());
+		
+		Date now = new Date();
+		Date startDate = new Date(set.getStartDate() * 1000);
+		Date endDate = new Date(set.getEndDate() * 1000);
+		
+		if((startDate.before(now) && state.getValue().equals("on") || set.getStatus() == Set.FINALIZED) && set.getStatus() != Set.INTERRUPTED) {
+			getParameters().put("activemessage", new StringUtil("Data e hora inicial deve ser maior que a data e hora atual. " +
+					"Redefina as propriedades do set clicando botão de edição."));
+		} else {
+			
+			now.setSeconds(0);
+			
+			if(state.getValue().equals("on")) {
+				
+				if(now.before(endDate)) {
+				
+					if(set.getStatus().equals(Set.INTERRUPTED)) {
+						set.setStatus(Set.SCHEDULED);
+					} 
+				
+					set.setState(Set.ON);
+					
+					set = remote.save(set);
+					
+					String avatar = set.getProfile().getAvatar();
+					set.getProfile().setAvatar(avatar);
+					
+					getParameters().put("activeset", set);
+					
+				} else {
+					getParameters().put("activemessage", new StringUtil("Este set já foi finalizado. Clique em editar para redefinir as propriedades."));
+				}
+					
+			} else {
+				if(!set.getStatus().equals(Set.FINALIZED)) {
+					set.setStatus(Set.INTERRUPTED);
+					set = removeSet(set);
+				}
+				
+				set.setState(Set.OFF);
+				
+				set = remote.save(set);
+				
+				String avatar = set.getProfile().getAvatar();
+				set.getProfile().setAvatar(avatar);
+				
+				getParameters().put("activeset", set);
+			}
+		}
+	}
+	
+	private Set removeSet(Set set) throws Exception {
+		
+		List<PostsController> setsToRemove = null;
+		
+		if(SetsController.POSTS_CONTROLLERS != null) {
+			for(PostsController postsController : SetsController.POSTS_CONTROLLERS) {
+				
+				if(set.getProfile().getIdProfile().equals(postsController.getSet().getProfile().getIdProfile())) {
+					if(setsToRemove == null) {
+						setsToRemove = new ArrayList<PostsController>();
+					}
+					
+					setsToRemove.add(postsController);
+				}
+			}
+		}
+
+		if(setsToRemove != null) {
+			for(PostsController postsController : setsToRemove) {
+				postsController.cancel();
+				SetsController.POSTS_CONTROLLERS.remove(postsController);
+			}
+		}
+		
+		return set;
+	}
+}

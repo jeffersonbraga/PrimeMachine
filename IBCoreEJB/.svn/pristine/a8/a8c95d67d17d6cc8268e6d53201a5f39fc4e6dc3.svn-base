@@ -1,0 +1,28 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.sets.Set;
+
+@Local
+public interface SetDAO extends AbstractDAO<Set> {
+	
+	public List<Set> getByStartDate(Long startDate);
+	
+	public List<Set> getByEndDate(Long endDate);;
+	
+	public List<Set> getByProfile(Long idProfile, Long idAccount);
+	
+	public List<Set> listSchedulings(Long idAccount);
+	
+	public List<Set> listSchedulings(Long idProfile, Long idAccount, Character status, Integer offset, Integer limit);
+	
+	public Long getAmount(Long idAccount);
+	
+	public List<Set> listActives();
+	
+	public List<Set> listByAccount(Long idAccount);
+}

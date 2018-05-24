@@ -1,0 +1,36 @@
+package br.com.opsocial.server.actions.reports.facebook;
+
+import java.util.HashMap;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.entity.report.facebook.ReportFacebookOverviewDTO;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.GenericDateInterval;
+import br.com.opsocial.server.utils.reports.UtilReports;
+import br.com.opsocial.server.utils.reports.xls.ReportFacebookOverviewXLS;
+
+public class ReportFacebookOverviewXLSAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		
+		setParameters(new HashMap<String, Object>());
+		
+		ReportFacebookOverviewDTO reportFacebookOverview = UtilReports.mountReportFacebookOverviewDTO(profile, new GenericDateInterval(dateFrom, dateUntil), null);
+
+		ReportFacebookOverviewXLS reportFacebookOverviewXLS = new ReportFacebookOverviewXLS(reportFacebookOverview, profile);
+		reportFacebookOverviewXLS.createXLS();
+
+		getParameters().put("xlsToDownload", new StringUtil(reportFacebookOverviewXLS.getFileName()));
+		getParameters().put("xlsNameToDownload", new StringUtil(reportFacebookOverviewXLS.getFormattedFileName()));
+		getParameters().put("idAccount", new br.com.opsocial.client.entity.primitive.Long(profile.getAccount().getIdAccount()));
+	}
+	
+}

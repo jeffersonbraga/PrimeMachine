@@ -1,0 +1,36 @@
+<div class="panel panel-transparent" *ngIf="total < profilesAllowed">
+	<div class="panel-heading">
+		<div class="panel-title">
+			meus canais
+		</div>
+	</div>
+	<div class="panel-body">
+		<div class="row">
+			<div *ngFor="let item of profiles; let i = index">
+				<div class="col-md-4" *ngIf="checkForExists(item) && item.type != 'L' && item.type != 'F' && item.type != 'H'">
+					<button_channels [profile]="item" [isEditable]="false" [isExcludable]="false" [isSelectable]="true" (objectChecked)="addRemoveProfile($event)"></button_channels>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="panel-footer">
+		<button class="btn btn-success pull-right" (click)="addStreams()"><i class="fa fa-plus" aria-hidden="true"></i> Add stream</button>
+	</div>
+</div>
+
+<div class="panel panel-transparent" *ngIf="total == profilesAllowed && loaded">
+	<div class="panel-heading">
+		<div class="panel-title">
+			Todos os canais já foram adicionados
+		</div>
+	</div>
+	<div class="panel-footer" style="border: none !important;">
+		<button class="btn btn-success pull-right" (click)="closeModal()"> Fechar</button>
+	</div>
+</div>
+
+<div class="panel panel-transparent no-preview text-center p-t-30 p-b-30" *ngIf="!loaded">
+	<div class="center-absolute">
+		<div class="progress-circle-indeterminate progress-circle-info"></div>
+	</div>
+</div>

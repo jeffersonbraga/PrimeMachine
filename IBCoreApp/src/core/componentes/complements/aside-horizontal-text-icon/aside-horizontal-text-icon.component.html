@@ -1,0 +1,7 @@
+<div class="m-r-0 m-l-0 m-b-5 footer-content">
+	<header>
+    <h4 class="font-montserrat fs-16 m-t-0 m-b-0 bold">
+			<i *ngIf="data.icon" class="fa {{ data.icon.icon }}" aria-hidden="true" [ngStyle]="{'color': data.icon.color? data.icon.color : '#666'}"></i>
+			<img *ngIf="data.iconUrl" src="{{ data.iconUrl }}" width="16" height="16"/> {{ data.value }}<small>{{ data.smallText }}</small></h4> 
+	</header>
+</div>

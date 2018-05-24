@@ -1,0 +1,167 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import br.com.opsocial.ejb.das.MaintenanceLinkedinPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.linkedin.LinkedinPost;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.linkedin.OAuth2Details;
+import br.com.opsocial.server.utils.linkedin.OAuthConstants;
+import br.com.opsocial.server.utils.linkedin.OAuthUtils;
+import br.com.opsocial.server.utils.reports.linkedin.LinkedinUpdates;
+
+public class LinkedinInsightsController {
+
+	private Timer timer;
+	public Gson gson = new GsonBuilder().serializeNulls().setFieldNamingPolicy(FieldNamingPolicy.IDENTITY).create();
+	Properties config = OAuthUtils.getClientConfigProps(OAuthConstants.CONFIG_FILE_PATH);
+	OAuth2Details oauthDetails = OAuthUtils.createOAuthDetails(config);
+	Map<String,String> map = new HashMap<String, String>();
+
+	public LinkedinInsightsController() {
+
+		timer = new Timer();
+
+		Calendar taskDate = Calendar.getInstance();
+		taskDate.set(Calendar.DAY_OF_MONTH, taskDate.get(Calendar.DAY_OF_MONTH) + 1);
+		taskDate.set(Calendar.HOUR_OF_DAY, 5);
+		taskDate.set(Calendar.MINUTE, 0);
+		taskDate.set(Calendar.SECOND, 0);
+
+		Date taskTime = taskDate.getTime();
+
+		timer.schedule(new Task(), taskTime, 86400 * 1000L);
+	}
+
+	class Task extends TimerTask {
+		
+		private MaintenanceProfileRemote profileRemote;
+		
+		public void run() {
+
+			Calendar reportDate = Calendar.getInstance();
+			reportDate.set(Calendar.DAY_OF_MONTH, reportDate.get(Calendar.DAY_OF_MONTH) - 3);
+			reportDate.setTimeZone(TimeZone.getTimeZone("America/Phoenix"));
+			reportDate.set(Calendar.AM_PM, Calendar.AM);
+			reportDate.set(Calendar.HOUR_OF_DAY, 0);
+			reportDate.set(Calendar.MINUTE, 0);
+			reportDate.set(Calendar.SECOND, 0);
+
+			Long reportDateStamp = reportDate.getTimeInMillis() / 1000L;
+
+			profileRemote = (MaintenanceProfileRemote)
+					RecoverMaintenance.recoverMaintenance("Profile");
+			
+			List<Profile> profilesAll = profileRemote.listActivesByType(Profile.LINKEDIN_PAGE);
+			HashSet<String> profilesAllMap = new HashSet<String>();
+			
+			for (Profile profile : profilesAll) {
+				
+				try {
+					
+					if(!profilesAllMap.contains(profile.getNetworkId())) {
+						getLinkedinDayPosts(profile.getIdProfile(), profile.getNetworkId(), profile.getToken(), reportDateStamp);
+					}
+					
+					profilesAllMap.add(profile.getNetworkId());
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		private void getLinkedinDayPosts(Long idProfile, String networkId, String token, Long reportDateStamp) {
+			
+			MaintenanceLinkedinPostRemote remoteLinkedinPosts = 
+					(MaintenanceLinkedinPostRemote) RecoverMaintenance.recoverMaintenance("LinkedinPost");
+			
+			try {
+				
+				Integer total = remoteLinkedinPosts.countLinkedinPosts(idProfile);
+				
+				if(total > 0) {
+					
+					oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/companies/"
+							  + networkId + "/updates?format=json"
+							  + "&start=" + total
+							  + "&count=100");
+					
+					oauthDetails.setAccessToken(token);
+					
+					map = OAuthUtils.getProtectedResource(oauthDetails);
+					
+					if(!map.isEmpty()) {
+						
+						String jsonResponse = String.valueOf(map.get("values"));
+						
+						jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+						
+						JsonParser parser = new JsonParser();
+						
+						JsonArray jsonResponseData = parser.parse(jsonResponse).getAsJsonArray();
+						
+						Iterator<JsonElement> elements = jsonResponseData.iterator();
+						
+						while (elements.hasNext() ) {
+						
+							JsonObject jsonObject = (JsonObject) elements.next();
+							
+							LinkedinUpdates linkedinUpdates = gson.fromJson(jsonObject, LinkedinUpdates.class);
+							
+							LinkedinPost lp = new LinkedinPost();
+							lp.setIsCommentable(linkedinUpdates.isCommentable());
+							lp.setIsLikable(linkedinUpdates.isLikable());
+							lp.setIsLiked(linkedinUpdates.isLiked());
+							lp.setNumLikes(linkedinUpdates.getNumLikes());
+							lp.setPostComment(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getComment()
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getComment() : "");
+							lp.setPostDescription(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getDescription() 
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getDescription() : "");
+							lp.setPostEyebrowUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getEyebrowUrl()
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getEyebrowUrl() : "");
+							lp.setPostId(linkedinUpdates.getUpdateKey());
+							lp.setPostSubmittedImageUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedImageUrl()
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedImageUrl() : "");
+							lp.setPostTitle(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getTitle()
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getTitle() : "");
+							lp.setProfileId(idProfile);
+							lp.setPostTime(linkedinUpdates.getTimestamp());
+							lp.setPostSubmittedUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedUrl()
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getSubmittedUrl() : "");
+							lp.setPostThumbnailUrl(linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getThumbnailUrl()
+									!= null ? linkedinUpdates.getUpdateContent().getCompanyStatusUpdate().getShare().getContent().getThumbnailUrl() : "");
+							lp.setTotalComments(linkedinUpdates.getUpdateComments().get_total());
+							lp.setUpdateType(linkedinUpdates.getUpdateType());
+							
+							remoteLinkedinPosts.save(lp);
+						}
+					}
+				}
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}

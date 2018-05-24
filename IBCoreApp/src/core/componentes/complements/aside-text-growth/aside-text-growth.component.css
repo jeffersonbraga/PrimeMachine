@@ -1,0 +1,14 @@
+h1 {
+    color: #00d6f6;
+    line-height: 1;
+}
+
+.small {
+    font-size: 100%;
+    font-weight: 300;
+}
+
+.panel .panel-heading {
+    min-height: auto;
+    line-height: 1.2;
+}

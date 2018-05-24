@@ -1,0 +1,55 @@
+package br.com.opsocial.ejb.entity.generic;
+
+import java.util.Date;
+
+import javax.annotation.Resource;
+import javax.ejb.SessionContext;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Transient;
+
+@MappedSuperclass
+public abstract class Persistent extends AbstractEntityImpl {
+	
+	@Resource
+	@Transient
+	public SessionContext sctx;
+	
+	private static final long serialVersionUID = 1L;
+	
+	public final static Character UNFILTERED_PICTURE = 'U';
+	public final static Character FILTERED_PICTURE = 'F';
+	
+	public void saveLog(String entity, String operation, Long idUser, Date date, Long entityKey){
+		if ((entity.equals("User") || entity.equals("Post") || entity.equals("Schedule")) && idUser != null){
+			/*try {
+				MaintenanceOpLogRemote remoteLog = (MaintenanceOpLogRemote) new InitialContext().lookup("global/OpSocialBack/MaintenanceOpLogBean!br.com.opsocial.ejb.das.MaintenanceOpLogRemote");
+				
+				OpLog opLog = new OpLog();
+				
+				opLog.setEntity(entity);
+				opLog.setOperation(operation);
+				opLog.setIdUser(idUser);
+				opLog.setDate(date);
+				opLog.setEntityKey(entityKey);
+				
+				remoteLog.save(opLog);
+				
+			} catch (NamingException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}*/
+		}
+	}
+		
+	@Override
+	public Long getId() {
+		return null;
+	}
+
+	@Override
+	public void setId(Long id) {
+	}
+}

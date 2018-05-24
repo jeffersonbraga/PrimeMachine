@@ -1,0 +1,89 @@
+package br.com.opsocial.server.services;
+
+import java.util.HashMap;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.persistence.OptimisticLockException;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+
+public abstract class ServerAction {
+	
+	public static final String PERSISTENT_UNIT = "opsocial";
+	
+	private HashMap<String, Object> parameters;
+	private User user;
+	private ServletContext context;
+	private HttpServletRequest request;
+	private HttpServletResponse response;
+	private HttpSession session;
+	
+	public InitialContext getInitialContext() throws NamingException {
+		return new InitialContext();
+	} 
+
+	public ServerAction() {
+		this.parameters = new HashMap<String, Object>();
+	}          
+
+	public abstract void doAction() throws Exception, OptimisticLockException;
+
+	public HashMap<String, Object> getParameters() {
+		return parameters;
+	}
+
+	public void setParameters(HashMap<String, Object> parameters) {
+		this.parameters = parameters;
+	}
+
+	public User getUser() {
+
+		if (this.user == null && (SecurityUtils.getCurrentUser() != null) ) {
+			this.setUser(SecurityUtils.getCurrentUser());
+		}
+
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public void setContext(ServletContext context) {
+		this.context = context;
+	}
+
+	public ServletContext getContext() {
+		return this.context;
+	}
+
+	public HttpServletRequest getRequest() {
+		return request;
+	}
+
+	public void setRequest(HttpServletRequest request) {
+		this.request = request;
+	}
+
+	public HttpServletResponse getResponse() {
+		return response;
+	}
+
+	public void setResponse(HttpServletResponse response) {
+		this.response = response;
+	}
+
+	public HttpSession getSession() {
+		return session;
+	}
+
+	public void setSession(HttpSession session) {
+		this.session = session;
+	}
+}

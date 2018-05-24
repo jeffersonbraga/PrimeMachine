@@ -1,0 +1,11 @@
+<button (click)="checkUncheck();" [ngClass]="{'b-primary': isClassVisible}" 
+        class="btn btn-block btn-default checkall-button" type="button">
+    <div class="checkall-button__selector pull-left">
+        <div [ngClass]="{'checkall-icon__clicked': isClassVisible}" class="checkall-icon__container">
+            <i class="fa fa-check"></i>
+        </div>
+    </div>
+    <div class="p-t-6 pull-left width80minus50">
+        <span class="p-l-10 channel-text">Ver todos deste grupo</span>
+    </div>
+</button>

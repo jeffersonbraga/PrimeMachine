@@ -1,0 +1,53 @@
+package br.com.opsocial.ejb.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.ejb.Local;
+
+import br.com.opsocial.ejb.dao.generic.AbstractDAO;
+import br.com.opsocial.ejb.entity.instagram.InstagramReportPost;
+import br.com.opsocial.ejb.entity.instagram.InstagramSimpleDataDTO;
+import br.com.opsocial.ejb.entity.report.FilterLikesComments;
+
+@Local
+public interface InstagramReportPostDAO extends AbstractDAO<InstagramReportPost> {
+
+	public Long getLastIdMedia(Long idInstagramUser);
+	
+	public Long getCountOfPosts(Long idInstagramUser);
+	public Long getCountOfLikes(Long idInstagramUser);
+	public Long getCountOfComments(Long idInstagramUser);
+	public Object[] getFilterMostUsed(Long idInstagramUser);
+	public Object[] getFilterLessUsed(Long idInstagramUser);
+	
+	public Map<Integer, Long> getPostsPerMonthYear(Long idInstagramUser, Integer year);
+	public Long getCountOfPosts(Long idInstagramUser, Integer year);
+	public Object[] getMonthWithMorePosts(Long idInstagramUser, Integer year);
+	
+	public Map<Integer, Long> getPostsPerWeek(Long idInstagramUser);
+	public Object[] getWeekDayWithMorePosts(Long idInstagramUser);
+	public Map<Integer, Long> getPostsPerHour(Long idInstagramuser);
+	public Object[] getHourWithMorePosts(Long idInstagramUser);
+	
+	public List<InstagramReportPost> getPostsWithMoreLikes(Long idInstagramUser);
+	public List<InstagramReportPost> getPostsWithMoreComments(Long idInstagramUser);
+	public List<InstagramReportPost> getPostsWithMoreLikes(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	public List<InstagramReportPost> getPostsWithMoreComments(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	
+	public List<InstagramReportPost> getPostsWithMoreInteractions(Long idInstagramUser, Long dateFrom, Long dateUntil);
+	
+	public List<FilterLikesComments> getFilterLikesComments(Long idInstagramUser);
+	public Object[] getFilterWithMoreLikes(Long idInstagramUser);
+	public Object[] getFilterWithMoreComments(Long idInstagramUser);
+	
+	public Map<String, Long> getFiltersCounts(Long idInstagramUser);
+	
+	public Map<String, Long> getInteractionsPerDay(Long idInstagramUser, Long dateFrom, Long dateUntil);
+
+	public List<InstagramSimpleDataDTO> getPostsPerMonthYearSimpleData(Long idInstagramUser, Integer year);
+
+	List<InstagramSimpleDataDTO> getPostsPerHourSimpleData(Long idInstagramuser);
+
+	List<InstagramSimpleDataDTO> getPostsPerWeekSimpleData(Long idInstagramUser);
+}

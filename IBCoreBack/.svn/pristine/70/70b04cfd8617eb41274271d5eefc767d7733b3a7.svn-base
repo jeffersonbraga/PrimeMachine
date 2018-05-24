@@ -1,0 +1,307 @@
+package br.com.opsocial.server.services.ipag;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.validation.Valid;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.server.security.SecurityUtils;
+import br.com.opsocial.server.utils.Reflection;
+import br.com.opsocial.server.utils.WebClientDevWrapper;
+import cieloecommerce.sdk.ecommerce.Sale;
+
+@RestController
+@RequestMapping("api")
+public class IpagService {
+
+	private String url = "https://sandbox.ipag.com.br/pagamento";
+	//private String url = "https://www.librepag.com.br/pagamento";
+	
+
+	private HashMap<String, String> mapMessageParameter; 
+	
+	private HttpPost httpPost;
+
+	private HttpClient httpclient;
+
+	public IpagService() {
+		
+	}
+
+	public IpagService(IpagDTO ipagDTO) {
+		
+		httpclient = new DefaultHttpClient();
+		
+		httpclient = WebClientDevWrapper.wrapClient(httpclient);
+		
+		httpPost = new HttpPost(url);
+/*
+		this.mapMessageParameter = new HashMap<String, String>();
+		mapMessageParameter.put("identificacao", "adm@opsocial.com.br");
+		mapMessageParameter.put("pedido","10000000");
+		mapMessageParameter.put("operacao","Pagamento");
+		mapMessageParameter.put("url_retorno","http://minhaloja.com");
+		mapMessageParameter.put("retorno_tipo","xml");
+		mapMessageParameter.put("valor","1.00");
+		mapMessageParameter.put("nome","teste ipag");
+		mapMessageParameter.put("email","ipag@teste.com.br");
+		mapMessageParameter.put("doc","11111111100");
+		mapMessageParameter.put("fone","1839161627");
+		mapMessageParameter.put("endereco","Rua Teste");
+		mapMessageParameter.put("numero_endereco","1000");
+		mapMessageParameter.put("complemento","");
+		mapMessageParameter.put("bairro","Bairro Teste");
+		mapMessageParameter.put("cidade","São Paulo");
+		mapMessageParameter.put("estado","SP");
+		mapMessageParameter.put("pais","Brasil");
+		mapMessageParameter.put("cep","01156060");
+		mapMessageParameter.put("metodo","visa");
+		mapMessageParameter.put("parcelas","1");
+		mapMessageParameter.put("nome_cartao","JOSE TESTE");
+		mapMessageParameter.put("num_cartao","4066553613548107");
+		mapMessageParameter.put("cvv_cartao","123");
+		mapMessageParameter.put("mes_cartao","10");
+		mapMessageParameter.put("ano_cartao","17");
+		*/
+
+        try {
+
+			List<NameValuePair> fields = new ArrayList<NameValuePair>();
+
+			//FIXO
+			fields.add(new BasicNameValuePair("identificacao", "adm@opsocial.com.br"));
+			fields.add(new BasicNameValuePair("operacao","Pagamento"));
+			//fields.add(new BasicNameValuePair("url_retorno","https://app.woopsocial.com/api/ipag_return"));
+			fields.add(new BasicNameValuePair("url_retorno","http://localhost/api/ipag_return"));
+			fields.add(new BasicNameValuePair("retorno_tipo","xml"));
+
+			User user = SecurityUtils.getCurrentUser();
+			//BUSCAR USUÁRIO CRIADO PELO FORM CADASTRO
+			fields.add(new BasicNameValuePair("nome",user.getName()));
+			fields.add(new BasicNameValuePair("email",user.getEmail()));
+			fields.add(new BasicNameValuePair("fone",user.getPhone()));
+			fields.add(new BasicNameValuePair("endereco","Rua Teste"));
+			fields.add(new BasicNameValuePair("numero_endereco","1000"));
+			fields.add(new BasicNameValuePair("complemento",""));
+			fields.add(new BasicNameValuePair("bairro","Bairro Teste"));
+			fields.add(new BasicNameValuePair("cidade","São Paulo"));
+			fields.add(new BasicNameValuePair("estado","SP"));
+			fields.add(new BasicNameValuePair("pais","Brasil"));
+			fields.add(new BasicNameValuePair("cep","01156060"));
+
+			//ALTERNATIVO E INFORMADO PELO USUÁRIO
+			fields.add(new BasicNameValuePair("metodo",		ipagDTO.getMetodo()));
+			fields.add(new BasicNameValuePair("parcelas",	"1"));
+			fields.add(new BasicNameValuePair("nome_cartao", ipagDTO.getNome_cartao()));
+			fields.add(new BasicNameValuePair("num_cartao",	ipagDTO.getNum_cartao()));
+			fields.add(new BasicNameValuePair("cvv_cartao",	ipagDTO.getCvv_cartao()));
+			fields.add(new BasicNameValuePair("mes_cartao",	ipagDTO.getMes_cartao()));
+			fields.add(new BasicNameValuePair("ano_cartao",	ipagDTO.getAno_cartao()));
+			
+			/**
+			 * 
+			 * 'frequencia'     => urlencode('1'),
+		      'intervalo'      => urlencode('month'),
+		      'inicio'         => urlencode('10/12/2016'),
+		      'ciclos'         => urlencode('12'),
+		      'trial'          => urlencode(true),
+		      'valor_rec'      => urlencode('30.00'),
+			 * 
+			 */
+
+			// Crie uma instância de Sale informando o ID do pagamento
+			String paymentIdWoop = new Double(Math.random()).toString();
+			paymentIdWoop = paymentIdWoop.substring(2, 12);
+
+			//PROCESSAMENTO DA VENDA
+			fields.add(new BasicNameValuePair("pedido",	paymentIdWoop));
+			fields.add(new BasicNameValuePair("doc",	paymentIdWoop));
+
+			Byte plCode = -1;
+			Integer numProfiles = -1;
+			Integer valuePlan 	= -1;
+			switch (ipagDTO.getPlantype()) {
+				case "basic"			: 
+					{
+						plCode = Account.WOOP_BASIC;
+						numProfiles = 10;
+						if (ipagDTO.getFrequencia().equals("Y")) {
+							valuePlan = 100;
+						} else {
+							valuePlan = 10;
+						}
+					}
+				break;
+				case "intermediate"		: 
+					{
+						plCode = Account.WOOP_INTERMEDIATE;
+						numProfiles = 20;
+						if (ipagDTO.getFrequencia().equals("Y")) {
+							valuePlan = 200;
+						} else {
+							valuePlan = 20;
+						}
+					}
+				break;
+				case "advanced"			: 
+					{
+						plCode = Account.WOOP_ADVANCED;
+						numProfiles = 30;
+						if (ipagDTO.getFrequencia().equals("Y")) {
+							valuePlan = 300;
+						} else {
+							valuePlan = 30;
+						}
+					}
+				break;
+			}
+
+			fields.add(new BasicNameValuePair("valor",	valuePlan.toString()));
+
+			httpPost.setEntity(new UrlEncodedFormEntity(fields));
+
+			HttpResponse response = httpclient.execute(httpPost);
+
+			HttpEntity entity = response.getEntity();
+
+			if (entity != null) {
+				InputStream instream = entity.getContent();
+
+	            try {
+	            	StringWriter writer = new StringWriter();
+	                IOUtils.copy(instream, writer, HTTP.UTF_8);
+	                
+	                System.out.println(writer.toString());
+	                
+	          } finally {
+	        	  instream.close();
+	          }
+	      }
+			
+        } catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/*
+	$fields = array(
+	  'identificacao'   => urlencode('SEU LOGIN");
+	  'pedido","10000000");
+	  'operacao","Pagamento");
+	  'url_retorno","http://minhaloja.com");
+	  'retorno_tipo'    => urlencode('xml");
+	  'valor'           => urlencode('1.00");
+	  'nome'            => urlencode('teste ipag");
+	  'email'           => urlencode('ipag@teste.com.br");
+	  'doc'             => urlencode('11111111100");
+	  'fone'            => urlencode('1839161627");
+	  'endereco","Rua Teste");
+	  'numero_endereco' => urlencode('1000");
+	  'complemento","");
+	  'bairro","Bairro Teste");
+	  'cidade","São Paulo");
+	  'estado","SP");
+	  'pais'            => urlencode('Brasil");
+	  'cep'             => urlencode('01156060");
+	  'metodo","visa");
+	  'parcelas","1");
+	  'nome_cartao","JOSE TESTE");
+	  'num_cartao'      => urlencode('4066553613548107");
+	  'cvv_cartao'      => urlencode('123");
+	  'mes_cartao'      => urlencode('10");
+	  'ano_cartao'      => urlencode('17')
+	);
+	$fields_string ='';
+	foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
+	rtrim($fields_string, '&');
+
+	$ch = curl_init();
+	curl_setopt( $ch, CURLOPT_URL, $url );
+	curl_setopt( $ch, CURLOPT_POST, true );
+	curl_setopt( $ch, CURLOPT_POSTFIELDS, $fields_string );
+	curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
+	curl_setopt( $ch, CURLOPT_HEADER, true);
+	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+	curl_setopt( $ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)' );
+	curl_setopt( $ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1 );
+
+	$result = curl_exec( $ch );
+
+	echo $result;
+
+	curl_close( $ch );*/
+	
+	public List<NameValuePair> processKeyParameter(Object ipagObj) {
+		
+		List<NameValuePair> data = new ArrayList<NameValuePair>();
+
+		Field[] fields = ipagObj.getClass().getDeclaredFields();    
+		for (Field field : fields) {
+
+			try {
+				data.add(new BasicNameValuePair(field.getName(), (String) Reflection.getValorCampo(ipagObj, field.getName())));
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		return data;
+	}
+
+	@RequestMapping(value = "/ipagservice",
+	    method = RequestMethod.GET,
+	    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void testeIpag(@Valid @RequestBody IpagDTO ipagDTO) {
+		new IpagService(ipagDTO);
+	}
+
+	@RequestMapping(value = "/ipag_return",
+	    method = RequestMethod.GET,
+	    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void callbackIpag(@Valid @RequestBody IpagDTO ipagDTO) {
+		new IpagService(ipagDTO);
+	}
+}

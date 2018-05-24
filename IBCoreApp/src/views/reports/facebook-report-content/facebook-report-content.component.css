@@ -1,0 +1,54 @@
+.auto-play-value {
+    color: #00d6f6;
+}
+
+.click-to-play-value {
+    color: #f6cb00;
+}
+
+h5 {
+    line-height: 1.2;
+}
+
+h4 {
+    line-height: 1;
+}
+
+.row-eq-height {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.panel {
+    height: 100%;
+}
+
+#content-pdf{
+    width: 650px;
+    max-height: 0px;
+    overflow: hidden; 
+}
+
+.page-break{
+    page-break-before: always;
+}
+
+@media print{
+    #content-pdf{
+        max-height: none;
+    }
+}
+
+@media (max-width: 1400px) {
+
+    .panel-sub-title {
+        margin-top: 10px !important;
+    }
+}
+
+.fa-facebook-square {
+    color: #3467d4;
+    font-size: 24px
+}

@@ -1,0 +1,22 @@
+package br.com.opsocial.server.actions.application;
+
+import br.com.opsocial.ejb.das.MaintenanceNotificationRemote;
+import br.com.opsocial.ejb.entity.application.Notification;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class DeleteNotificationAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception {
+		
+		Long notificationId = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("notificationId")).getValue();
+
+		MaintenanceNotificationRemote remote = (MaintenanceNotificationRemote) RecoverMaintenance.recoverMaintenance("Notification");
+		
+		Notification notification = remote.getById(notificationId); 
+		
+		remote.delete(notification);
+	}
+
+}

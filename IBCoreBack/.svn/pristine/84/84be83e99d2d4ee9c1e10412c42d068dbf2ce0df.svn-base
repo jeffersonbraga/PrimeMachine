@@ -1,0 +1,117 @@
+package br.com.opsocial.server.services;
+
+import java.io.IOException;
+
+import javax.naming.NamingException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.auth.AccessToken;
+import twitter4j.auth.RequestToken;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.networksintegrations.TwitterIntegration;
+import das.MaintenanceProfileRemote;
+import entity.application.Profile;
+import entity.application.User;
+
+public class AuthTwitterCallbackServlet extends HttpServlet {
+	
+	private static final long serialVersionUID = 1L;
+	
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		doGet(request, response);
+	}
+	
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		
+		Twitter systemTwitter = (Twitter) request.getSession().getAttribute("twitter");
+        RequestToken requestToken = (RequestToken) request.getSession().getAttribute("requestToken");
+        String verifier = request.getParameter("oauth_verifier");
+        
+        try {	
+            AccessToken accessToken = systemTwitter.getOAuthAccessToken(requestToken, verifier);
+            
+            TwitterIntegration twitterIntegration = new TwitterIntegration();
+            Twitter twitter = twitterIntegration.getTwitter(accessToken.getToken(), accessToken.getTokenSecret());
+            	
+            User userSystem = (User) request.getSession().getAttribute("user");
+
+            MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+            
+            Profile baseProfile = remote.getEntityByNetworkId(String.valueOf(twitter.getId()), userSystem.getAccount().getIdAccount());
+			 
+            if(request.getSession().getAttribute("is_profile_refresh_token") == null) {
+            	
+            	if(baseProfile == null) {
+    				
+    				Profile profile = new Profile();
+    				profile.setAccount(userSystem.getAccount());
+    				profile.setNetworkId(String.valueOf(twitter.getId()));
+    				profile.setScreenName(twitter.getScreenName());
+
+    				twitter4j.User user = twitter.showUser(twitter.getId());
+    				
+    				if(user.getProfileImageURLHttps().contains("normal")) {
+        				profile.setAvatar(user.getProfileImageURLHttps().replace("_normal", ""));
+    				} else {
+        				profile.setAvatar(user.getProfileImageURLHttps());	
+    				}
+
+    				profile.setType(Profile.TWITTER);
+    				profile.setToken(accessToken.getToken());
+    				profile.setTokenSecret(accessToken.getTokenSecret());
+    				
+    				request.getSession().setAttribute("profile", profile);
+    			} else {
+    				if(baseProfile.isActive()) {
+    					request.getSession().setAttribute("message", "Perfil já cadastrado");
+    				}
+    			}
+            } else {
+            	
+				Profile profile = ((Profile) request.getSession().getAttribute("profile"));
+            	
+            	if(baseProfile != null) {
+					if(profile.getIdProfile().equals(baseProfile.getIdProfile())) {
+						
+						baseProfile.setActive('T');
+    					baseProfile.setToken(accessToken.getToken());
+    					baseProfile.setTokenSecret(accessToken.getTokenSecret());
+    					baseProfile = remote.save(baseProfile);
+    									
+					} else {
+						request.getSession().setAttribute("message", new StringUtil("Para reconectar o perfil escolhido, você deverá " +
+								"primeiramente estar logado no Twitter com o perfil que deseja reconectar."));
+					}
+            	} else {
+					request.getSession().setAttribute("message", new StringUtil("Para reconectar o perfil escolhido, você deverá " +
+							"primeiramente estar logado no Twitter com o perfil que deseja reconectar."));
+				}
+            	
+            	request.getSession().removeAttribute("is_profile_refresh_token");
+            	
+            	request.getSession().setAttribute("alr_rec_twitter", new Boolean(true));
+            }
+    		
+            request.getSession().removeAttribute("requestToken");
+            
+        } catch (TwitterException e) {
+            throw new ServletException(e);
+        } catch (NamingException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}

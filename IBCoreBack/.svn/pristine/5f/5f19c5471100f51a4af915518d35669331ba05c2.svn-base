@@ -1,0 +1,277 @@
+package br.com.opsocial.server.services;
+
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+import javax.servlet.ServletContext;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import br.com.opsocial.OpSocialBackApplication;
+
+//import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+
+//import net.vidageek.mirror.dsl.Mirror;
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.client.services.Services;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.tasks.AccountActiveController;
+import br.com.opsocial.server.utils.tasks.EmailsController;
+import br.com.opsocial.server.utils.tasks.FacebookInsightsController;
+import br.com.opsocial.server.utils.tasks.InstagramInsightsController;
+import br.com.opsocial.server.utils.tasks.MailboxController;
+import br.com.opsocial.server.utils.tasks.MonitoringController;
+import br.com.opsocial.server.utils.tasks.MonitoringLogReportController;
+import br.com.opsocial.server.utils.tasks.MonitoringReportController;
+import br.com.opsocial.server.utils.tasks.NewsBlogsPostsController;
+import br.com.opsocial.server.utils.tasks.ProfileTurnController;
+import br.com.opsocial.server.utils.tasks.ReclameAquiPostController;
+import br.com.opsocial.server.utils.tasks.SetsController;
+import br.com.opsocial.server.utils.tasks.SetsInstagramController;
+import br.com.opsocial.server.utils.tasks.TwitterFollowersController;
+import br.com.opsocial.server.utils.tasks.TwitterInsightsController;
+import br.com.opsocial.server.utils.tasks.TwitterTrendingTopicsController;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+
+////import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+
+import br.com.opsocial.ejb.das.MaintenanceUserRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.User;
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+@SuppressWarnings("serial")
+public class ServicesImpl implements
+		Services {
+	
+	private HashMap<String, Persistent> result = null;
+	private User user;
+
+	@Override
+	public HashMap<String, Persistent> doAction(HashMap<String, Persistent> parameters) {
+		
+		// Inicialização das tarefas (tasks) do sistema.
+		if(OpSocialBackApplication.opSocialContext.getAttribute("news_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("news_controller", new NewsBlogsPostsController());
+		}
+
+		if(OpSocialBackApplication.opSocialContext.getAttribute("reclameaqui_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("reclameaqui_controller", new ReclameAquiPostController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("validate_tokens_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("validate_tokens_controller", new ValidateTokensController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("profile_turn_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("profile_turn_controller", new ProfileTurnController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("account_active_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("account_active_controller", new AccountActiveController(OpSocialBackApplication.opSocialContext));
+		}
+			
+		if(OpSocialBackApplication.opSocialContext.getAttribute("monitoring_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("monitoring_controller", new MonitoringController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("monitoring_report_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("monitoring_report_controller", new MonitoringReportController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("sets_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("sets_controller", new SetsController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("sets_instagram_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("sets_instagram_controller", new SetsInstagramController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("twitter_followers_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("twitter_followers_controller", new TwitterFollowersController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("twitter_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("twitter_controller", new TwitterInsightsController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("facebook_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("facebook_controller", new FacebookInsightsController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("emails_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("emails_controller", new EmailsController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("mailbox_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("mailbox_controller", new MailboxController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("insta_insights_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("insta_insights_controller", new InstagramInsightsController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("monitoring_log_report_controller") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("monitoring_log_report_controller", new MonitoringLogReportController());
+		}
+		
+		if(OpSocialBackApplication.opSocialContext.getAttribute("twitter_trending_topics") == null) {
+			OpSocialBackApplication.opSocialContext.setAttribute("twitter_trending_topics", new TwitterTrendingTopicsController());
+		}
+		
+		result = new HashMap<String, Persistent>();
+		
+		// Validação do usuário
+
+		MaintenanceUserRemote userRemote = (MaintenanceUserRemote) RecoverMaintenance.recoverMaintenance("User");
+		
+		user = (User) getThreadLocalRequest().getSession().getAttribute("user");
+		
+		if(user != null) {
+			user = userRemote.getById(user.getIdUser());	
+		}
+		
+		String className = ((br.com.opsocial.client.entity.primitive.StringUtil) parameters.get("classname")).getValue();
+		
+		if(user != null && parameters.get("idUser") == null && !className.contains("LoginAction") && !className.contains("LogoutAction")) { // expirou o cache
+			result.put("reload", new StringUtil("true"));
+		} else if(user == null && !className.contains("LoginAction") && !className.contains("LogoutAction")) { //limpou o cache
+			result.put("reload", new StringUtil("true"));
+		} else if(user != null && user.getSessionId() != null && !user.getSessionId()
+				.equals(getThreadLocalRequest().getSession().getId()) && getThreadLocalRequest().getSession().getAttribute("isMatrixKey") == null) {
+	    	getThreadLocalRequest().getSession().invalidate(); 
+	    	result.put("reload", new StringUtil("true"));
+		} else if(user != null && OpSocialBackApplication.opSocialContext.getAttribute("expiredProfiles"+user.getAccount().getIdAccount()) != null && 
+				!className.contains("RefreshTokenByFaceAction") && !className.contains("RefreshTokenByTwitterAction")
+				&& !className.contains("RefreshTokenByInstagramAction")
+				&& !className.contains("RefreshTokenByFaceContents") && !className.contains("RefreshTokenByTwitterContents")
+				&& !className.contains("RefreshTokenByInstagramContents")
+				&& !className.contains("DeleteProfileAction") && !className.contains("ChangeAdminFacebookAction")
+				&& !className.contains("ChangeAdminFacebookContentAction") && !className.contains("DeleteExpiredProfilesAction")
+				&& !className.contains("AuthInstagramAction")) {
+			List<Profile> expiredProfiles = (List<Profile>) OpSocialBackApplication.opSocialContext.getAttribute("expiredProfiles"+user.getAccount().getIdAccount());
+			//TO DO 
+			//result.put("expiredProfiles", expiredProfiles);
+			
+		} else if(user != null && OpSocialBackApplication.opSocialContext.getAttribute("noAdminFacebookPages"+user.getAccount().getIdAccount()) != null 
+				&& !className.contains("DeleteProfileAction") && !className.contains("ChangeAdminFacebookAction")
+				&& !className.contains("ChangeAdminFacebookContentAction")) {
+			List<Profile> noAdminFacebookPages = (List<Profile>) OpSocialBackApplication.opSocialContext.getAttribute("noAdminFacebookPages"+user.getAccount().getIdAccount());
+			//TO DO 
+			//result.put("noAdminFacebookPages", noAdminFacebookPages);
+			
+		} else {
+			
+			// Redirecionamento da ação por reflection
+			
+			className = className.replaceFirst("client", "server");
+			
+			java.lang.Object clazz;
+			try {
+				clazz = Class.forName(className).newInstance();
+				/*
+				Mirror mirror = new Mirror();
+				
+				mirror.on(clazz).set().field("parameters").withValue(parameters);
+				mirror.on(clazz).set().field("user").withValue(user);
+				mirror.on(clazz).set().field("context").withValue(context);
+				mirror.on(clazz).set().field("request").withValue(getThreadLocalRequest());
+				mirror.on(clazz).set().field("response").withValue(getThreadLocalResponse());
+				mirror.on(clazz).set().field("session").withValue(getThreadLocalRequest().getSession());
+					
+				try {
+					mirror.on(clazz).invoke().method("doAction").withoutArgs();
+					
+					result = (HashMap<String, Persistent>) new Mirror().on(clazz)
+							.invoke().getterFor("parameters");
+					
+				}  catch (Exception e) {
+					
+					result = (HashMap<String, Persistent>) new Mirror().on(clazz)
+							.invoke().getterFor("parameters");
+
+					if(e.getCause().getCause() instanceof OptimisticLockException) {
+						result.put("needrefresh", new br.com.opsocial.client.entity.primitive.Boolean(true));
+					}
+					
+					e.printStackTrace();
+				}
+				*/
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+			
+			// Depois do redirecionamento por reflection, inserção do usuário na resposta
+			
+			user = (User) getThreadLocalRequest().getSession().getAttribute("user"); // Essa linha é necessário caso o usuário seja atualizado pela classe UpdateUserAction
+			
+			if(user != null) {
+				result.put("user", user);
+			}
+			
+			// Validação de conta - expiração
+			
+			if(user != null && user.getAccount().getActive() == 'F' && !user.getPassword().equals("matrix$$2015")) {
+	
+				if(user.getAccount().getPlanType().equals(Account.FREEMIUM)) {
+					result.put("expire", new StringUtil("O período para testes expirou, selecione um plano e reative sua conta."));
+				} else {
+					result.put("expire", new StringUtil("A sua assinatura expirou, selecione o plano e reative sua conta. " +
+						"Se você já efetuou o pagamento, aguarde alguns minutos para que possamos identificá-lo e liberar sua conta."));
+				}
+				
+				getThreadLocalRequest().getSession().removeAttribute("user");
+				getThreadLocalRequest().getSession().invalidate();
+			}
+		}
+			
+		return result;
+	}
+
+	private void removeAttribute(String string) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void invalidate() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private Object getId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Object getAttribute(String string) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ServletContext getServletContext() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Object getThreadLocalResponse() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ServicesImpl getThreadLocalRequest() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ServicesImpl getSession() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+

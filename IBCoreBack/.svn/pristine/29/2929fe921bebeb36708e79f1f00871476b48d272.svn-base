@@ -1,0 +1,237 @@
+package br.com.opsocial.server.utils.linkedin;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
+import br.com.opsocial.OpSocialBackApplication;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.utils.networksintegrations.LinkedinIntegration;
+
+@RestController
+@RequestMapping("opsocial")
+public class LinkedInApi {
+	
+//	private Properties config = OAuthUtils.getClientConfigProps(OAuthConstants.CONFIG_FILE_PATH);
+//	private OAuth2Details oauthDetails = OAuthUtils.createOAuthDetails(config);
+
+	Map<String,String> map = new HashMap<String, String>();
+	
+	private CloseableHttpClient client;
+	private HttpClientContext context;
+
+	@CrossOrigin
+	@RequestMapping(value = "/post_linkedin",
+	method = RequestMethod.POST,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public Boolean post(Post post, Profile profile) {
+		
+		Boolean wasSent = true;
+		String tempPath = OpSocialBackApplication.UPLOAD_DIR_TEMP + "/";
+		String videoPostsPath = OpSocialBackApplication.UPLOAD_DIR_VIDEO_POSTS + "/"; 
+		
+    	context = HttpClientContext.create();
+        client = HttpClients.custom()
+            .setConnectionManager(new BasicHttpClientConnectionManager())
+            .build();
+		
+		try {
+			
+			JSONObject obj = new JSONObject();
+			JSONObject obj1 = new JSONObject();
+			JSONObject obj2 = new JSONObject();
+			
+//			PostAttachment postAttachment = new PostAttachment();
+//			
+//			if(post.getPostsAttachments().get(0) != null) {
+//				postAttachment = post.getPostsAttachments().get(0);
+//				if(post.getPostsAttachments().get(0).getFileType().equals(PostAttachment.VIDEO)) {
+//					post.setAppendType(Post.APPEND_VIDEO);
+//				} else if (post.getPostsAttachments().get(0).getFileType().equals(PostAttachment.PHOTO)) {
+//					post.setAppendType(Post.APPEND_PICTURE);
+//				}
+//			} 
+			
+			if(post.getAppendType() != null) {
+			
+				if(post.getAppendType().equals(Post.APPEND_PICTURE)) {
+					
+					obj1.put("code", "anyone");
+					obj2.put("submitted-url", tempPath + post.getPostsAttachments().get(0).getFileName());
+					obj2.put("submitted-image-url", tempPath + post.getPostsAttachments().get(0).getFileName());
+					obj.put("visibility", obj1);
+					obj.put("comment", post.getText());
+					obj.put("content", obj2);
+					
+				} else if(post.getAppendType().equals(Post.APPEND_RESUME)) {
+					
+					obj1.put("code", "anyone");
+					obj2.put("submitted-url", post.getLink());
+					obj.put("visibility", obj1);
+					obj.put("comment", post.getText());
+					obj.put("content", obj2);
+					
+				} else if(post.getAppendType().equals(Post.APPEND_VIDEO)) {
+					
+					obj1.put("code", "anyone");
+					obj2.put("submitted-url", videoPostsPath + post.getPostsAttachments().get(0).getFileName());
+					obj2.put("submitted-image-url", videoPostsPath + post.getPostsAttachments().get(0).getFileName());
+					obj.put("visibility", obj1);
+					obj.put("comment", post.getText());
+					obj.put("content", obj2);
+				}
+				
+			} else {
+				
+				obj1.put("code", "anyone");
+				obj.put("visibility", obj1);
+				obj.put("comment", post.getText());
+			}
+			
+			if(profile.getType() == 'L') {
+			
+				post(obj, "https://api.linkedin.com/v1/people/~/shares?oauth2_access_token=" 
+												+ profile.getToken() + "&format=json");
+			} else {
+			
+				post(obj, "https://api.linkedin.com/v1/companies/" + profile.getNetworkId() + "/shares?oauth2_access_token=" 
+												+ profile.getToken() + "&format=json");
+			}
+			
+		} catch (Exception e) {
+			wasSent = false;
+			e.printStackTrace();
+		}
+			
+		return wasSent;
+	}
+	
+	private String post(JSONObject post, String url) {
+		
+		String sonuc = "";
+
+		try {
+
+			Header[] headers = new Header[2];
+			headers[0] = new BasicHeader("Content-type", "application/json");
+			headers[1] = new BasicHeader("x-li-format", "json");
+			
+			CloseableHttpResponse response = (CloseableHttpResponse) this.requestPOST(url, post.toString(), headers);
+
+			sonuc = extractJSONResponse(response);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "";
+		}
+
+		return sonuc;
+	}
+	
+	private String extractJSONResponse(CloseableHttpResponse response) throws Exception {
+		
+		String jsonResponse = "";
+
+		if (response.getStatusLine().getStatusCode() != 201) {
+			System.out.println("Failed : HTTP error code : " + response.getStatusLine().getStatusCode());
+		}
+
+		System.out.println(response.getStatusLine());
+		HttpEntity entity2 = response.getEntity();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(entity2.getContent(), Charset.forName("UTF-8")));
+
+		String line;
+		System.out.println("--------- Response Body --------");
+		while ((line = br.readLine())!= null) {
+			System.out.println(line);
+			jsonResponse += line;
+		}
+		
+		EntityUtils.consume(entity2);
+
+		response.close();
+		
+		return jsonResponse;
+	}
+	
+	public Boolean verifyAccessToken(String accessToken) {
+		
+		try {
+			
+//			Properties config = OAuthUtils.getClientConfigProps(OAuthConstants.CONFIG_FILE_PATH);
+//			OAuth2Details oauthDetails = OAuthUtils.createOAuthDetails(config);
+			OAuth2Details oauthDetails = new LinkedinIntegration().createOAuthDetails();
+			Map<String,String> map = new HashMap<String, String>();
+			
+			oauthDetails.setResourceServerUrl("https://api.linkedin.com/v1/people/~?oauth2_access_token=" + accessToken);
+	
+			oauthDetails.setAccessToken(accessToken);
+			
+			map = OAuthUtils.getProtectedResource(oauthDetails);
+			
+			String jsonResponse = String.valueOf(map.get("values"));
+	
+			jsonResponse = jsonResponse.replaceAll("\\{\\}", "[]");
+	    	
+	    	JsonParser parser = new JsonParser();
+			
+			JsonArray jsonResponseData = parser.parse(jsonResponse).getAsJsonArray();
+			
+			Iterator<JsonElement> elements = jsonResponseData.iterator();
+			
+//			if() {
+//				return true;
+//			} else {
+//				return false;
+//			}
+			
+//		<error>
+//		    <status>401</status>
+//		    <timestamp>1504316464834</timestamp>
+//		    <request-id>JT4TSOW9P1</request-id>
+//		    <error-code>0</error-code>
+//		    <message>Then token used in this request has been revoked by the user.</message>
+//		</error>
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+    
+    public CloseableHttpResponse requestPOST(String url, String postData, Header[] headers) throws IOException {
+    	
+    	HttpPost request = new HttpPost(url);
+		request.setEntity(new StringEntity(postData, Charset.forName("UTF-8")));
+		request.setHeaders(headers);
+    	
+		return client.execute(request, context);
+    }
+}

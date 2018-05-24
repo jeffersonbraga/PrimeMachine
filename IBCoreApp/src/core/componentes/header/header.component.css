@@ -1,0 +1,15 @@
+.uploading-avatar {
+    background: url(/pages/img/progress/progress-circle-success.svg) no-repeat top left;
+    width: 20px;
+    height: 20px;
+    background-size: 100% auto;
+}
+
+.avatar-user {
+    object-fit: cover;
+}
+
+.over-logo {
+    position: relative;
+    z-index: 2;
+}

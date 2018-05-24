@@ -1,0 +1,21 @@
+package br.com.opsocial.server.actions.schedulings;
+
+import br.com.opsocial.ejb.das.MaintenanceSetRemote;
+import br.com.opsocial.ejb.entity.sets.Set;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+public class DeleteScheduleAction extends ServerAction {
+	
+	@Override
+	public void doAction() throws Exception {
+	
+		MaintenanceSetRemote remote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+		
+		Set setDTO = (Set) getParameters().get("set");
+		
+		remote.delete(setDTO);
+		
+	}
+
+}

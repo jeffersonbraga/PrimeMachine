@@ -1,0 +1,206 @@
+package br.com.opsocial.client.entity.report.facebook;
+
+import java.util.Date;
+import java.util.Map;
+
+import br.com.opsocial.ejb.entity.generic.Persistent;
+
+public class FaceReportPostDTO extends Persistent {
+
+	private static final long serialVersionUID = 1L;
+	
+	private String postId;
+	private String pageId;
+	private String message;
+	private String type;
+	private String permalink;
+	private Date createdTime;
+	private Integer likes;
+	private Integer comments;
+	private Integer shares;
+	private Long lastDateInsights;
+	private String photoSrc;
+	private Integer photoWidth;
+	private Integer photoHeight;
+	
+	private Double engagement;
+	
+	private Map<String, Long> postInsights;
+	private Long totalReach;
+	private Long totalInteractions;
+	
+	public final static String PHOTOS_POSTED = "247";
+	public final static String STATUS_UPDATE = "46";
+	public final static String LINK_POSTED = "80";
+	public final static String VIDEO_POSTED = "128";
+	
+	public static final String POST_IMPRESSIONS_UNIQUE = "post_impressions_unique";
+	public static final String POST_IMPRESSIONS = "post_impressions";
+	public static final String POST_STORIES = "post_stories";
+	public static final String POST_CONSUMPTIONS = "post_consumptions";
+	
+	public static final String POST_IMPRESSIONS_PAID_UNIQUE = "post_impressions_paid_unique";
+	public static final String POST_IMPRESSIONS_ORGANIC_UNIQUE = "post_impressions_organic_unique";
+	public static final String POST_IMPRESSIONS_VIRAL_UNIQUE = "post_impressions_viral_unique";
+	
+	public static final String POST_IMPRESSIONS_PAID = "post_impressions_paid";
+	public static final String POST_IMPRESSIONS_ORGANIC = "post_impressions_organic";
+	public static final String POST_IMPRESSIONS_VIRAL = "post_impressions_viral";
+	
+	public static final String POST_STORIES_BY_ACTION_TYPE = "post_stories_by_action_type";
+	public static final String POST_STORIES_BY_ACTION_TYPE_LIKE = "post_stories_by_action_type_like";
+	public static final String POST_STORIES_BY_ACTION_TYPE_COMMENT = "post_stories_by_action_type_comment";
+	public static final String POST_STORIES_BY_ACTION_TYPE_SHARE = "post_stories_by_action_type_share";
+	
+	public static final String POST_REACTIONS_LOVE_TOTAL = "post_reactions_love_total";
+	public static final String POST_REACTIONS_HAHA_TOTAL = "post_reactions_haha_total";
+	public static final String POST_REACTIONS_WOW_TOTAL = "post_reactions_wow_total";
+	public static final String POST_REACTIONS_SORRY_TOTAL = "post_reactions_sorry_total";
+	public static final String POST_REACTIONS_ANGER_TOTAL = "post_reactions_anger_total";
+	public static final String POST_REACTIONS_LIKE_TOTAL = "post_reactions_like_total";
+	
+	public static final String POST_CONSUMPTIONS_BY_TYPE = "post_consumptions_by_type";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_OTHER_CLICKS = "post_consumptions_by_type_other_clicks";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_PHOTO_VIEW = "post_consumptions_by_type_photo_view";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_LINK_CLICKS = "post_consumptions_by_type_link_clicks";
+	public static final String POST_CONSUMPTIONS_BY_TYPE_VIDEO_PLAY = "post_consumptions_by_type_video_play";
+	
+	public FaceReportPostDTO() {
+	}
+
+	public String getPostId() {
+		return postId;
+	}
+
+	public void setPostId(String postId) {
+		this.postId = postId;
+	}
+
+	public String getPageId() {
+		return pageId;
+	}
+
+	public void setPageId(String pageId) {
+		this.pageId = pageId;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getPermalink() {
+		return permalink;
+	}
+
+	public void setPermalink(String permalink) {
+		this.permalink = permalink;
+	}
+
+	public Date getCreatedTime() {
+		return createdTime;
+	}
+
+	public void setCreatedTime(Date createdTime) {
+		this.createdTime = createdTime;
+	}
+
+	public Integer getLikes() {
+		return likes;
+	}
+
+	public void setLikes(Integer likes) {
+		this.likes = likes;
+	}
+
+	public Integer getComments() {
+		return comments;
+	}
+
+	public void setComments(Integer comments) {
+		this.comments = comments;
+	}
+
+	public Integer getShares() {
+		return shares;
+	}
+
+	public void setShares(Integer shares) {
+		this.shares = shares;
+	}
+
+	public Long getLastDateInsights() {
+		return lastDateInsights;
+	}
+
+	public void setLastDateInsights(Long lastDateInsights) {
+		this.lastDateInsights = lastDateInsights;
+	}
+
+	public String getPhotoSrc() {
+		return photoSrc;
+	}
+
+	public void setPhotoSrc(String photoSrc) {
+		this.photoSrc = photoSrc;
+	}
+
+	public Integer getPhotoWidth() {
+		return photoWidth;
+	}
+
+	public void setPhotoWidth(Integer photoWidth) {
+		this.photoWidth = photoWidth;
+	}
+
+	public Integer getPhotoHeight() {
+		return photoHeight;
+	}
+
+	public void setPhotoHeight(Integer photoHeight) {
+		this.photoHeight = photoHeight;
+	}
+
+	public Double getEngagement() {
+		return engagement;
+	}
+
+	public void setEngagement(Double engagement) {
+		this.engagement = engagement;
+	}
+
+	public Map<String, Long> getPostInsights() {
+		return postInsights;
+	}
+
+	public void setPostInsights(Map<String, Long> postInsights) {
+		this.postInsights = postInsights;
+	}
+
+	public Long getTotalReach() {
+		return totalReach;
+	}
+
+	public void setTotalReach(Long totalReach) {
+		this.totalReach = totalReach;
+	}
+
+	public Long getTotalInteractions() {
+		return totalInteractions;
+	}
+
+	public void setTotalInteractions(Long totalInteractions) {
+		this.totalInteractions = totalInteractions;
+	}
+}

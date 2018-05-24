@@ -1,0 +1,70 @@
+package br.com.opsocial.server.utils.instagram;
+
+import java.io.File;
+
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.sets.Post;
+import br.com.opsocial.server.services.ServicesImpl;
+
+public class InstagramAPI {
+	
+	private InstagramPostHelper instagramPostHelper;
+
+	public InstagramAPI() {
+		
+	}
+	
+	public boolean post(Post post, Profile profile) {
+		
+		Boolean wasSent = true;
+		String tempPath = ServicesImpl.context.getInitParameter("uploadDirTemp") + "/";
+		String videoPostsPath = ServicesImpl.context.getInitParameter("uploadDirVideoPosts") + "/";
+		
+		try {
+			
+			instagramPostHelper = new InstagramPostHelper();
+			
+			if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_PICTURE)) {
+				
+				String pathName = tempPath + post.getPicture().substring(post.getPicture().lastIndexOf("/") + 1);
+				
+				if(post.getTargetFeed().equals(Post.TIMELINE_FEED)) {
+					wasSent = instagramPostHelper.uploadTimelinePhoto(profile, profile.getInstagramDevice(), post.getText(), new File(pathName));
+				} else if(post.getTargetFeed().equals(Post.STORY_FEED)) {
+					wasSent = instagramPostHelper.uploadStoryPhoto(profile, profile.getInstagramDevice(), post.getText(), new File(pathName));
+				}
+				
+			} else if(post.getAppendType() != null && post.getAppendType().equals(Post.APPEND_VIDEO)) {
+				
+				if(post.getTargetFeed().equals(Post.TIMELINE_FEED)) {
+					wasSent = instagramPostHelper.uploadTimelineVideo(profile, profile.getInstagramDevice(), post, new File(videoPostsPath + post.getVideoName()));
+				} else if(post.getTargetFeed().equals(Post.STORY_FEED)) {
+					wasSent = instagramPostHelper.uploadStoryVideo(profile, profile.getInstagramDevice(), post, new File(videoPostsPath + post.getVideoName()));
+				}
+				
+			} else if(post.getAppendType().equals(Post.APPEND_ALBUM)) {
+				wasSent = instagramPostHelper.uploadTimelineAlbum(profile, profile.getInstagramDevice(), post);
+			}
+			
+			if(!wasSent && !instagramPostHelper.isAccountAuthenticated()) {
+				instagramPostHelper.deactivateProfileScheduling(profile.getIdProfile());
+			}
+			
+		} catch (Exception e) {
+			wasSent = false;
+			e.printStackTrace();
+		}
+		
+		return wasSent;
+	}
+	
+	public String extractSendImageErrorMessage() {
+		return instagramPostHelper.extractSendImageErrorMessage();
+	}
+
+	public boolean tryToPostAgain() {
+		return instagramPostHelper.tryToPostAgain();
+	}
+	
+	
+}

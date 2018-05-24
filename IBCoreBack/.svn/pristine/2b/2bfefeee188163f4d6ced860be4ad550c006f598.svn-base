@@ -1,0 +1,67 @@
+package br.com.opsocial.server.actions.schedulings;
+
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import das.MaintenanceSetRemote;
+import entity.application.Profile;
+import entity.application.User;
+import entity.sets.Post;
+import entity.sets.Set;
+
+@RestController
+@RequestMapping("opsocial")
+public class ListSchedulingsByProfileAction extends ServerAction {
+
+	@Override
+	@RequestMapping(value = "/list_schedulingsby_profile",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		Character status = (Character) getParameters().get("status");
+		Integer offset = (Integer) getParameters().get("offset");
+		
+		setParameters(new HashMap<String, Object>());
+
+		User user = (User) getSession().getAttribute("user");
+
+		MaintenanceSetRemote setRemote = (MaintenanceSetRemote) RecoverMaintenance.recoverMaintenance("Set");
+		
+		Integer limit = 20;
+		
+		List<Set> baseSchedules = setRemote.listSchedulings(profile.getIdProfile(), user.getAccount().getIdAccount(), status, offset, limit);
+		
+		List<Set> clientSchedules = new ArrayList<Set>();
+			
+		for(Set set : baseSchedules) {
+
+			Post post = set.getPosts().get(0);
+
+			post.setFormattedPost(UtilFunctions.getFomattedStringWithWBR(post.getText(), 50));
+			post.setOriginalLink(post.getLink());
+
+			if(post.getLink() != null) {
+				post.setLink(new URL(post.getLink()).getHost());
+			}
+
+			clientSchedules.add(set);
+		}
+			
+		getParameters().put("schedules", clientSchedules);
+	}
+
+}

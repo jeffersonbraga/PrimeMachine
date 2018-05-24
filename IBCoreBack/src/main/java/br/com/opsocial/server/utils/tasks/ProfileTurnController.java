@@ -1,0 +1,67 @@
+package br.com.opsocial.server.utils.tasks;
+
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+
+public class ProfileTurnController {
+
+	public static Profile INSTAGRAM_PROFILE_TURN = null;
+	
+	public ProfileTurnController() {
+
+		Timer timer = new Timer();
+		
+		timer.schedule(new TimerTask() {
+			
+			@Override
+			public void run() {
+				
+				MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+				
+				//Instagram
+				
+				List<Profile> profiles = remote.getEntityByNetworkType(Profile.INSTAGRAM);
+				
+				INSTAGRAM_PROFILE_TURN = null;
+				
+				for(Profile profile : profiles) {
+					
+					if(profile.getActive() == 'T' && profile.getTurn().equals('T')) {
+						
+						profile.setTurn('F');
+						
+						try {
+							remote.save(profile);
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						
+						INSTAGRAM_PROFILE_TURN = profile;
+						
+						break;
+					}	
+				}
+				
+				if(INSTAGRAM_PROFILE_TURN == null && profiles.size() > 0) {
+					for(Profile profile : profiles) {
+						profile.setTurn('T');
+						try {
+							remote.save(profile);
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}, 0, 60000L);
+	}
+}

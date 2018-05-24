@@ -1,0 +1,94 @@
+<article class="schedule-item" *ngFor="let schedule of schedules, let i = index">
+	<h6 [ngSwitch]="schedule.type">
+		<i *ngSwitchCase="'F'" class=" fa fa-facebook-square"></i>
+		<i *ngSwitchCase="'P'" class="adjust-middle fa fa-facebook-square"></i>
+		<i *ngSwitchCase="'T'" class="adjust-middle fa fa-twitter-square"></i>
+		<i *ngSwitchCase="'I'" class="adjust-middle fa fa-instagram"></i>
+		<i *ngSwitchCase="'S'" class="adjust-middle fa fa-instagram"></i>
+		<i *ngSwitchCase="'L'" class="adjust-middle fa fa-linkedin-square"></i>
+		<i *ngSwitchCase="'H'" class="adjust-middle fa fa-linkedin-square"></i>
+
+		<strong (click)="teste(schedule)">{{ schedule.channel }}</strong>
+		<span *ngIf="schedule.userLog"> por {{ schedule.userLog.name }}</span>
+	</h6>
+
+	<div class="schedule-container">
+		<div class="row">
+			<div class="col-lg-1 col-md-1 col-sm-2 schedule-date no-padding">
+				<div>
+					<span class="fa fa-calendar"></span>
+					<span class="date">{{ schedule.datetime | date:"dd"}} {{ schedule.datetime  | date:"MM" | monthName }}</span>
+					<span class="year">{{ schedule.datetime | date:"yyyy" }}</span>
+				</div>
+				<div class="time">
+					<span class="fa fa-clock-o"></span>
+					<span class="hour">{{ schedule.datetime | date:"h:mm a" | hHour}}</span>
+				</div>
+			</div>
+			<div class="col-lg-2 col-md-2 col-sm-3 schedule-image" *ngIf="schedule.postsAttachments?.length === 1">
+				<img [src]="controlService.temp_image_path + schedule.postsAttachments[0].fileName" class="singleImage" *ngIf="schedule.typeMedia !== 'R'">
+				<img [src]="schedule.postsAttachments" class="singleImage" *ngIf="schedule.typeMedia === 'R'">
+				<div class="img-hover img-hover-full" (click)="openMedia({
+					type: schedule.typeMedia, 
+					link: schedule.link,
+					photo: schedule.postsAttachments[0].fileName,
+					video: schedule.video
+				})" [ngSwitch]="schedule.typeMedia">
+					<span *ngSwitchCase="'P'" class="fa fa-search-plus"></span>
+					<span *ngSwitchCase="'S'" class="fa fa-search-plus"></span>
+					<span *ngSwitchCase="'A'" class="fa fa-search-plus"></span>
+					<span *ngSwitchCase="'V'" class="fa fa-play"></span>
+					<span *ngSwitchCase="'R'" class="fa fa-link"></span>
+				</div>
+			</div>
+			<div class="col-lg-2 col-md-2 col-sm-3 schedule-image" *ngIf="schedule.postsAttachments?.length > 1">
+				<div id="carousel-schedule" class="carousel slide" data-ride="carousel" data-interval="false">
+					<div class="carousel-inner" role="listbox">
+						<div class="item" [class.active]="!i" *ngFor="let photo of schedule.postsAttachments, let i = index">
+							<img [src]="controlService.temp_image_path + photo.fileName">
+							<div class="img-hover" (click)="openMedia({
+								type: schedule.typeMedia, 
+								link: schedule.link,
+								photo: photo.fileName,
+								video: schedule.video
+							})" [ngSwitch]="schedule.typeMedia">
+								<span *ngSwitchCase="'P'" class="fa fa-search-plus"></span>
+								<span *ngSwitchCase="'S'" class="fa fa-search-plus"></span>
+								<span *ngSwitchCase="'A'" class="fa fa-search-plus"></span>
+								<span *ngSwitchCase="'V'" class="fa fa-play"></span>
+								<span *ngSwitchCase="'R'" class="fa fa-link"></span>
+							</div>
+						</div>
+					</div>
+
+					<a class="left carousel-control" href="#carousel-schedule" role="button" data-slide="prev">
+						<span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+						<span class="sr-only">Next</span>
+					</a>
+					<a class="right carousel-control" href="#carousel-schedule" role="button" data-slide="next">
+						<span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+						<span class="sr-only">Prev</span>
+					</a>
+				</div>
+			</div>
+
+			<div [class.schedule-content]="true" [ngClass]="{
+					'col-lg-9 col-md-9 col-sm-7': schedule.postsAttachments?.length,
+					'col-lg-11 col-md-11 col-sm-10': !schedule.postsAttachments?.length 
+					}">
+				<div class="row">
+					<div class="col-lg-11 col-md-11 col-sm-10">
+						<p class="content-description p-t-30">
+							{{ schedule.description }}
+						</p>
+						<!-- <hr class="gradient-bottom"> -->
+					</div>
+					<div class="col-lg-1 col-md-1 col-sm-2 content-buttons">
+						<button class="btn btn-xs btn-info" (click)="editSchedule(schedule.id)"><span class="fa fa-pencil"></span> Editar</button>
+						<button class="btn btn-xs btn-danger" (click)="confirmDeleteSchedule(schedule.id, i);"><span class="fa fa-trash"></span> Excluir</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</article>

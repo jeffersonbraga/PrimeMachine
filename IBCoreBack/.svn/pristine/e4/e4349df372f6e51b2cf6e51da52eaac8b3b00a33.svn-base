@@ -1,0 +1,57 @@
+package br.com.opsocial.server.actions.reports.twitter;
+
+import java.util.HashMap;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import br.com.opsocial.client.entity.mount.MountDTO;
+import br.com.opsocial.client.entity.report.twitter.TwitterReportStatusDTO;
+import br.com.opsocial.ejb.das.MaintenanceTwitterStatusRemote;
+import br.com.opsocial.ejb.das.MaintenanceTwitterStatusReportRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.reports.ReportTwitter;
+
+public class UpdateTwitterStatusAction extends ServerAction {
+
+	@Override
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		Profile profile = (Profile) getParameters().get("profile");
+		
+		Integer offset = (Integer) getParameters().get("offset");
+		
+		Long dateFrom = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateFrom")).getValue();
+		Long dateUntil = ((br.com.opsocial.client.entity.primitive.Long) getParameters().get("dateUntil")).getValue();
+		
+		setParameters(new HashMap<String, Object>());
+		
+		MaintenanceTwitterStatusRemote twitterStatusRemote = (MaintenanceTwitterStatusRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatus");
+		
+		MaintenanceTwitterStatusReportRemote twitterStatusReportRemote = (MaintenanceTwitterStatusReportRemote)
+				RecoverMaintenance.recoverMaintenance("TwitterStatusReport");
+		
+		List<TwitterReportStatusDTO> twitterReportStatus = MountDTO.mountTwitterReportStatus(
+				twitterStatusRemote.getTwitterStatus(profile.getNetworkId(), dateFrom, dateUntil + 86400, offset, null), 
+					profile);
+		
+		for(TwitterReportStatusDTO twitterReportStatusDTO : twitterReportStatus) {
+			
+			twitterReportStatusDTO.setRepliesCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), "repliesOfMeCountAll"));
+			
+			twitterReportStatusDTO.setRetweetsCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), "retweetsOfMeCountAll"));
+			
+			twitterReportStatusDTO.setFavoriteCount(twitterStatusReportRemote.getEntityValueByProperty(
+					twitterReportStatusDTO.getIdProfile(), twitterReportStatusDTO.getIdStatus(), ReportTwitter.FAVORITE_COUNT_ALL));
+		}
+		
+		getParameters().put("twitterStatus", twitterReportStatus);
+		
+	}
+
+}

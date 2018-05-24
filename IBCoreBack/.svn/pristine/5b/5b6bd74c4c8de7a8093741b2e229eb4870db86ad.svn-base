@@ -1,0 +1,1204 @@
+package br.com.opsocial.server.utils.reports;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.json.JsonString;
+
+import org.jinstagram.Instagram;
+import org.jinstagram.entity.common.Pagination;
+import org.jinstagram.entity.users.feed.MediaFeed;
+import org.jinstagram.entity.users.feed.MediaFeedData;
+import org.jinstagram.exceptions.InstagramBadRequestException;
+import org.jinstagram.exceptions.InstagramException;
+import org.jinstagram.exceptions.InstagramRateLimitException;
+
+import br.com.opsocial.ejb.das.MaintenanceInstagramFollowerRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostCommentRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostLikeRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramPostTagRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramReportPostRemote;
+import br.com.opsocial.ejb.das.MaintenanceInstagramReportRemote;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportControlRemote;
+import br.com.opsocial.ejb.das.MaintenanceReportGenerateRemote;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.ejb.entity.application.idclass.InstagramPostTagId;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollower;
+import br.com.opsocial.ejb.entity.instagram.InstagramFollowerTrend;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostComment;
+import br.com.opsocial.ejb.entity.instagram.InstagramPostTag;
+import br.com.opsocial.ejb.entity.instagram.InstagramReport;
+import br.com.opsocial.ejb.entity.instagram.InstagramReportPost;
+import br.com.opsocial.ejb.entity.report.ReportControl;
+import br.com.opsocial.ejb.entity.report.ReportGenerate;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+import br.com.opsocial.server.utils.UtilFunctions;
+import br.com.opsocial.server.utils.instagram.InstagramAPI;
+import br.com.opsocial.server.utils.instagram.InstagramBusinessBO;
+import br.com.opsocial.server.utils.instagram.InstagramPostHelper;
+import br.com.opsocial.server.utils.instagram.entities.Comment;
+import br.com.opsocial.server.utils.instagram.entities.CommentFeed;
+import br.com.opsocial.server.utils.instagram.entities.Follower;
+import br.com.opsocial.server.utils.instagram.entities.FollowerFeed;
+import br.com.opsocial.server.utils.instagram.entities.Media;
+import br.com.opsocial.server.utils.instagram.entities.Paging;
+import br.com.opsocial.server.utils.instagram.entities.User;
+import br.com.opsocial.server.utils.networksintegrations.FacebookIntegration;
+import br.com.opsocial.server.utils.tasks.ValidateTokensController;
+import facebook4j.Facebook;
+import facebook4j.FacebookException;
+import facebook4j.auth.AccessToken;
+
+public class ReportInstagram {
+
+	private Instagram instagram;
+	
+	private FacebookIntegration facebookIntegration;
+	private Facebook facebook;
+
+	private Profile profile;
+	
+	private MaintenanceProfileRemote profileRemote;
+	private MaintenanceReportGenerateRemote reportGenerateRemote;
+	private MaintenanceReportControlRemote reportControlRemote;
+
+	private MaintenanceInstagramReportPostRemote instagramReportPostRemote;
+	private MaintenanceInstagramPostCommentRemote instagramPostCommentRemote;
+	private MaintenanceInstagramPostLikeRemote instagramPostLikeRemote;
+	private MaintenanceInstagramPostTagRemote instagramPostTagRemote;
+	private MaintenanceInstagramFollowerRemote instagramFollowerRemote;
+	private MaintenanceInstagramReportRemote instagramReportRemote;
+	
+	public static final String GROUP_MAIN = "main";
+
+	public static final Character IS_A_FOLLOWER = 'T';
+	public static final Character NOT_A_FOLLOWER = 'F';
+
+	public static final String PROFILE_FOLLOWERS = "profile_followers";
+	public static final String PROFILE_FOLLOWERS_ADDS = "profile_followers_adds";
+	public static final String PROFILE_FOLLOWERS_REMOVES = "profile_followers_removes";
+	
+	public static final String FOLLOWER_COUNT = "follower_count";
+
+	public static final Integer UPDATE_POSTS_PERIOD = 30;
+	
+	public static final Long MAX_ALREADY_FOLLOWERS_SEQUENCE = 500L;
+	
+	public static final String POST_TYPE_IMAGE = "IMAGE";
+	public static final String POST_TYPE_VIDEO = "VIDEO";
+	public static final String POST_TYPE_CAROUSEL = "CAROUSEL";
+
+	private boolean isFirstReportGeneration;
+	
+	private ReportGenerate reportGenerate;
+
+	// 1 hora e 1 minuto (acrescentado 1 minuto de "delay") 
+	public static final Long REQUEST_WINDOW_TIME = 3660000L;
+
+	public ReportInstagram(Profile profile, Boolean isFirstReportGeneration) {
+
+		facebookIntegration = new FacebookIntegration();
+
+		this.profile = profile;
+		this.isFirstReportGeneration = isFirstReportGeneration;
+
+		profileRemote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		reportGenerateRemote = (MaintenanceReportGenerateRemote) RecoverMaintenance.recoverMaintenance("ReportGenerate");
+		reportControlRemote = (MaintenanceReportControlRemote) RecoverMaintenance.recoverMaintenance("ReportControl");
+
+		instagramReportPostRemote = (MaintenanceInstagramReportPostRemote) RecoverMaintenance.recoverMaintenance("InstagramReportPost");
+		instagramPostCommentRemote = (MaintenanceInstagramPostCommentRemote) RecoverMaintenance.recoverMaintenance("InstagramPostComment");
+		instagramPostLikeRemote = (MaintenanceInstagramPostLikeRemote) RecoverMaintenance.recoverMaintenance("InstagramPostLike");
+		instagramPostTagRemote = (MaintenanceInstagramPostTagRemote) RecoverMaintenance.recoverMaintenance("InstagramPostTag");
+		instagramFollowerRemote = (MaintenanceInstagramFollowerRemote) RecoverMaintenance.recoverMaintenance("InstagramFollower");
+		instagramReportRemote = (MaintenanceInstagramReportRemote) RecoverMaintenance.recoverMaintenance("InstagramReport");
+	}
+	
+	public void retrieveAllInsightsForDay(Long day) {
+		
+		// Updates user info.
+		User user = updateProfileInfo();
+		
+		// Retrieve insights for current day.
+		retrieveInsightsForDay(day, user);
+		
+		// Retrieve last posts.
+		InstagramReportPost lastInstagramReportPost = instagramReportPostRemote.getLastPost(profile.getInstagramBusinessId());
+		saveInstagramReportsPosts(user, lastInstagramReportPost);
+	}
+	
+	public void retrieveInsightsForPeriod(Integer period) {
+		
+		Calendar untilDate = new GregorianCalendar();
+		untilDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+		Calendar sinceDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+				untilDate.get(Calendar.MONTH),
+				untilDate.get(Calendar.DAY_OF_MONTH));
+		sinceDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (period - 1));
+		
+		Long dateSince = UtilFunctions.getDateForFacebookReport(sinceDate);
+		Long dateUntil = UtilFunctions.getDateForFacebookReport(untilDate);
+		
+		User user = updateProfileInfo();
+		
+		for(Long currentDay = dateSince; currentDay <= dateUntil; currentDay += 86400) {
+			retrieveInsightsForDay(currentDay, user);
+		}
+		
+		retrieveInsightsForLifetime(dateUntil);
+		
+		InstagramReportPost lastInstagramReportPost = instagramReportPostRemote.getLastPost(profile.getInstagramBusinessId());
+		saveInstagramReportsPosts(user, lastInstagramReportPost);
+	}
+	
+	public void retrieveInsightsForLifetime(Long day) {
+		
+		try {
+			
+			InstagramBusinessBO instagramBusinessBO = new InstagramBusinessBO(profile, day);
+			
+			List<InstagramReport> instagramReports = new ArrayList<InstagramReport>();
+			
+			instagramReports.addAll(instagramBusinessBO.retrieveProfileInsightsForLifetime(profile));
+			
+			// Save all instagramreports.
+			for (InstagramReport instagramReport : instagramReports) {
+				
+				try {
+					
+					InstagramReport instagramReportDB = instagramReportRemote.getEntity(profile.getInstagramBusinessId(), 
+							instagramReport.getProperty(), instagramReport.getLabel());
+					
+					// Verify if this insight already exists on database, since it is a lifetime metric there should be only one for the current profile.
+					if(instagramReportDB != null) {
+						instagramReport.setIdInstagramReport(instagramReportDB.getIdInstagramReport());
+						instagramReport.setVersion(instagramReportDB.getVersion());
+					}
+					
+					instagramReportRemote.save(instagramReport);
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		
+	}
+	
+	/**
+	 * 
+	 * Método que exporta todos os dados relativos a followers/unfollowers da estrutura antiga existente na entidade InstagramFollower 
+	 * para a nova concentrada na entidade InstagramReport, caso ainda não tenha sido feito esse processo.
+	 * 
+	 * Muito importante manter esse método sendo utilizado antes da geração de relatórios, já que dessa forma,
+	 * quando um perfil voltar a ter seus dados de relatório gerados, o Op será capaz de atualizar os dados de forma incremental, 
+	 * na medida em que perfis inseridos em algum momento na história do OP=p voltem a ser inclusos.
+	 * 
+	 * @param idInstagramUser
+	 */
+	public void updateInstagramReportFollowers(Long idInstagramUser) {
+		
+		try {
+			
+			String idProfile = idInstagramUser.toString();
+			
+			ReportGenerate reportGenerate = reportGenerateRemote.getEntity(idProfile, Profile.INSTAGRAM);
+			
+			if(reportGenerate.getIsInNewInstaFollowersReports().equals('F')) {
+				
+				Long followersTotal = 0L;
+				
+				List<InstagramFollowerTrend> instagramFollowerTrends = 
+						instagramFollowerRemote.getInstagramFollowersCount(idInstagramUser);
+				
+				if(!instagramFollowerTrends.isEmpty()) {
+					
+					InstagramFollowerTrend instagramFollowerTrend = instagramFollowerTrends.get(0);
+					
+					InstagramReport instagramReportFollowers = new InstagramReport();
+					instagramReportFollowers.setIdInstagramUser(idProfile);
+					instagramReportFollowers.setProperty(PROFILE_FOLLOWERS);
+					instagramReportFollowers.setDate(instagramFollowerTrend.getDate());
+					instagramReportFollowers.setValue(instagramFollowerTrend.getNewFollowers());
+					
+					instagramReportRemote.save(instagramReportFollowers);
+					
+					followersTotal = instagramFollowerTrend.getNewFollowers();
+					instagramFollowerTrends.remove(0);
+				}
+				
+				for (InstagramFollowerTrend instagramFollowerTrend : instagramFollowerTrends) {
+					
+					try {
+						
+						followersTotal += instagramFollowerTrend.getBalanceFollowers();
+						
+						InstagramReport followers = new InstagramReport();
+						followers.setIdInstagramUser(idProfile);
+						followers.setProperty(PROFILE_FOLLOWERS);
+						followers.setDate(instagramFollowerTrend.getDate());
+						followers.setValue(followersTotal);
+						
+						instagramReportRemote.save(followers);
+						
+						InstagramReport followersAdds = new InstagramReport();
+						followersAdds.setIdInstagramUser(idProfile);
+						followersAdds.setProperty(PROFILE_FOLLOWERS_ADDS);
+						followersAdds.setDate(instagramFollowerTrend.getDate());
+						followersAdds.setValue(instagramFollowerTrend.getNewFollowers());
+						
+						instagramReportRemote.save(followersAdds);
+						
+						InstagramReport followersRemoves = new InstagramReport();
+						followersRemoves.setIdInstagramUser(idProfile);
+						followersRemoves.setProperty(PROFILE_FOLLOWERS_REMOVES);
+						followersRemoves.setDate(instagramFollowerTrend.getDate());
+						followersRemoves.setValue(instagramFollowerTrend.getUnfollowers());
+						
+						instagramReportRemote.save(followersRemoves);
+						
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+				reportGenerate = reportGenerateRemote.getEntity(idProfile, Profile.INSTAGRAM);
+				reportGenerate.setIsInNewInstaFollowersReports('T');
+				
+				try {
+					
+					reportGenerateRemote.save(reportGenerate);
+					
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	// Update the profile info.
+	public User updateProfileInfo() {
+		
+		User user = null;
+		
+		try {
+			
+			AccessToken accessToken = new AccessToken(profile.getToken(), null);
+			facebook = facebookIntegration.getFacebook(accessToken);
+
+			// Update the profile info.
+			user = new InstagramAPI().getUser(profile.getInstagramBusinessId(), facebook);
+			
+			profile.setScreenName(user.getUsername());
+			profile.setAvatar(user.getProfilePictureUrl());
+			profile.setFollowers(user.getFollowersCount());
+			profile.setFollows(user.getFollowsCount());
+
+			profileRemote.save(profile);
+			
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (FacebookException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		return user;
+	}
+	
+	public void retrieveInsightsForDay(Long day, User user) {
+		
+		boolean insightsSaved = true;
+
+		if(reportControlRemote.getEntityByNetwork(profile.getNetworkId(), Profile.INSTAGRAM, day) == null) {
+
+			do {
+
+				try {
+
+					AccessToken accessToken = new AccessToken(profile.getToken(), null);
+					facebook = facebookIntegration.getFacebook(accessToken);
+
+					profile = profileRemote.getById(profile.getIdProfile());
+					
+					// Start a report generation
+					ReportControl reportControl = new ReportControl();
+					reportControl.setNetworkId(profile.getNetworkId());
+					reportControl.setNetworkType(profile.getType());
+					reportControl.setDate(day);
+					reportControl.setType(GROUP_MAIN);
+					reportControl.setStartDate(new Date().getTime());
+
+					reportControl = reportControlRemote.save(reportControl);
+					
+					InstagramBusinessBO instagramBusinessBO = new InstagramBusinessBO(profile, day);
+					
+					List<InstagramReport> instagramReports = new ArrayList<InstagramReport>();
+					
+					instagramReports.addAll(instagramBusinessBO.retrieveProfileInsightsForDay(profile, day));
+					instagramReports.addAll(instagramBusinessBO.retrieveProfileOnlineFollowersInsights(profile, day));
+					
+					normalizeProfileInsights(profile, instagramReports, day);
+					
+					// Save all instagramreports.
+					for (InstagramReport instagramReport : instagramReports) {
+						instagramReportRemote.save(instagramReport);
+					}
+
+					reportControl = reportControlRemote.getById(reportControl.getIdReportsControl());
+
+					reportControl.setFinishDate(new Date().getTime());
+					reportControlRemote.save(reportControl);
+
+					insightsSaved = true;
+
+				} catch (FacebookException e) {
+					
+					insightsSaved = true;
+					ValidateTokensController.validatingTokens(profile.getAccount());
+					e.printStackTrace();
+					
+				} catch (Exception e) {
+					insightsSaved = true;
+					e.printStackTrace();
+				}
+
+			} while (!insightsSaved);
+		}
+	}
+
+	private void normalizeProfileInsights(Profile profile, List<InstagramReport> instagramReports, Long day) {
+		
+		List<InstagramReport> instagramReportsGenerated = new ArrayList<InstagramReport>();
+		
+		for(InstagramReport instagramReport : instagramReports) {
+			
+			if(instagramReport.getProperty().equals(FOLLOWER_COUNT)) {
+				
+				instagramReport.setProperty(PROFILE_FOLLOWERS_ADDS);
+				
+				InstagramReport instaRepProfileFollowers = new InstagramReport();
+				instaRepProfileFollowers.setIdInstagramUser(profile.getInstagramBusinessId());
+				instaRepProfileFollowers.setProperty(PROFILE_FOLLOWERS);
+				instaRepProfileFollowers.setDate(day);
+				instaRepProfileFollowers.setValue(profile.getFollowers());
+				
+				instagramReportsGenerated.add(instaRepProfileFollowers);
+				
+				InstagramReport instaRepProfileFollowersRemoves = new InstagramReport();
+				instaRepProfileFollowersRemoves.setIdInstagramUser(profile.getInstagramBusinessId());
+				instaRepProfileFollowersRemoves.setProperty(PROFILE_FOLLOWERS_REMOVES);
+				instaRepProfileFollowersRemoves.setDate(day);
+				
+				if(isFirstReportGeneration == false) {
+					
+					InstagramReport instRepFollowersYesterday = 
+							instagramReportRemote.getEntityBeforeDate(profile.getInstagramBusinessId(), PROFILE_FOLLOWERS, day);
+					
+					if(instRepFollowersYesterday != null) {
+						
+						if(instaRepProfileFollowers.getValue() > instRepFollowersYesterday.getValue()) {
+							instaRepProfileFollowersRemoves.setValue(Math.abs((instaRepProfileFollowers.getValue() - instRepFollowersYesterday.getValue()) - instagramReport.getValue()));
+						} else {
+							instaRepProfileFollowersRemoves.setValue((instRepFollowersYesterday.getValue() - instaRepProfileFollowers.getValue()) + instagramReport.getValue());
+						}
+						
+					} else {
+						instaRepProfileFollowersRemoves.setValue(0L);
+					}
+					
+				} else {
+					instaRepProfileFollowersRemoves.setValue(0L);
+				}
+				
+				instagramReportsGenerated.add(instaRepProfileFollowersRemoves);
+				
+				break;
+			}
+			
+		}
+		
+		instagramReports.addAll(instagramReportsGenerated);
+	}
+	
+	private void refreshPostsInsights(Long idInstagramUser) {
+
+		Calendar untilDate = new GregorianCalendar();
+		untilDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - 1);
+
+		Calendar fromDate = new GregorianCalendar(untilDate.get(Calendar.YEAR),
+				untilDate.get(Calendar.MONTH),
+				untilDate.get(Calendar.DAY_OF_MONTH));
+		fromDate.set(Calendar.DAY_OF_MONTH, untilDate.get(Calendar.DAY_OF_MONTH) - (UPDATE_POSTS_PERIOD - 1));
+
+		Long dateFrom = UtilFunctions.getMidnightDateNoDaylightTime(fromDate.getTime());
+
+		Pagination pagination = null;
+
+		do {
+
+			try {
+
+				MediaFeed mediaFeed;
+				if(pagination == null) {
+					mediaFeed = instagram.getRecentMediaFeed(idInstagramUser.toString(), 20, null, null, untilDate.getTime(), null);
+				} else {
+					mediaFeed = instagram.getRecentMediaNextPage(pagination);
+				}
+
+				pagination = mediaFeed.getPagination();
+				List<MediaFeedData> feeds = mediaFeed.getData();
+
+				if(feeds != null) {
+					for(MediaFeedData feed : feeds) {
+
+						try {
+
+							InstagramReportPost instagramReportPost = instagramReportPostRemote.getById(new java.lang.Long(feed.getId().substring(0,feed.getId().indexOf("_"))));
+							instagramReportPost.setAvatar(feed.getUser().getProfilePictureUrl());
+							instagramReportPost.setLikes(feed.getLikes().getCount());
+							instagramReportPost.setComments(feed.getComments().getCount());
+
+							instagramReportPost.setPictureCaption(feed.getCaption() != null ? feed.getCaption().getText() : null);
+
+							instagramReportPostRemote.save(instagramReportPost);
+
+							instagramReportPost = instagramReportPostRemote.getById(instagramReportPost.getIdMedia());
+
+							saveInstagramTags(feed.getTags(), instagramReportPost);
+
+							if(feed.getComments().getCount() > 0) {
+								saveInstagramPostComments(instagramReportPost);
+							}
+//							if(feed.getLikes().getCount() > 0) {
+//								saveInstagramLikes(instagramReportPost, feed.getCreatedTime());
+//							}
+
+						} catch (IllegalArgumentException e) {
+							e.printStackTrace();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+					
+					// Verifica se os posts do perído definido em UPDATE_POSTS_PERIOD já foram todos atualizados.
+					if(!feeds.isEmpty()) {
+						Long createdTime = Long.valueOf(feeds.get(feeds.size() - 1).getCreatedTime());
+						if(dateFrom > createdTime) {
+							break;
+						}
+					}
+					
+				}
+
+			} catch (InstagramBadRequestException e) {
+				
+				//ValidateTokensController.validatingTokens(profile.getAccount(), OpSocialBackApplication.opSocialContext);
+				ValidateTokensController.validatingTokens(profile.getAccount());
+				pagination.setNextMaxId(null);
+				pagination.setNextMinId(null);
+				
+				e.printStackTrace();
+			} catch (InstagramRateLimitException e) {
+				if(e.getRemainingLimitStatus() <= 0) {
+					try {
+						System.out.println("Parando relatório..:" + profile.getNetworkId());
+						Thread.sleep(REQUEST_WINDOW_TIME);
+						System.out.println("Continuando relatório..:" + idInstagramUser);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				}
+				e.printStackTrace();
+			} catch (InstagramException e) {
+				if(e.getRemainingLimitStatus() <= 0) {
+					try {
+						System.out.println("Parando relatório..:" + profile.getNetworkId());
+						Thread.sleep(REQUEST_WINDOW_TIME);
+						System.out.println("Continuando relatório..:" + idInstagramUser);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+				}
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		} while (pagination.getNextMaxId() != null || pagination.getNextMinId() != null);
+	}
+
+	public void retrieveFollowers(Long day) {
+		
+		InstagramPostHelper instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		
+		FollowerFeed followerFeed = new FollowerFeed();
+		
+		do {
+			
+			if(followerFeed.getNextMaxId() == null) {
+				followerFeed = instagramPostHelper.getFollowers(profile, profile.getInstagramDevice(), null);
+			} else {
+				followerFeed = instagramPostHelper.getFollowers(profile, profile.getInstagramDevice(), followerFeed.getNextMaxId());
+			}
+			
+			for(Follower follower : followerFeed.getUsers()) {
+
+				InstagramFollower instagramFollower = new InstagramFollower();
+				instagramFollower.setIdProfile(profile.getNetworkId());
+				instagramFollower.setFollowerId(follower.getPk().toString());
+				instagramFollower.setUserName(follower.getUsername());
+				instagramFollower.setFullName(follower.getFullName());
+				instagramFollower.setProfilePicture(follower.getProfilePicUrl());
+				instagramFollower.setIsStillFollower(IS_A_FOLLOWER);
+				instagramFollower.setFollowingDate(day);
+
+				try {
+
+					instagramFollowerRemote.save(instagramFollower);
+
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} while(followerFeed.getNextMaxId() != null);
+		
+		System.out.println("Followers retrieved!!!!");
+	}
+	
+//	private void saveInstagramFollowers(Long idProfile) {
+//
+//		Pagination pagination = null;
+//
+//		do {
+//
+//			try {
+//
+//				UserFeed userFeed;
+//				if(pagination == null) {
+//					userFeed = instagram.getUserFollowedByList(idProfile.toString());
+//				} else {
+//					userFeed = instagram.getUserFollowListNextPage(pagination);
+//				}
+//
+//				pagination = userFeed.getPagination();
+//				List<UserFeedData> users = userFeed.getUserList();
+//
+//				for(UserFeedData user : users) {
+//
+//					InstagramFollower instagramFollower = new InstagramFollower();
+//					instagramFollower.setIdProfile(idProfile);
+//					instagramFollower.setFollowerId(Long.valueOf(user.getId()));
+//					instagramFollower.setUserName(user.getUserName());
+//					instagramFollower.setFullName(user.getFullName());
+//					instagramFollower.setProfilePicture(user.getProfilePictureUrl());
+//					instagramFollower.setIsStillFollower(IS_A_FOLLOWER);
+////					instagramFollower.setFollowingDate(reportDateStamp);
+//
+//					try {
+//
+//						instagramFollowerRemote.save(instagramFollower);
+//
+//					} catch (IllegalArgumentException e) {
+//						e.printStackTrace();
+//					} catch (Exception e) {
+//						e.printStackTrace();
+//					}
+//				}
+//
+//			} catch (InstagramBadRequestException e) {
+//				
+//				//ValidateTokensController.validatingTokens(profile.getAccount(), OpSocialBackApplication.opSocialContext);
+//				ValidateTokensController.validatingTokens(profile.getAccount());
+//				pagination.setNextUrl(null);
+//				
+//				e.printStackTrace();
+//			} catch (InstagramRateLimitException e) {
+//				if(e.getRemainingLimitStatus() <= 0) {
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + idProfile);
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+//				e.printStackTrace();
+//			} catch (InstagramException e) {
+//				if(e.getRemainingLimitStatus() <= 0) {
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + idProfile);
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+//				e.printStackTrace();
+//			}
+//
+//		} while (pagination.getNextUrl() != null);
+//
+//	}
+//
+//	private InstagramReport updateInstagramFollowers(Long idProfile) {
+//
+//		// Save Instagram Followers for the current day.
+//		InstagramReport instRepFollowersAdds = new InstagramReport();
+//		instRepFollowersAdds.setIdInstagramUser(idProfile.toString());
+//		instRepFollowersAdds.setProperty(PROFILE_FOLLOWERS_ADDS);
+////		instRepFollowersAdds.setDate(reportDateStamp);
+//
+//		Long alreadyFollowersSequence = 0L;
+//		
+//		Long followersAdds = 0L;
+//		Pagination pagination = null;
+//
+//		do {
+//
+//			try {
+//
+//				UserFeed userFeed;
+//				if(pagination == null) {
+//					userFeed = instagram.getUserFollowedByList(idProfile.toString());
+//				} else {
+//					userFeed = instagram.getUserFollowedByListNextPage(pagination);
+//				}
+//
+//				pagination = userFeed.getPagination();
+//				List<UserFeedData> users = userFeed.getUserList();
+//
+//				for(UserFeedData user : users) {
+//
+//					InstagramFollowerId instagramFollowerId = new InstagramFollowerId();
+//					instagramFollowerId.setFollowerId(Long.valueOf(user.getId()));
+//					instagramFollowerId.setIdProfile(idProfile);
+//
+//					InstagramFollower instagramFollower = instagramFollowerRemote.getById(instagramFollowerId);
+//
+//					if(instagramFollower == null) {
+//
+//						instagramFollower = new InstagramFollower();
+//						instagramFollower.setIdProfile(idProfile);
+//						instagramFollower.setFollowerId(Long.valueOf(user.getId()));
+//						instagramFollower.setUserName(user.getUserName());
+//						instagramFollower.setFullName(user.getFullName());
+//						instagramFollower.setProfilePicture(user.getProfilePictureUrl());
+//						instagramFollower.setIsStillFollower(IS_A_FOLLOWER);
+////						instagramFollower.setFollowingDate(reportDateStamp);
+//
+//						try {
+//
+//							instagramFollowerRemote.save(instagramFollower);
+//							followersAdds++;
+//							followersAdds += alreadyFollowersSequence;
+//							alreadyFollowersSequence = 0L;
+//
+//						} catch (IllegalArgumentException e) {
+//							e.printStackTrace();
+//						} catch (Exception e) {
+//							e.printStackTrace();
+//						}
+//					} else {
+//						alreadyFollowersSequence++;
+//						if(alreadyFollowersSequence.equals(MAX_ALREADY_FOLLOWERS_SEQUENCE)) {
+//							pagination.setNextUrl(null);
+//							break;
+//						}
+//					}
+//				}
+//
+//			} catch (InstagramBadRequestException e) {
+//				
+//				//ValidateTokensController.validatingTokens(profile.getAccount(), OpSocialBackApplication.opSocialContext);
+//				ValidateTokensController.validatingTokens(profile.getAccount());
+//				pagination.setNextUrl(null);
+//				
+//				e.printStackTrace();
+//			} catch (InstagramRateLimitException e) {
+//				if(e.getRemainingLimitStatus() <= 0) {
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + idProfile);
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+//				e.printStackTrace();
+//			} catch (InstagramException e) {
+//				if(e.getRemainingLimitStatus() <= 0) {
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + idProfile);
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+//				e.printStackTrace();
+//			}
+//
+//		} while (pagination.getNextUrl() != null);
+//
+//		instRepFollowersAdds.setValue(followersAdds);
+//
+//		try {
+//
+//			instRepFollowersAdds = instagramReportRemote.save(instRepFollowersAdds);
+//
+//		} catch (IllegalArgumentException e) {
+//			e.printStackTrace();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//
+//		return instRepFollowersAdds;
+//	}
+	
+	private void saveInstagramReportsPosts(User user, InstagramReportPost lastInstagramReportPost) {
+
+		Paging paging = null;
+		Boolean hasMorePosts = true;
+		
+		do {
+
+			try {
+				
+				br.com.opsocial.server.utils.instagram.entities.MediaFeed mediaFeed = new InstagramAPI().getMedia(profile, paging, 25);
+				
+				for(Media media : mediaFeed.getData()) {
+					
+					InstagramReportPost instagramReportPost = new InstagramReportPost();
+					instagramReportPost.setIdMedia(media.getId());
+					instagramReportPost.setIdInstagramUser(user.getId());
+					instagramReportPost.setUserName(user.getUsername());
+					instagramReportPost.setFullName(user.getName());
+					instagramReportPost.setAvatar(user.getProfilePictureUrl());
+					instagramReportPost.setCreateTime(ZonedDateTime.parse(media.getTimestamp(), DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")).toEpochSecond());
+					instagramReportPost.setLink(media.getPermalink());
+					instagramReportPost.setType(media.getMediaType());
+					instagramReportPost.setLikes(media.getLikeCount().intValue());
+					instagramReportPost.setComments(media.getCommentsCount().intValue());
+
+					instagramReportPost.setPictureUrl(media.getMediaUrl());
+					instagramReportPost.setPictureCaption(media.getCaption());
+					
+					if(lastInstagramReportPost != null && (lastInstagramReportPost.getCreateTime() >= instagramReportPost.getCreateTime())) {
+						hasMorePosts = false;
+						break;
+					}
+
+					try {
+
+						instagramReportPostRemote.save(instagramReportPost);
+
+						instagramReportPost = instagramReportPostRemote.getById(instagramReportPost.getIdMedia());
+
+						saveInstagramTags(UtilFunctions.getHashTags(instagramReportPost.getPictureCaption()), instagramReportPost);
+
+						if(media.getCommentsCount() > 0) {
+							saveInstagramPostComments(instagramReportPost);
+						}
+//						if(media.getLikeCount() > 0) {
+//							saveInstagramLikes(instagramReportPost, feed.getCreatedTime());
+//						}
+
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+				}
+				
+				if(hasMorePosts) {
+					paging = mediaFeed.getPaging();
+				} else {
+					paging = null;
+				}
+				
+
+			} catch (FacebookException e) {
+				
+				//ValidateTokensController.validatingTokens(profile.getAccount(), OpSocialBackApplication.opSocialContext);
+				ValidateTokensController.validatingTokens(profile.getAccount());
+				
+				e.printStackTrace();
+			}
+
+		} while (paging != null && paging.getNext() != null);
+
+		System.out.println("No more posts");
+	}
+
+	private void saveInstagramPostComments(InstagramReportPost instagramReportPost) {
+
+		boolean commentsSaved = true;
+
+		do {
+
+			try {
+
+				CommentFeed commentFeed = new InstagramAPI().getComments(profile, instagramReportPost.getIdMedia());
+
+				for(Comment comment : commentFeed.getData()) {
+
+					try {
+					
+						InstagramPostComment instagramPostComment = new InstagramPostComment();
+						instagramPostComment.setIdComment(comment.getId());
+						instagramPostComment.setText(comment.getText());
+						instagramPostComment.setIdInstagramUser(comment.getUser().getId());
+						instagramPostComment.setUserName(comment.getUser().getUsername());
+						instagramPostComment.setFullName(comment.getUser().getName());
+						instagramPostComment.setProfilePicture(comment.getUser().getProfilePictureUrl());
+						instagramPostComment.setCreateTime(ZonedDateTime.parse(comment.getTimestamp(), DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")).toEpochSecond());
+						instagramPostComment.setInstagramReportPost(instagramReportPost);
+
+						instagramPostCommentRemote.save(instagramPostComment);
+
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+				commentsSaved = true;
+
+			} catch (FacebookException e) {
+				
+//				if(e.getRemainingLimitStatus() <= 0) {
+//
+//					commentsSaved = false;
+//
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + instagramReportPost.getIdInstagramUser());
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+				
+				//ValidateTokensController.validatingTokens(profile.getAccount(), OpSocialBackApplication.opSocialContext);
+				ValidateTokensController.validatingTokens(profile.getAccount());
+				commentsSaved = true;
+				
+				e.printStackTrace();
+			}
+
+		} while (!commentsSaved);
+		
+	}
+
+//	private void saveInstagramLikes(InstagramReportPost instagramReportPost, Long createdTime) {
+//
+//		boolean likesSaved = true;
+//
+//		do {
+//
+//			List<User> users = new ArrayList<User>();
+//
+//			try {
+//
+//				users = instagram.getUserLikes(instagramReportPost.getIdMedia() + "_" + instagramReportPost.getIdInstagramUser()).getUserList();
+//
+//				for(User user : users) {
+//
+//					InstagramPostLike instagramPostLike;
+//
+//					InstagramPostLikeId instagramPostLikeId = new InstagramPostLikeId();
+//					instagramPostLikeId.setIdInstagramUser(user.getId());
+//					instagramPostLikeId.setInstagramReportPost(instagramReportPost.getIdMedia());
+//
+//					instagramPostLike = instagramPostLikeRemote.getById(instagramPostLikeId);
+//
+//					if(instagramPostLike == null) {
+//
+//						instagramPostLike = new InstagramPostLike();
+//						instagramPostLike.setInstagramReportPost(instagramReportPost);
+//						instagramPostLike.setIdInstagramUser(user.getId());
+//						instagramPostLike.setProfilePicture(user.getProfilePictureUrl());
+//						instagramPostLike.setUserName(user.getUserName());
+//						instagramPostLike.setFullName(user.getFullName());
+//						instagramPostLike.setCreateTime(createdTime);
+//
+//						try {
+//
+//							instagramPostLikeRemote.save(instagramPostLike);
+//
+//						} catch (IllegalArgumentException e) {
+//							e.printStackTrace();
+//						} catch (Exception e) {
+//							e.printStackTrace();
+//						}
+//					}			
+//				}
+//
+//				likesSaved = true;
+//
+//			} catch (InstagramBadRequestException e) {
+//				
+//				//ValidateTokensController.validatingTokens(profile.getAccount(), OpSocialBackApplication.opSocialContext);
+//				ValidateTokensController.validatingTokens(profile.getAccount());
+//				likesSaved = true;
+//				
+//				e.printStackTrace();
+//			} catch (InstagramRateLimitException e) {
+//
+//				likesSaved = false;
+//
+//				if(e.getRemainingLimitStatus() <= 0) {
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + instagramReportPost.getIdInstagramUser());
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+//				e.printStackTrace();
+//			} catch (InstagramException e) {
+//				if(e.getRemainingLimitStatus() <= 0) {
+//
+//					likesSaved = false;
+//
+//					try {
+//						System.out.println("Parando relatório..:" + profile.getNetworkId());
+//						Thread.sleep(REQUEST_WINDOW_TIME);
+//						System.out.println("Continuando relatório..:" + instagramReportPost.getIdInstagramUser());
+//					} catch (InterruptedException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+//				e.printStackTrace();
+//			} catch (Exception e) {
+//				likesSaved = true;
+//				e.printStackTrace();
+//			}
+//
+//		} while (!likesSaved);
+//
+//	}
+
+	private void saveInstagramTags(List<String> tags, InstagramReportPost instagramReportPost) {
+
+		for(String tag : tags) {
+
+			try {
+
+				InstagramPostTag instagramPostTag;
+
+				InstagramPostTagId instagramPostTagId = new InstagramPostTagId();
+				instagramPostTagId.setInstagramReportPost(instagramReportPost.getIdMedia());
+				instagramPostTagId.setTag(tag);
+
+				instagramPostTag = instagramPostTagRemote.getById(instagramPostTagId);
+
+				if(instagramPostTag == null) {
+
+					instagramPostTag = new InstagramPostTag();
+					instagramPostTag.setInstagramReportPost(instagramReportPost);
+					instagramPostTag.setTag(tag);
+
+					try {
+
+						instagramPostTagRemote.save(instagramPostTag);
+
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public ReportGenerate getReportGenerate() {
+		return reportGenerate;
+	}
+
+	public void setReportGenerate(ReportGenerate reportGenerate) {
+		this.reportGenerate = reportGenerate;
+	}
+
+	/**
+	 * 
+	 * Método que efetua busca dos dados AUDIENCES do instagram, apenas para perfil do tipo business.
+	 * 
+	 * @param profile
+	 */
+	public void retireveAudiencesForDay(Profile profile) {
+
+		InstagramPostHelper instagramPostHelper = new InstagramPostHelper(profile.getInstagramCookies(), profile.getInstagramLastLoginTime());
+		instagramPostHelper.authenticateUser(profile, profile.getInstagramDevice(), false);
+		String r = instagramPostHelper.getBusinessInformation(profile.getInstagramDevice());
+
+		InputStream fis = new ByteArrayInputStream(r.getBytes(StandardCharsets.UTF_8));		
+		JsonReader jsonReader = Json.createReader(fis);
+		JsonObject jsonObject = jsonReader.readObject();
+		jsonReader.close();
+
+		JsonObject o1 	= (JsonObject) jsonObject.get("instagram_user");
+		JsonObject o2 	= o1.getJsonObject("instagram_insights");
+		JsonArray o3 	= o2.getJsonArray("nodes");
+		List<InstagramReport> listaPersistir = new ArrayList<>();
+		processAudiences(profile, o3, listaPersistir);
+	}
+
+	private void processAudiences(Profile profile, JsonArray o3, List<InstagramReport> listaPersistir) {
+
+		for (Object item : o3) {
+
+			JsonObject itAux 	= (JsonObject) item;
+			JsonObject o4 		= itAux.getJsonObject("attachments");
+			JsonArray o5 		= o4.getJsonArray("nodes");
+
+			String unit_name = itAux.getString("unit_name", "");
+
+			if (unit_name != null) {
+				unit_name = unit_name.replaceAll(" ", "_");
+			}
+
+			String chart_name;
+			JsonString __typename;
+			String show_percentage;
+			String title;
+			String tab_name;
+			for (Object itemNode : o5) {
+
+				JsonObject itNodeAux 	= (JsonObject) itemNode;
+				chart_name 				= itNodeAux.getString("chart_name", "");
+				__typename 				= itNodeAux.getJsonString("__typename");
+				show_percentage 		= itNodeAux.getString("show_percentage", "");
+				title 					= itNodeAux.getString("title", "");
+				tab_name 				= itNodeAux.getString("tab_name", "");
+				JsonArray datapoints 	= itNodeAux.getJsonArray("datapoints");
+
+				if (datapoints != null) {
+/*
+					System.out.println("----------------------------------------------------------------------------------");
+					System.out.println("unit_name: " 	+ unit_name);
+					System.out.println("chart_name: " 	+ chart_name);
+					System.out.println("tab_name: " 	+ tab_name);
+					System.out.println("title: " 		+ title);
+					System.out.println("----------------------------------------------------------------------------------");
+*/
+					processDataPoint(profile, datapoints, unit_name + "_" + chart_name, listaPersistir, null);
+				} else {
+
+					JsonArray oAux4 		= itNodeAux.getJsonArray("chart_data_list");
+					if (oAux4 != null) {
+
+						int indexAux = -1;
+						for (Object itemData : oAux4) {
+							JsonObject itDataAux 	= (JsonObject) itemData;
+							JsonArray oAux5 		= itDataAux.getJsonArray("datapoints");		
+							if (oAux5 != null) {
+/*
+								System.out.println("----------------------------------------------------------------------------------");
+								System.out.println("unit_name: " 	+ unit_name);
+								System.out.println("chart_name: " 	+ chart_name);
+								System.out.println("tab_name: " 	+ tab_name);
+								System.out.println("title: " 		+ title);
+								System.out.println("----------------------------------------------------------------------------------");
+*/								
+								String day_week = null;
+								if ((tab_name != null) && (tab_name.equals("Horas"))) {
+									day_week = itDataAux.getString("title", "");							
+								} else {
+									indexAux++;
+									day_week = indexAux + "";
+								}
+
+								processDataPoint(profile, oAux5, unit_name + "_" + tab_name, listaPersistir, day_week);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void processDataPoint(Profile profile, JsonArray datapoints, String chart_name, List<InstagramReport> listaPersistir, String day_week) {
+
+		String labelAnterior 	= "";
+
+		for (Object itemData : datapoints) {
+
+			InstagramReport reportItem = new InstagramReport();
+			
+//			reportItem.setDate(this.reportDateStamp);
+			JsonObject itDataAux 	= (JsonObject) itemData;
+			String label = itDataAux.getString("label", "");
+
+			if (chart_name.equals("follower_activity_Horas") && ((label == null) || (label.equals("")))) {
+				labelAnterior = new Integer(labelAnterior) + 1 + "";
+				label = labelAnterior + "h";
+			} else if (chart_name.equals("follower_activity_Horas") && (!label.equals(""))) {
+				labelAnterior = label.replaceAll("h", "");
+			}
+
+			int v = itDataAux.getInt("y");
+			reportItem.setValue(new Long(v));
+			reportItem.setProperty(chart_name);
+			reportItem.setLabel(label);
+
+			if ((day_week != null) && (!day_week.equals(""))) {
+				reportItem.setDayWeek(day_week);
+			}
+
+			reportItem.setIdInstagramUser(profile.getNetworkId());
+			listaPersistir.add(reportItem);
+
+			try {
+				instagramReportRemote.save(reportItem);
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+}

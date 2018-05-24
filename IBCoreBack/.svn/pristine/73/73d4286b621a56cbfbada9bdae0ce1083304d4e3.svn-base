@@ -1,0 +1,54 @@
+package br.com.opsocial.server.actions.planscontrol;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.OptimisticLockException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.opsocial.client.entity.primitive.StringUtil;
+import br.com.opsocial.ejb.das.MaintenanceProfileRemote;
+import br.com.opsocial.ejb.entity.application.Account;
+import br.com.opsocial.ejb.entity.application.Profile;
+import br.com.opsocial.server.services.ServerAction;
+import br.com.opsocial.server.utils.RecoverMaintenance;
+
+@RestController
+@RequestMapping("opsocial")
+public class ProfileInsertionControlAction extends ServerAction {
+	
+	@Override
+	@RequestMapping(value = "/profile_insertion_control",
+    method = RequestMethod.GET,
+    produces = MediaType.APPLICATION_JSON_VALUE)
+	public void doAction() throws Exception, OptimisticLockException {
+		
+		java.lang.Integer profilesToAdd = (Integer) getParameters().get("profiles_count");
+	
+		MaintenanceProfileRemote remote = (MaintenanceProfileRemote) RecoverMaintenance.recoverMaintenance("Profile");
+		
+		List<Character> profileTypes = new ArrayList<Character>();
+		profileTypes.add(Profile.FACEBOOK_PAGE);
+		profileTypes.add(Profile.TWITTER);
+		profileTypes.add(Profile.FACEBOOK);
+		profileTypes.add(Profile.INSTAGRAM);
+		
+		List<Profile> profiles = remote.getEntityByNetworkType(profileTypes, getUser().getAccount().getIdAccount());
+		
+		if(getUser().getAccount().getPlanType().equals(Account.FREE) && profiles.size() + profilesToAdd > 5) {
+			getParameters().put("profilecontrol", new StringUtil("Você possui o plano gratuito, que permite a inserção de 5 perfis."));
+			
+		} else if(profiles.size() + profilesToAdd > getUser().getAccount().getProfiles()) {
+			String message = "O plano contratado permite a inserção de até " + getUser().getAccount().getProfiles() + " perfis/páginas";
+			getParameters().put("profilecontrol", new StringUtil(message));	
+		}
+		
+		if(getParameters().get("profilecontrol") == null) {	
+			getParameters().put("profilecontrol", new StringUtil("canInsert"));
+		}
+	}
+}
