@@ -1,0 +1,28 @@
+<project name="Mover_arquivo" default="mover" basedir=".">
+
+	<property name="PATH_DESTINO"      			value="D:\Projetos\PrimeMachine\src\main\webapp"/>
+	<property name="PATH_DESTINO_COMPILADO"     value="D:\Projetos\PrimeMachine\target\PrimeMachine-1.5"/>
+	<property name="PATH_ORIGEM"      			value="D:\Projetos\AngularApp\src"/>
+	<property name="PATH_DIST"      			value="D:\Projetos\my-maps-project\dist"/>
+	<property name="PATH_ORIGEM_NODE"			value="D:\Projetos\AngularApp\node_modules"/>
+	
+	<target name="excluir"
+   		description="Delete old build and dist directories">
+		<delete dir="${PATH_DESTINO}"/>
+	</target>
+
+	<target name="mover" description="Move angular2 sources">
+		<copy  todir="${PATH_DESTINO}">
+			<fileset dir="${PATH_DIST}"/>
+		</copy>
+		<copy  todir="${PATH_DESTINO}/node_modules">
+			<fileset dir="${PATH_ORIGEM_NODE}"/>
+		</copy>
+	</target>
+
+	<target name="mover_para_war" description="Move angular2 sources to WAR file">
+		<copy  todir="${PATH_DESTINO_COMPILADO}">
+			<fileset dir="${PATH_ORIGEM}"/>
+		</copy>
+	</target>
+</project>

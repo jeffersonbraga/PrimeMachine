@@ -1,0 +1,48 @@
+package br.com.primum.service.escalonamento_formulario;
+
+import java.util.List;
+
+import br.com.primum.bo.escalonamento_formulario.Escalonamento_formularioBO;
+import br.com.primum.modelo.escalonamento_formulario.Escalonamento_formulario;
+import br.com.primum.modelo.escalonamento_usuario.Escalonamento_usuario;
+import br.com.primum.modelo.formulario.Formulario;
+
+public class Escalonamento_formularioService {
+
+	private Escalonamento_formularioBO escalonamentoBO;
+
+	public Escalonamento_formularioBO getEscalonamentoBO() {
+		return escalonamentoBO;
+	}
+
+	public void setEscalonamentoBO(Escalonamento_formularioBO escalonamentoBO) {
+		this.escalonamentoBO = escalonamentoBO;
+	}
+
+	public List<Escalonamento_usuario> buscarCronogramaAtividades(Integer cd_usuario, Integer tp_formulario) {
+		this.setEscalonamentoBO(new Escalonamento_formularioBO());
+		return this.getEscalonamentoBO().buscarCronogramaAtividades(cd_usuario, tp_formulario);
+	}
+	
+	public List<?> montarPainelProximoDia(Integer qtdeDias) {
+		this.setEscalonamentoBO(new Escalonamento_formularioBO());
+		return this.getEscalonamentoBO().montarPainelProximoDia(qtdeDias);
+	}
+	
+	public boolean validarEscalonamentoUsuario(Escalonamento_formulario escalonamento_formulario, Escalonamento_usuario escalonamento_usuario) {
+		this.setEscalonamentoBO(new Escalonamento_formularioBO());
+		return this.getEscalonamentoBO().validarEscalonamentoUsuario(escalonamento_formulario, escalonamento_usuario);
+	}
+
+	public List<?> montarPainelAcompanhamento() {
+		this.setEscalonamentoBO(new Escalonamento_formularioBO());
+		return this.getEscalonamentoBO().montarPainelAcompanhamento();
+	}
+	
+	public List<Escalonamento_usuario> listarFormularioEscalonadosPorSituacao(Integer cd_usuario) {
+		this.setEscalonamentoBO(new Escalonamento_formularioBO());
+		return this.getEscalonamentoBO().listarFormularioEscalonadosPorSituacao(cd_usuario);
+	}
+	
+	
+}

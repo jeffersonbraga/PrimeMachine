@@ -1,0 +1,7 @@
+dialetoConexao&br.com.primum.dialect.PostgresqlDialect_ext
+driverConexao&org.postgresql.Driver
+tipoBancoDados&postgresql
+caminhoConexao&jdbc:postgresql://192.168.0.28:5432/lifesoftware
+usuarioConexao&postgres
+senhaConexao&masterkey
+urlservidor&http://192.168.20.115:8510/Mangoni/Builder.html

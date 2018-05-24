@@ -1,0 +1,7 @@
+dialetoConexao&org.hibernate.dialect.Oracle10gDialect
+driverConexao&oracle.jdbc.driver.OracleDriver
+tipoBancoDados&oracle
+caminhoConexao&jdbc:oracle:thin:@//192.168.201.1:1521/xe
+usuarioConexao&VIASOFTMCP
+senhaConexao&VIASOFTMCP
+urlservidor&http://192.168.201.1:8181/Builder.html
